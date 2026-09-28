@@ -1,0 +1,7 @@
+/**
+ * Shared utility helpers.
+ */
+
+export function assertNever(value: never, message: string): never {
+	throw new Error(`${message}: ${String(value)}`)
+}
