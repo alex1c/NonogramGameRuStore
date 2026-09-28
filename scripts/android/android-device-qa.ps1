@@ -332,7 +332,7 @@ function Invoke-PhoneMetroHealth([string]$AdbPath, [string]$Serial) {
 			#
 			#
 			#
-			Stop-QA 'Phone → Metro' 'Device curl reached no healthy Metro status.' 'Verify adb reverse and keep Metro on the configured port with --host lan.'
+			Stop-QA 'Phone -> Metro' 'Device curl reached no healthy Metro status.' 'Verify adb reverse and keep Metro on the configured port with --host lan.'
 			#
 			Stop-QA 'Phone to Metro' 'Device curl reached no healthy Metro status.' 'Verify adb reverse and keep Metro on the configured port with --host lan.'
 			#
@@ -346,7 +346,7 @@ function Invoke-PhoneMetroHealth([string]$AdbPath, [string]$Serial) {
 		$result = Invoke-NativeCommand $AdbPath @('-s', $Serial, 'shell', 'wget', '-q', '-O', '-', $MetroStatusUrl) -AllowNonZero
 		$text = ($result.Output -join [Environment]::NewLine)
 		if ($result.ExitCode -ne 0 -or $text -notmatch 'packager-status\s*:\s*running') {
-			Stop-QA 'Phone → Metro' 'Device wget reached no healthy Metro status.' 'Verify adb reverse and keep Metro on the configured port with --host lan.'
+			Stop-QA 'Phone -> Metro' 'Device wget reached no healthy Metro status.' 'Verify adb reverse and keep Metro on the configured port with --host lan.'
 		}
 			#
 			Stop-QA 'Phone to Metro' 'Device wget reached no healthy Metro status.' 'Verify adb reverse and keep Metro on the configured port with --host lan.'
@@ -540,7 +540,7 @@ try {
 		})
 		if (-not (Test-MetroHealth)) {
 			$ownerSummary = ($ownerClassifications | ForEach-Object {
-				"PID $($_.Pid): $($_.Classification.Kind) — $($_.Classification.Detail)"
+				"PID $($_.Pid): $($_.Classification.Kind)  -  $($_.Classification.Detail)"
 			}) -join '; '
 			Stop-QA 'Metro port' "Configured port $MetroPort is occupied but Metro /status is not healthy. $ownerSummary" 'Inspect the identified owner and restore or stop it manually; this script never kills a process or switches ports.'
 		}
@@ -645,14 +645,14 @@ try {
 	Write-Pass 'adb reverse'
 
 	<#
-	Write-Stage 'Phone → Metro'
+	Write-Stage 'Phone -> Metro'
 	#>
 	Write-Stage 'Phone to Metro'
 	$phoneHealthMethod = Invoke-PhoneMetroHealth $adb $serial
 	if ($phoneHealthMethod) {
 		Write-Host "Device health method: $phoneHealthMethod"
 		<#
-		Write-Pass 'Phone → Metro'
+		Write-Pass 'Phone -> Metro'
 	}
 		#>
 		Write-Pass 'Phone to Metro'
@@ -728,7 +728,7 @@ catch {
 	Write-Host '========================================' -ForegroundColor Red
 	<#
 	#
-	Write-Host "STOP — $layer" -ForegroundColor Red
+	Write-Host "STOP  -  $layer" -ForegroundColor Red
 	Write-Host '========================================' -ForegroundColor Red
 	#
 	#>

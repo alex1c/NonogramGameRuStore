@@ -1,36 +1,47 @@
+import { useState } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { StyleSheet, View } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { RootNavigation } from './src/navigation/RootNavigation'
 import { BannerSlot } from './src/components/BannerSlot'
 import { colors } from './src/theme'
 
 /**
- * Minimal application shell.
- * Layout contract: CONTENT -> BANNER -> SAFE AREA (ForestMusic DevTools).
+ * App shell.
+ * Single navigation instance. BannerSlot only while Home is active.
+ * Game owns its own safe-area padding and does not show a banner.
  */
 export default function App() {
+	const [homeActive, setHomeActive] = useState(true)
+
 	return (
-		<SafeAreaProvider>
-			<SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-				<View style={styles.content}>
-					<RootNavigation />
+		<GestureHandlerRootView style={styles.flex}>
+			<SafeAreaProvider>
+				<View style={styles.flex}>
+					<View style={styles.flex}>
+						<RootNavigation onHomeActiveChange={setHomeActive} />
+					</View>
+					{homeActive ? (
+						<>
+							<BannerSlot />
+							<SafeAreaView
+								edges={['bottom']}
+								style={styles.bottomInset}
+							/>
+						</>
+					) : null}
+					<StatusBar style={homeActive ? 'dark' : 'auto'} />
 				</View>
-				<BannerSlot />
-				<SafeAreaView edges={['bottom']} style={styles.bottomInset} />
-				<StatusBar style="dark" />
-			</SafeAreaView>
-		</SafeAreaProvider>
+			</SafeAreaProvider>
+		</GestureHandlerRootView>
 	)
 }
 
 const styles = StyleSheet.create({
-	safe: {
+	flex: {
 		flex: 1,
 		backgroundColor: colors.background,
-	},
-	content: {
-		flex: 1,
 	},
 	bottomInset: {
 		backgroundColor: colors.background,
