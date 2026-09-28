@@ -1,15 +1,15 @@
 # ForestMusic DevTools pin
 
-This project was bootstrapped / Phase 3-checked against:
+This project was bootstrapped / Phase 3B-checked against:
 
 - Repository: https://github.com/alex1c/forestMusicDevTools
 - Version: **1.1.0**
 - `main` SHA: **527d089ac229e4f7af15d8e4ca04efaaa85acd92**
 
-Unchanged since Phase 1 / Phase 2 checkpoints (fetched `origin/main` again
-before Phase 3; still v1.1.0 @ 527d089).
+Unchanged since Phase 1 / Phase 2 / Phase 3 checkpoints (fetched `origin/main`
+again before Phase 3B; still v1.1.0 @ 527d089).
 
-Applied in Phase 0–3:
+Applied in Phase 0–3B:
 
 - README.md
 - VERSION

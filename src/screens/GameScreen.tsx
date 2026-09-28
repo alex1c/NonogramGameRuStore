@@ -55,6 +55,7 @@ import {
 	type GameSession,
 } from '../gameplay/session'
 import { analyzeDifficulty } from '../domain/difficulty/analyzer'
+import { difficultyLabelRu } from '../presentation/difficultyLabels'
 
 export interface GameScreenProps {
 	readonly puzzleId: string
@@ -371,8 +372,11 @@ export function GameScreen({
 						{puzzle.metadata.title ?? puzzle.id}
 					</Text>
 					<Text style={[styles.meta, { color: palette.clueTextDimmed }]}>
-						{puzzle.width}×{puzzle.height} · {difficultyTier ?? '—'} ·{' '}
-						{elapsed}
+						{puzzle.width}×{puzzle.height} ·{' '}
+						{difficultyTier === null
+							? '—'
+							: difficultyLabelRu(difficultyTier)}{' '}
+						· {elapsed}
 					</Text>
 				</View>
 			</View>

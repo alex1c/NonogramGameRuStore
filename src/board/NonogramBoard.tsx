@@ -1,6 +1,9 @@
 /**
  * Skia nonogram board renderer + shared transform hit-testing.
  * Single source of truth: layout + ViewTransform from geometry.ts.
+ *
+ * Phase 3B: larger clue glyphs, measured horizontal centering, explicit
+ * gap between the last row clue and the grid edge.
  */
 
 import { useMemo } from 'react'
@@ -13,10 +16,12 @@ import {
 	Text as SkiaText,
 	matchFont,
 	vec,
+	type SkFont,
 } from '@shopify/react-native-skia'
 import { PlayerCell, type Puzzle, type PlayerState } from '../domain/nonogram/types'
 import {
 	GROUP_SEPARATOR_EVERY,
+	clueFontSize,
 	type BoardLayout,
 	type ViewTransform,
 	cellRect,
@@ -65,6 +70,35 @@ function CrossMark({
 	)
 }
 
+/** Measured text width; falls back to a digit-count estimate if measure fails. */
+function measureClueWidth(font: SkFont | null, text: string, fontSize: number): number {
+	if (font !== null) {
+		try {
+			return font.measureText(text).width
+		} catch {
+			// Fall through to estimate when the native font path is unavailable.
+		}
+	}
+	return text.length * fontSize * 0.62
+}
+
+/**
+ * Skia text uses baseline Y. Center the glyph box on `centerY` when metrics
+ * are available; otherwise use a stable fraction of the font size.
+ */
+function baselineForCenter(font: SkFont | null, centerY: number, fontSize: number): number {
+	if (font !== null) {
+		try {
+			const metrics = font.getMetrics()
+			// Skia ascent is typically negative; descent positive.
+			return centerY - (metrics.ascent + metrics.descent) / 2
+		} catch {
+			// Fall through.
+		}
+	}
+	return centerY + fontSize * 0.35
+}
+
 export function NonogramBoard({
 	puzzle,
 	player,
@@ -77,13 +111,14 @@ export function NonogramBoard({
 	viewportWidth,
 	viewportHeight,
 }: NonogramBoardProps) {
+	const fontSize = clueFontSize(layout.cellSize)
 	const font = useMemo(
 		() =>
 			matchFont({
 				fontFamily: 'sans-serif',
-				fontSize: Math.max(9, Math.floor(layout.cellSize * 0.38)),
+				fontSize,
 			}),
-		[layout.cellSize],
+		[fontSize],
 	)
 
 	const highlight = activeGesture
@@ -209,26 +244,28 @@ export function NonogramBoard({
 						)
 					})}
 
-					{/* Row clues — last number closest to the grid */}
+					{/* Row clues — last number closest to the grid, with explicit gap */}
 					{puzzle.rowClues.map((clue, row) => {
 						const dimmed = satisfiedRows[row] === true
 						const numbers = clue.length === 0 ? [0] : [...clue]
+						const rowCenterY =
+							layout.gridOriginY + row * layout.cellSize + layout.cellSize / 2
+						const baselineY = baselineForCenter(font, rowCenterY, fontSize)
 						return numbers.map((value, indexFromLeft) => {
 							const indexFromRight = numbers.length - 1 - indexFromLeft
-							const x =
+							const text = String(value)
+							const textWidth = measureClueWidth(font, text, fontSize)
+							const slotCenterX =
 								layout.gridOriginX -
-								(indexFromRight + 1) * layout.cellSize * 0.5 +
-								2
-							const y =
-								layout.gridOriginY +
-								row * layout.cellSize +
-								layout.cellSize * 0.68
+								layout.rowClueGridGap -
+								(indexFromRight + 0.5) * layout.rowClueSlotWidth
+							const x = slotCenterX - textWidth / 2
 							return (
 								<SkiaText
 									key={`rc-${row}-${indexFromLeft}`}
 									x={x}
-									y={y}
-									text={String(value)}
+									y={baselineY}
+									text={text}
 									font={font}
 									color={dimmed ? palette.clueTextDimmed : palette.clueText}
 								/>
@@ -240,22 +277,24 @@ export function NonogramBoard({
 					{puzzle.columnClues.map((clue, col) => {
 						const dimmed = satisfiedColumns[col] === true
 						const numbers = clue.length === 0 ? [0] : [...clue]
+						const colCenterX =
+							layout.gridOriginX + col * layout.cellSize + layout.cellSize / 2
 						return numbers.map((value, indexFromTop) => {
 							const indexFromBottom = numbers.length - 1 - indexFromTop
-							const x =
-								layout.gridOriginX +
-								col * layout.cellSize +
-								layout.cellSize * 0.28
-							const y =
+							const text = String(value)
+							const textWidth = measureClueWidth(font, text, fontSize)
+							const slotCenterY =
 								layout.gridOriginY -
-								indexFromBottom * layout.cellSize * 0.62 -
-								4
+								layout.colClueGridGap -
+								(indexFromBottom + 0.5) * layout.colClueSlotHeight
+							const x = colCenterX - textWidth / 2
+							const y = baselineForCenter(font, slotCenterY, fontSize)
 							return (
 								<SkiaText
 									key={`cc-${col}-${indexFromTop}`}
 									x={x}
 									y={y}
-									text={String(value)}
+									text={text}
 									font={font}
 									color={dimmed ? palette.clueTextDimmed : palette.clueText}
 								/>

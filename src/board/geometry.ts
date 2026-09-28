@@ -1,5 +1,10 @@
 /**
  * Board geometry + view transform — single source of truth for render & hit-test.
+ *
+ * Phase 3B clue layout:
+ * - wider horizontal slots for multi-digit clues (10, 11, 15, …)
+ * - explicit gap between last row-clue digit and the grid edge
+ * - modest vertical slot growth so column clues share the same font scale
  */
 
 export interface BoardLayout {
@@ -16,6 +21,14 @@ export interface BoardLayout {
 	readonly totalHeight: number
 	readonly maxRowClueCount: number
 	readonly maxColClueCount: number
+	/** Horizontal pitch between row-clue numbers (board space). */
+	readonly rowClueSlotWidth: number
+	/** Gap between the last row-clue digit and the left grid line. */
+	readonly rowClueGridGap: number
+	/** Vertical pitch between column-clue numbers (board space). */
+	readonly colClueSlotHeight: number
+	/** Gap between the last column-clue digit and the top grid line. */
+	readonly colClueGridGap: number
 }
 
 export interface ViewTransform {
@@ -40,12 +53,37 @@ export const MIN_SCALE = 0.55
 export const MAX_SCALE = 4
 export const GROUP_SEPARATOR_EVERY = 5
 
+/**
+ * Clue slot / gap factors relative to cellSize.
+ * Slot width is sized for two-digit glyphs (e.g. "15") at the Phase 3B font.
+ */
+export const ROW_CLUE_SLOT_FACTOR = 0.62
+export const COL_CLUE_SLOT_FACTOR = 0.72
+/** Extra space left of the grid so the last row clue does not touch the line. */
+export const ROW_CLUE_GAP_FACTOR = 0.16
+export const COL_CLUE_GAP_FACTOR = 0.14
+export const ROW_CLUE_GAP_MIN = 4
+export const COL_CLUE_GAP_MIN = 3
+
+/** Phase 3B clue font: ~+18% vs old `cellSize * 0.38`, with stable clamps. */
+export const CLUE_FONT_FACTOR = 0.45
+export const CLUE_FONT_MIN = 10
+export const CLUE_FONT_MAX = 20
+
 function maxClueCount(clues: readonly (readonly number[])[]): number {
 	let max = 1
 	for (const clue of clues) {
 		max = Math.max(max, Math.max(clue.length, 1))
 	}
 	return max
+}
+
+/** Shared clue font size used by the Skia board renderer. */
+export function clueFontSize(cellSize: number): number {
+	return Math.max(
+		CLUE_FONT_MIN,
+		Math.min(CLUE_FONT_MAX, Math.round(cellSize * CLUE_FONT_FACTOR)),
+	)
 }
 
 /**
@@ -67,10 +105,11 @@ export function computeBoardLayout(input: {
 	const minCell = input.minCellSize ?? 10
 	const maxCell = input.maxCellSize ?? 48
 
-	// total = clueColWidth + gridWidth, clueColWidth ≈ maxRowClueCount * (cell*0.55)
-	// Solve for cellSize that fits viewport.
-	const clueFactorX = maxRowClueCount * 0.55
-	const clueFactorY = maxColClueCount * 0.7
+	// totalW ≈ (gapFactor + maxRow * slotFactor + puzzleWidth) * cell
+	const clueFactorX =
+		ROW_CLUE_GAP_FACTOR + maxRowClueCount * ROW_CLUE_SLOT_FACTOR
+	const clueFactorY =
+		COL_CLUE_GAP_FACTOR + maxColClueCount * COL_CLUE_SLOT_FACTOR
 	const cellByWidth =
 		input.viewportWidth / (input.puzzleWidth + clueFactorX)
 	const cellByHeight =
@@ -80,8 +119,31 @@ export function computeBoardLayout(input: {
 		Math.min(maxCell, Math.floor(Math.min(cellByWidth, cellByHeight))),
 	)
 
-	const clueColWidth = Math.max(24, Math.ceil(maxRowClueCount * cellSize * 0.55))
-	const clueRowHeight = Math.max(24, Math.ceil(maxColClueCount * cellSize * 0.7))
+	const rowClueSlotWidth = Math.max(
+		Math.ceil(cellSize * ROW_CLUE_SLOT_FACTOR),
+		Math.ceil(clueFontSize(cellSize) * 1.35),
+	)
+	const colClueSlotHeight = Math.max(
+		Math.ceil(cellSize * COL_CLUE_SLOT_FACTOR),
+		Math.ceil(clueFontSize(cellSize) * 1.15),
+	)
+	const rowClueGridGap = Math.max(
+		ROW_CLUE_GAP_MIN,
+		Math.round(cellSize * ROW_CLUE_GAP_FACTOR),
+	)
+	const colClueGridGap = Math.max(
+		COL_CLUE_GAP_MIN,
+		Math.round(cellSize * COL_CLUE_GAP_FACTOR),
+	)
+
+	const clueColWidth = Math.max(
+		24,
+		rowClueGridGap + maxRowClueCount * rowClueSlotWidth,
+	)
+	const clueRowHeight = Math.max(
+		24,
+		colClueGridGap + maxColClueCount * colClueSlotHeight,
+	)
 	const gridWidth = input.puzzleWidth * cellSize
 	const gridHeight = input.puzzleHeight * cellSize
 
@@ -99,6 +161,10 @@ export function computeBoardLayout(input: {
 		totalHeight: clueRowHeight + gridHeight,
 		maxRowClueCount,
 		maxColClueCount,
+		rowClueSlotWidth,
+		rowClueGridGap,
+		colClueSlotHeight,
+		colClueGridGap,
 	}
 }
 

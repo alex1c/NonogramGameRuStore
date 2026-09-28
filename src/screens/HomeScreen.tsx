@@ -10,6 +10,7 @@ import { getHomePlayablePuzzles } from '../content/playable'
 import { colors, spacing, typography } from '../theme'
 import { analyzeDifficulty } from '../domain/difficulty/analyzer'
 import type { CatalogPuzzle } from '../content/types'
+import { difficultyLabelRu } from '../presentation/difficultyLabels'
 
 interface HomeScreenProps {
 	readonly onOpenPuzzle: (puzzleId: string) => void
@@ -85,7 +86,7 @@ function PuzzleButton({
 				{puzzle.metadata.title ?? puzzle.id}
 			</Text>
 			<Text style={styles.puzzleMeta}>
-				{puzzle.width}×{puzzle.height} · {difficulty.tier}
+				{puzzle.width}×{puzzle.height} · {difficultyLabelRu(difficulty.tier)}
 			</Text>
 		</Pressable>
 	)
