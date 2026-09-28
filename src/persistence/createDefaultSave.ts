@@ -18,14 +18,21 @@ export function createEmptyStatistics(): ProgressStatistics {
 	})
 }
 
-/** Pure deterministic default save (no wall-clock fields). */
+/** Pure deterministic default save (schema v2, no wall-clock fields). */
 export function createDefaultSave(): SaveRoot {
 	return Object.freeze({
 		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
 		activeGame: null,
+		activeDailyGame: null,
 		completedPuzzleIds: Object.freeze([] as string[]),
+		solvedPuzzleIds: Object.freeze([] as string[]),
 		startedPuzzleIds: Object.freeze([] as string[]),
 		bestTimes: Object.freeze([] as SaveRoot['bestTimes']),
 		statistics: createEmptyStatistics(),
+		dailyCompletionRecords: Object.freeze(
+			[] as SaveRoot['dailyCompletionRecords'],
+		),
+		restoredDailyDays: Object.freeze([] as string[]),
+		dailyStartedDay: null,
 	})
 }

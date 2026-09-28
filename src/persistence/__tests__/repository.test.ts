@@ -15,6 +15,7 @@ function withCompletions(ids: string[]): SaveRoot {
 	return {
 		...createDefaultSave(),
 		completedPuzzleIds: Object.freeze(ids),
+		solvedPuzzleIds: Object.freeze(ids),
 	}
 }
 

@@ -53,6 +53,7 @@ describe('progress reducers', () => {
 		})
 		expect(save.activeGame).toBeNull()
 		expect(save.completedPuzzleIds).toEqual([puzzle.id])
+		expect(save.solvedPuzzleIds).toEqual([puzzle.id])
 		expect(save.statistics.totalCompletions).toBe(1)
 		expect(save.bestTimes[0]?.bestActiveTimeMs).toBe(5000)
 	})

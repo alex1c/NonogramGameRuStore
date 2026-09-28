@@ -1,5 +1,9 @@
 /**
  * Pure achievement evaluator — no AsyncStorage, no React.
+ *
+ * Phase 6: unique / difficulty / collection / large_grid use solvedPuzzleIds.
+ * Campaign-only metrics are not used for Gallery-facing achievements.
+ * Daily achievements use dailyCompletionRecords + streak.
  */
 
 import { analyzeDifficulty } from '../domain/difficulty/analyzer'
@@ -7,6 +11,11 @@ import type { DifficultyTier } from '../domain/difficulty/tiers'
 import { getProductionPuzzleById } from '../content/playable'
 import { GALLERY_ITEMS } from '../gallery/definitions'
 import type { SaveRoot } from '../persistence/schema'
+import {
+	computeCurrentStreak,
+	computeLongestStreak,
+} from '../daily/streak'
+import { localDayKey } from '../daily/dateUtils'
 import {
 	ACHIEVEMENT_DEFINITIONS,
 	type AchievementDefinition,
@@ -28,15 +37,30 @@ export interface AchievementState {
 }
 
 export interface AchievementEvalContext {
-	readonly completedPuzzleIds: readonly string[]
+	readonly solvedPuzzleIds: readonly string[]
 	readonly totalCompletions: number
+	readonly dailyCompletionCount: number
+	readonly currentStreak: number
+	readonly longestStreak: number
 }
 
 /** Build eval context from a save snapshot (before or after mutation). */
-export function contextFromSave(save: SaveRoot): AchievementEvalContext {
+export function contextFromSave(
+	save: SaveRoot,
+	today: string = localDayKey(),
+): AchievementEvalContext {
+	const streakInput = {
+		today,
+		completions: save.dailyCompletionRecords,
+		restoredDays: save.restoredDailyDays,
+		dailyStartedDay: save.dailyStartedDay,
+	}
 	return {
-		completedPuzzleIds: save.completedPuzzleIds,
+		solvedPuzzleIds: save.solvedPuzzleIds,
 		totalCompletions: save.statistics.totalCompletions,
+		dailyCompletionCount: save.dailyCompletionRecords.length,
+		currentStreak: computeCurrentStreak(streakInput),
+		longestStreak: computeLongestStreak(streakInput),
 	}
 }
 
@@ -54,11 +78,11 @@ function tierFor(puzzleId: string): DifficultyTier | 'UNRATED' {
 }
 
 function countDifficulty(
-	completedIds: readonly string[],
+	solvedIds: readonly string[],
 	tier: DifficultyTier,
 ): number {
 	let count = 0
-	for (const id of completedIds) {
+	for (const id of solvedIds) {
 		if (tierFor(id) === tier) {
 			count += 1
 		}
@@ -66,8 +90,8 @@ function countDifficulty(
 	return count
 }
 
-function countCompletedCollections(completedIds: readonly string[]): number {
-	const set = new Set(completedIds)
+function countCompletedCollections(solvedIds: readonly string[]): number {
+	const set = new Set(solvedIds)
 	const byCollection = new Map<string, string[]>()
 	for (const item of GALLERY_ITEMS) {
 		const list = byCollection.get(item.collectionId) ?? []
@@ -84,11 +108,11 @@ function countCompletedCollections(completedIds: readonly string[]): number {
 }
 
 function countLargeGrid(
-	completedIds: readonly string[],
+	solvedIds: readonly string[],
 	minSide: number,
 ): number {
 	let count = 0
-	for (const id of completedIds) {
+	for (const id of solvedIds) {
 		const puzzle = getProductionPuzzleById(id)
 		if (puzzle === null) {
 			continue
@@ -106,38 +130,30 @@ function progressFor(
 ): number {
 	const { condition } = def
 	switch (condition.kind) {
-		case 'unique_completed':
-			return ctx.completedPuzzleIds.filter((id) =>
-				GALLERY_ITEMS.some((item) => item.puzzleId === id) ||
-				getProductionPuzzleById(id) !== null,
-			).length
+		case 'unique_solved':
+			return new Set(ctx.solvedPuzzleIds).size
 		case 'difficulty_count':
 		case 'difficulty_any':
 			return countDifficulty(
-				ctx.completedPuzzleIds,
+				ctx.solvedPuzzleIds,
 				condition.difficultyTier as DifficultyTier,
 			)
 		case 'collection_complete_any':
-			return countCompletedCollections(ctx.completedPuzzleIds)
+			return countCompletedCollections(ctx.solvedPuzzleIds)
 		case 'total_completions':
 			return ctx.totalCompletions
 		case 'large_grid':
 			return countLargeGrid(
-				ctx.completedPuzzleIds,
+				ctx.solvedPuzzleIds,
 				condition.minSide ?? 15,
 			)
+		case 'daily_completions':
+			return ctx.dailyCompletionCount
+		case 'daily_streak':
+			return Math.max(ctx.currentStreak, ctx.longestStreak)
 		default:
 			return 0
 	}
-}
-
-/**
- * Unique completed for unique_completed achievements should count campaign IDs
- * present in save (including gallery). Unknown historical IDs still count toward
- * unique_completed if they are completed — but difficulty/collection ignore unknowns.
- */
-function uniqueCompletedCount(ctx: AchievementEvalContext): number {
-	return new Set(ctx.completedPuzzleIds).size
 }
 
 export function evaluateAchievements(
@@ -145,10 +161,7 @@ export function evaluateAchievements(
 ): readonly AchievementState[] {
 	const states: AchievementState[] = []
 	for (const def of ACHIEVEMENT_DEFINITIONS) {
-		const current =
-			def.condition.kind === 'unique_completed'
-				? uniqueCompletedCount(ctx)
-				: progressFor(def, ctx)
+		const current = progressFor(def, ctx)
 		const target = def.condition.target
 		const unlocked = current >= target
 		states.push({

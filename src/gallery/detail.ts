@@ -57,7 +57,7 @@ export function buildGalleryDetail(
 		}
 	}
 
-	if (!save.completedPuzzleIds.includes(puzzleId)) {
+	if (!save.solvedPuzzleIds.includes(puzzleId)) {
 		return {
 			kind: 'locked',
 			puzzleId,

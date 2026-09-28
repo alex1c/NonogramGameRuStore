@@ -162,7 +162,8 @@ export function buildGalleryItemView(
 }
 
 export function buildGalleryScreenView(save: SaveRoot): GalleryScreenView {
-	const completed = new Set(save.completedPuzzleIds)
+	// Gallery unlock source = solvedPuzzleIds (any mode), not campaign-only.
+	const completed = new Set(save.solvedPuzzleIds)
 	const collections: GalleryCollectionView[] = []
 	let unlockedCount = 0
 
@@ -211,14 +212,14 @@ export function buildGalleryScreenView(save: SaveRoot): GalleryScreenView {
 	}
 }
 
-export function countGalleryUnlocked(completedPuzzleIds: readonly string[]): {
+export function countGalleryUnlocked(solvedPuzzleIds: readonly string[]): {
 	readonly unlocked: number
 	readonly total: number
 } {
-	const completed = new Set(completedPuzzleIds)
+	const solved = new Set(solvedPuzzleIds)
 	let unlocked = 0
 	for (const item of GALLERY_ITEMS) {
-		if (completed.has(item.puzzleId)) {
+		if (solved.has(item.puzzleId)) {
 			unlocked += 1
 		}
 	}
@@ -227,17 +228,17 @@ export function countGalleryUnlocked(completedPuzzleIds: readonly string[]): {
 
 export function isGalleryPuzzleUnlocked(
 	puzzleId: string,
-	completedPuzzleIds: readonly string[],
+	solvedPuzzleIds: readonly string[],
 ): boolean {
 	if (getGalleryItemDef(puzzleId) === null) {
 		return false
 	}
-	return completedPuzzleIds.includes(puzzleId)
+	return solvedPuzzleIds.includes(puzzleId)
 }
 
 export function collectionJustCompleted(
-	beforeCompleted: readonly string[],
-	afterCompleted: readonly string[],
+	beforeSolved: readonly string[],
+	afterSolved: readonly string[],
 	puzzleId: string,
 ): string | null {
 	const item = getGalleryItemDef(puzzleId)
@@ -251,8 +252,8 @@ export function collectionJustCompleted(
 	const members = GALLERY_ITEMS.filter(
 		(entry) => entry.collectionId === item.collectionId,
 	)
-	const beforeSet = new Set(beforeCompleted)
-	const afterSet = new Set(afterCompleted)
+	const beforeSet = new Set(beforeSolved)
+	const afterSet = new Set(afterSolved)
 	const beforeDone = members.every((entry) => beforeSet.has(entry.puzzleId))
 	const afterDone = members.every((entry) => afterSet.has(entry.puzzleId))
 	if (!beforeDone && afterDone) {
@@ -264,9 +265,9 @@ export function collectionJustCompleted(
 /** Extract solution only when unlock is proven — for completion/detail. */
 export function getUnlockedSolution(
 	puzzleId: string,
-	completedPuzzleIds: readonly string[],
+	solvedPuzzleIds: readonly string[],
 ): { readonly width: number; readonly height: number; readonly solution: SolutionGrid } | null {
-	if (!completedPuzzleIds.includes(puzzleId)) {
+	if (!solvedPuzzleIds.includes(puzzleId)) {
 		return null
 	}
 	const puzzle = getProductionPuzzleById(puzzleId)

@@ -12,12 +12,14 @@ import {
 } from '../achievements'
 import { countGalleryUnlocked } from '../gallery'
 import { buildHomeViewModel } from '../presentation/homeViewModel'
+import { buildHomeDualActiveView } from '../presentation/homeDailyViewModel'
 import { useProgress } from '../progress/ProgressProvider'
 import { colors, spacing, typography } from '../theme'
 
 interface HomeScreenProps {
 	readonly onContinue: () => void
 	readonly onPlay: () => void
+	readonly onOpenDaily: () => void
 	readonly onOpenLevels: () => void
 	readonly onOpenGallery: () => void
 	readonly onOpenAchievements: () => void
@@ -29,6 +31,7 @@ interface HomeScreenProps {
 export function HomeScreen({
 	onContinue,
 	onPlay,
+	onOpenDaily,
 	onOpenLevels,
 	onOpenGallery,
 	onOpenAchievements,
@@ -39,11 +42,13 @@ export function HomeScreen({
 	const insets = useSafeAreaInsets()
 	const { save, service, refresh } = useProgress()
 	const home = buildHomeViewModel(save)
+	const today = service.todayDayKey()
+	const dual = buildHomeDualActiveView(save, today)
 	const progress = getCampaignProgressSummary(save)
 	const progressRatio =
 		progress.total === 0 ? 0 : progress.completed / progress.total
-	const gallery = countGalleryUnlocked(save.completedPuzzleIds)
-	const achievements = evaluateAchievements(contextFromSave(save))
+	const gallery = countGalleryUnlocked(save.solvedPuzzleIds)
+	const achievements = evaluateAchievements(contextFromSave(save, today))
 	const unlockedAchievements = achievements.filter(
 		(item) => item.access === 'UNLOCKED',
 	).length
@@ -118,6 +123,24 @@ export function HomeScreen({
 					<Text style={styles.primaryMeta}>Выберите уровень</Text>
 				</Pressable>
 			)}
+
+			<Pressable
+				accessibilityRole="button"
+				accessibilityLabel={dual.dailyCard.accessibilityLabel}
+				onPress={onOpenDaily}
+				style={({ pressed }) => [
+					styles.dailyCard,
+					{ opacity: pressed ? 0.9 : 1 },
+				]}
+				testID="home-daily"
+			>
+				<Text style={styles.dailyTitle}>{dual.dailyCard.title}</Text>
+				<Text style={styles.dailyMeta}>{dual.dailyCard.metaLine}</Text>
+				{dual.dailyCard.streakLabel !== null ? (
+					<Text style={styles.dailyMeta}>{dual.dailyCard.streakLabel}</Text>
+				) : null}
+				<Text style={styles.dailyCta}>{dual.dailyCard.ctaLabel}</Text>
+			</Pressable>
 
 			<Pressable
 				accessibilityRole="button"
@@ -262,6 +285,32 @@ const styles = StyleSheet.create({
 		marginTop: 4,
 		fontSize: 14,
 		color: '#E7F5EE',
+	},
+	dailyCard: {
+		backgroundColor: '#FFFFFF',
+		borderRadius: 14,
+		borderWidth: 1,
+		borderColor: colors.border,
+		paddingHorizontal: 16,
+		paddingVertical: 14,
+		minHeight: 72,
+		justifyContent: 'center',
+	},
+	dailyTitle: {
+		fontSize: 17,
+		fontWeight: '700',
+		color: colors.text,
+	},
+	dailyMeta: {
+		marginTop: 2,
+		fontSize: 13,
+		color: colors.textMuted,
+	},
+	dailyCta: {
+		marginTop: 6,
+		fontSize: 15,
+		fontWeight: '700',
+		color: colors.accent,
 	},
 	secondaryButton: {
 		backgroundColor: '#FFFFFF',

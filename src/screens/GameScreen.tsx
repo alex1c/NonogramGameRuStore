@@ -75,16 +75,21 @@ import {
 	type ActiveTimerState,
 } from '../persistence/timer'
 import { useProgress } from '../progress/ProgressProvider'
-import type { GameLaunchMode } from '../navigation/RootNavigation'
-import type { CompletionEventResult } from '../persistence/completionResult'
+import type { GameSessionDescriptor } from '../navigation/RootNavigation'
+import type {
+	CompletionEventResult,
+	DailyCompletionEventResult,
+} from '../persistence/completionResult'
 import { cropSolutionBitmap } from '../gallery/crop'
 import { getGalleryItemDef } from '../gallery/definitions'
+import { formatDayTitleRu } from '../daily/dateUtils'
+import { formatDayPlural } from '../presentation/russianPlural'
 
 export interface GameScreenProps {
-	readonly puzzleId: string
-	readonly mode: GameLaunchMode
+	readonly session: GameSessionDescriptor
 	readonly onExit: () => void
 	readonly onOpenGallery: () => void
+	readonly onOpenDailyCalendar: (dayKey: string) => void
 	readonly onNextPuzzle: (puzzleId: string) => void
 	readonly darkMode?: boolean
 }
@@ -110,10 +115,10 @@ const liveGame = {
 }
 
 export function GameScreen({
-	puzzleId,
-	mode,
+	session: routeSession,
 	onExit,
 	onOpenGallery,
+	onOpenDailyCalendar,
 	onNextPuzzle,
 	darkMode = false,
 }: GameScreenProps) {
@@ -122,6 +127,11 @@ export function GameScreen({
 	const palette: BoardPalette = darkMode
 		? DARK_BOARD_PALETTE
 		: LIGHT_BOARD_PALETTE
+
+	const puzzleId = routeSession.puzzleId
+	const isDaily = routeSession.mode === 'DAILY'
+	const isReplay = routeSession.mode === 'REPLAY'
+	const dailyDayKey = routeSession.mode === 'DAILY' ? routeSession.dayKey : null
 
 	const puzzle = useMemo(() => getProductionPuzzleById(puzzleId), [puzzleId])
 	const loadError =
@@ -138,10 +148,12 @@ export function GameScreen({
 	const [timer, setTimer] = useState<ActiveTimerState>(createPausedTimer(0))
 	const [restartCountThisRun, setRestartCountThisRun] = useState(0)
 	const [completionPersisted, setCompletionPersisted] = useState(false)
-	const [completionEvent, setCompletionEvent] =
-		useState<CompletionEventResult | null>(null)
+	const [completionEvent, setCompletionEvent] = useState<
+		CompletionEventResult | DailyCompletionEventResult | null
+	>(null)
+	const [dailySelectionVersion, setDailySelectionVersion] = useState('daily-v1')
 
-	const bindKey = `${puzzleId}:${mode}`
+	const bindKey = `${routeSession.mode}:${puzzleId}:${dailyDayKey ?? ''}:${routeSession.launch}`
 
 	useEffect(() => {
 		liveGame.session = session
@@ -152,23 +164,49 @@ export function GameScreen({
 
 	// Bootstrap / restore session when route identity changes.
 	if (puzzle !== null && boundKey !== bindKey) {
-		if (mode === 'resume') {
-			const resumed = service.resumeActivePuzzle()
-			if (resumed !== null && resumed.puzzle.id === puzzle.id) {
-				setSession(
-					restoreGameSession(puzzle, resumed.player, resumed.tool),
-				)
-				setTimer(createPausedTimer(resumed.accumulatedActiveMs))
-				setRestartCountThisRun(resumed.restartCountThisRun)
+		if (routeSession.launch === 'resume') {
+			if (isDaily) {
+				const resumed = service.resumeActiveDaily()
+				if (
+					resumed !== null &&
+					resumed.puzzle.id === puzzle.id &&
+					resumed.dayKey === dailyDayKey
+				) {
+					setSession(
+						restoreGameSession(puzzle, resumed.player, resumed.tool),
+					)
+					setTimer(createPausedTimer(resumed.accumulatedActiveMs))
+					setRestartCountThisRun(resumed.restartCountThisRun)
+					setDailySelectionVersion(resumed.selectionVersion)
+				} else {
+					setSession(createGameSession(puzzle))
+					setTimer(createPausedTimer(0))
+					setRestartCountThisRun(0)
+				}
 			} else {
-				setSession(createGameSession(puzzle))
-				setTimer(createPausedTimer(0))
-				setRestartCountThisRun(0)
+				const resumed = service.resumeActivePuzzle()
+				if (resumed !== null && resumed.puzzle.id === puzzle.id) {
+					setSession(
+						restoreGameSession(puzzle, resumed.player, resumed.tool),
+					)
+					setTimer(createPausedTimer(resumed.accumulatedActiveMs))
+					setRestartCountThisRun(resumed.restartCountThisRun)
+				} else {
+					setSession(createGameSession(puzzle))
+					setTimer(createPausedTimer(0))
+					setRestartCountThisRun(0)
+				}
 			}
 		} else {
 			setSession(createGameSession(puzzle))
 			setTimer(createPausedTimer(0))
 			setRestartCountThisRun(0)
+			if (isDaily && dailyDayKey !== null) {
+				const active = service.getSave().activeDailyGame
+				if (active !== null && active.dayKey === dailyDayKey) {
+					setDailySelectionVersion(active.selectionVersion)
+				}
+			}
 		}
 		setCompletionPersisted(false)
 		setCompletionEvent(null)
@@ -208,16 +246,43 @@ export function GameScreen({
 			}
 			const now = Date.now()
 			const paused = pauseTimer(nextTimer, now)
-			await service.persistGameState({
-				puzzle: nextSession.puzzle,
-				player: nextSession.player,
-				accumulatedActiveMs: paused.accumulatedMs,
-				tool: nextSession.tool,
-				restartCountThisRun: liveGame.restartCount,
-			})
+			if (isDaily && dailyDayKey !== null) {
+				await service.persistDailyState({
+					dayKey: dailyDayKey,
+					selectionVersion: dailySelectionVersion,
+					puzzle: nextSession.puzzle,
+					player: nextSession.player,
+					accumulatedActiveMs: paused.accumulatedMs,
+					tool: nextSession.tool,
+					restartCountThisRun: liveGame.restartCount,
+				})
+			} else if (!isReplay) {
+				await service.persistGameState({
+					puzzle: nextSession.puzzle,
+					player: nextSession.player,
+					accumulatedActiveMs: paused.accumulatedMs,
+					tool: nextSession.tool,
+					restartCountThisRun: liveGame.restartCount,
+				})
+			} else {
+				await service.persistGameState({
+					puzzle: nextSession.puzzle,
+					player: nextSession.player,
+					accumulatedActiveMs: paused.accumulatedMs,
+					tool: nextSession.tool,
+					restartCountThisRun: liveGame.restartCount,
+				})
+			}
 			refresh()
 		},
-		[refresh, service],
+		[
+			dailyDayKey,
+			dailySelectionVersion,
+			isDaily,
+			isReplay,
+			refresh,
+			service,
+		],
 	)
 
 	const persistCompletion = useCallback(
@@ -227,17 +292,37 @@ export function GameScreen({
 			}
 			const now = Date.now()
 			const elapsed = readActiveElapsedMs(pauseTimer(nextTimer, now), now)
-			const { event } = await service.completePuzzle({
-				puzzleId: nextSession.puzzle.id,
-				activeTimeMs: elapsed,
-			})
-			liveGame.completionPersisted = true
-			setCompletionPersisted(true)
-			setCompletionEvent(event)
+			if (isDaily && dailyDayKey !== null) {
+				const { event } = await service.completeDailyPuzzle({
+					dayKey: dailyDayKey,
+					puzzleId: nextSession.puzzle.id,
+					selectionVersion: dailySelectionVersion,
+					activeTimeMs: elapsed,
+				})
+				liveGame.completionPersisted = true
+				setCompletionPersisted(true)
+				setCompletionEvent(event)
+			} else {
+				const { event } = await service.completePuzzle({
+					puzzleId: nextSession.puzzle.id,
+					activeTimeMs: elapsed,
+					isReplay,
+				})
+				liveGame.completionPersisted = true
+				setCompletionPersisted(true)
+				setCompletionEvent(event)
+			}
 			setTimer(createPausedTimer(elapsed))
 			refresh()
 		},
-		[refresh, service],
+		[
+			dailyDayKey,
+			dailySelectionVersion,
+			isDaily,
+			isReplay,
+			refresh,
+			service,
+		],
 	)
 
 	const applySessionUpdate = useCallback(
@@ -470,18 +555,36 @@ export function GameScreen({
 				text: 'Начать заново',
 				style: 'destructive',
 				onPress: () => {
-					void service.restartPuzzle(puzzle).then(() => {
+					const run = async () => {
+						if (isDaily && dailyDayKey !== null) {
+							await service.restartDaily({
+								dayKey: dailyDayKey,
+								puzzle,
+								selectionVersion: dailySelectionVersion,
+							})
+						} else {
+							await service.restartPuzzle(puzzle)
+						}
 						setSession(createGameSession(puzzle))
 						setTimer(startOrResumeTimer(createPausedTimer(0), Date.now()))
 						setRestartCountThisRun((value) => value + 1)
 						setCompletionPersisted(false)
 						setCompletionEvent(null)
 						refresh()
-					})
+					}
+					void run()
 				},
 			},
 		])
-	}, [puzzle, refresh, service, session])
+	}, [
+		dailyDayKey,
+		dailySelectionVersion,
+		isDaily,
+		puzzle,
+		refresh,
+		service,
+		session,
+	])
 
 	const difficultyTier = useMemo(
 		() => (puzzle === null ? null : analyzeDifficulty(puzzle).tier),
@@ -607,9 +710,14 @@ export function GameScreen({
 						style={[styles.title, { color: palette.headerText }]}
 						numberOfLines={1}
 					>
-						{puzzle.width}×{puzzle.height}
+						{isDaily
+							? 'Кроссворд дня'
+							: `${puzzle.width}×${puzzle.height}`}
 					</Text>
 					<Text style={[styles.meta, { color: palette.clueTextDimmed }]}>
+						{isDaily && dailyDayKey !== null
+							? `${formatDayTitleRu(dailyDayKey)} · `
+							: ''}
 						{difficultyTier === null
 							? '—'
 							: difficultyLabelRu(difficultyTier)}{' '}
@@ -680,9 +788,14 @@ export function GameScreen({
 
 			<CompletionOverlay
 				visible={session.completed}
+				headline={
+					isDaily ? 'Кроссворд дня пройден' : 'Готово'
+				}
 				title={
-					getGalleryItemDef(puzzle.id)?.titleRu ??
-					`${puzzle.width}×${puzzle.height}`
+					session.completed
+						? (getGalleryItemDef(puzzle.id)?.titleRu ??
+							(isDaily ? 'Кроссворд дня' : `${puzzle.width}×${puzzle.height}`))
+						: `${puzzle.width}×${puzzle.height}`
 				}
 				sizeLabel={
 					difficultyTier === null
@@ -701,15 +814,33 @@ export function GameScreen({
 						: null
 				}
 				event={completionEvent}
+				streakLabel={
+					completionEvent !== null && completionEvent.mode === 'DAILY'
+						? `Серия: ${formatDayPlural(completionEvent.streakAfter)}`
+						: null
+				}
 				onHome={() => {
 					refresh()
 					onExit()
 				}}
 				onGallery={onOpenGallery}
+				onCalendar={
+					isDaily && dailyDayKey !== null
+						? () => {
+								refresh()
+								onOpenDailyCalendar(dailyDayKey)
+							}
+						: null
+				}
 				onNext={
-					completionEvent?.nextCampaignPuzzleId
+					!isDaily &&
+					completionEvent !== null &&
+					completionEvent.mode !== 'DAILY' &&
+					completionEvent.nextCampaignPuzzleId
 						? () =>
-								onNextPuzzle(completionEvent.nextCampaignPuzzleId as string)
+								onNextPuzzle(
+									completionEvent.nextCampaignPuzzleId as string,
+								)
 						: null
 				}
 			/>

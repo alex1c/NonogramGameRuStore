@@ -2,7 +2,7 @@
  * Phase 5 gallery content definitions.
  *
  * Development campaign baseline — NOT the final RuStore pack.
- * Stable puzzle IDs remain the unlock source of truth (completedPuzzleIds).
+ * Stable puzzle IDs remain the unlock source of truth (`solvedPuzzleIds`).
  * Presentation titles/collections do NOT affect active-game fingerprints.
  */
 

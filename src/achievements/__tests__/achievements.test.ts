@@ -150,10 +150,10 @@ describe('achievement evaluator', () => {
 		expect(a).toEqual(b)
 	})
 
-	it('unknown completed IDs are safe', () => {
+	it('unknown solved IDs are safe', () => {
 		const save = {
 			...createDefaultSave(),
-			completedPuzzleIds: Object.freeze(['ghost-id'] as string[]),
+			solvedPuzzleIds: Object.freeze(['ghost-id'] as string[]),
 			statistics: Object.freeze({
 				...createDefaultSave().statistics,
 				totalCompletions: 1,

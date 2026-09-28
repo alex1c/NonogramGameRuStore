@@ -17,15 +17,19 @@ export type AchievementIconKey =
 	| 'collection'
 	| 'replay'
 	| 'grid'
+	| 'daily'
+	| 'streak'
 	| 'fallback'
 
 export type AchievementConditionKind =
-	| 'unique_completed'
+	| 'unique_solved'
 	| 'difficulty_count'
 	| 'difficulty_any'
 	| 'collection_complete_any'
 	| 'total_completions'
 	| 'large_grid'
+	| 'daily_completions'
+	| 'daily_streak'
 
 export interface AchievementDefinition {
 	readonly id: string
@@ -50,7 +54,7 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] =
 			descriptionRu: 'Завершите первый кроссворд',
 			displayOrder: 1,
 			iconKey: 'first',
-			condition: { kind: 'unique_completed', target: 1 },
+			condition: { kind: 'unique_solved', target: 1 },
 		},
 		{
 			id: 'collection_start',
@@ -58,7 +62,7 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] =
 			descriptionRu: 'Откройте 3 разные картинки',
 			displayOrder: 2,
 			iconKey: 'star',
-			condition: { kind: 'unique_completed', target: 3 },
+			condition: { kind: 'unique_solved', target: 3 },
 		},
 		{
 			id: 'five_pictures',
@@ -66,7 +70,7 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] =
 			descriptionRu: 'Откройте 5 разных картинок',
 			displayOrder: 3,
 			iconKey: 'five',
-			condition: { kind: 'unique_completed', target: 5 },
+			condition: { kind: 'unique_solved', target: 5 },
 		},
 		{
 			id: 'ten_pictures',
@@ -74,7 +78,7 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] =
 			descriptionRu: 'Откройте 10 разных картинок',
 			displayOrder: 4,
 			iconKey: 'ten',
-			condition: { kind: 'unique_completed', target: 10 },
+			condition: { kind: 'unique_solved', target: 10 },
 		},
 		{
 			id: 'collector',
@@ -82,7 +86,7 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] =
 			descriptionRu: 'Откройте 20 разных картинок',
 			displayOrder: 5,
 			iconKey: 'collector',
-			condition: { kind: 'unique_completed', target: 20 },
+			condition: { kind: 'unique_solved', target: 20 },
 		},
 		{
 			id: 'beginner_master',
@@ -167,5 +171,37 @@ export const ACHIEVEMENT_DEFINITIONS: readonly AchievementDefinition[] =
 			displayOrder: 13,
 			iconKey: 'grid',
 			condition: { kind: 'large_grid', target: 1, minSide: 15 },
+		},
+		{
+			id: 'daily_first',
+			titleRu: 'Первый день',
+			descriptionRu: 'Завершите первый кроссворд дня',
+			displayOrder: 14,
+			iconKey: 'daily',
+			condition: { kind: 'daily_completions', target: 1 },
+		},
+		{
+			id: 'daily_streak_3',
+			titleRu: 'Три дня подряд',
+			descriptionRu: 'Соберите серию из 3 дней',
+			displayOrder: 15,
+			iconKey: 'streak',
+			condition: { kind: 'daily_streak', target: 3 },
+		},
+		{
+			id: 'daily_streak_7',
+			titleRu: 'Неделя',
+			descriptionRu: 'Соберите серию из 7 дней',
+			displayOrder: 16,
+			iconKey: 'streak',
+			condition: { kind: 'daily_streak', target: 7 },
+		},
+		{
+			id: 'daily_ten',
+			titleRu: 'Десять кроссвордов дня',
+			descriptionRu: 'Завершите 10 кроссвордов дня',
+			displayOrder: 17,
+			iconKey: 'daily',
+			condition: { kind: 'daily_completions', target: 10 },
 		},
 	])

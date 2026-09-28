@@ -5,6 +5,7 @@
 const FORMS = {
 	achievement: ['достижение', 'достижения', 'достижений'],
 	picture: ['картинка', 'картинки', 'картинок'],
+	day: ['день', 'дня', 'дней'],
 } as const
 
 export type PluralKind = keyof typeof FORMS
@@ -30,4 +31,9 @@ export function russianPlural(count: number, kind: PluralKind): string {
 
 export function formatAchievementCount(count: number): string {
 	return `${count} ${russianPlural(count, 'achievement')}`
+}
+
+/** e.g. 1 день / 2 дня / 5 дней / 21 день */
+export function formatDayPlural(count: number): string {
+	return `${count} ${russianPlural(count, 'day')}`
 }

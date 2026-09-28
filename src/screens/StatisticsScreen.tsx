@@ -29,11 +29,12 @@ export function StatisticsScreen({ onBack }: StatisticsScreenProps) {
 	const insets = useSafeAreaInsets()
 	const { save } = useProgress()
 	const stats = buildStatisticsViewModel(save)
-	const gallery = countGalleryUnlocked(save.completedPuzzleIds)
+	const gallery = countGalleryUnlocked(save.solvedPuzzleIds)
 	const achievements = evaluateAchievements(contextFromSave(save))
 	const unlockedAchievements = achievements.filter(
 		(item) => item.access === 'UNLOCKED',
 	).length
+	const dailyCount = save.dailyCompletionRecords.length
 
 	useEffect(() => {
 		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -71,9 +72,14 @@ export function StatisticsScreen({ onBack }: StatisticsScreenProps) {
 
 			<ScrollView contentContainerStyle={styles.content}>
 				<StatRow
-					label="Пройдено"
+					label="Уровней пройдено"
 					value={`${stats.completedUnique} / ${stats.campaignTotal}`}
 				/>
+				<StatRow
+					label="Картинок открыто"
+					value={`${gallery.unlocked} / ${gallery.total}`}
+				/>
+				<StatRow label="Кроссвордов дня" value={String(dailyCount)} />
 				<StatRow label="Начато" value={String(stats.startedUnique)} />
 				<StatRow
 					label="Всего прохождений"
@@ -86,10 +92,6 @@ export function StatisticsScreen({ onBack }: StatisticsScreenProps) {
 				<StatRow
 					label="Начать заново"
 					value={String(stats.totalRestarts)}
-				/>
-				<StatRow
-					label="Картинки"
-					value={`${gallery.unlocked} / ${gallery.total}`}
 				/>
 				<StatRow
 					label="Достижения"

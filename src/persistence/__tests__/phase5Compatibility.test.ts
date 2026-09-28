@@ -73,12 +73,12 @@ describe('completion event result', () => {
 	})
 })
 
-describe('Phase 4 save compatibility', () => {
-	it('loads Phase 4 schema v1 fixture without data loss', async () => {
+describe('Phase 4/5 save compatibility', () => {
+	it('loads Phase 5 schema v1 fixture without data loss (migrates to v2)', async () => {
 		const puzzle = requirePuzzle('mini-easy-stairs')
 		const player = createEmptyPlayerState(puzzle.width, puzzle.height)
 		const phase4Save = {
-			schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+			schemaVersion: 1,
 			activeGame: {
 				puzzleId: puzzle.id,
 				contentFingerprint: buildPuzzleContentFingerprint(puzzle),
@@ -115,14 +115,19 @@ describe('Phase 4 save compatibility', () => {
 
 		const migrated = migrateSave(phase4Save)
 		expect(migrated.kind).toBe('ok')
-		expect(migrated.save.schemaVersion).toBe(1)
+		expect(migrated.save.schemaVersion).toBe(2)
 		expect(migrated.save.activeGame?.puzzleId).toBe(puzzle.id)
 		expect(migrated.save.activeGame?.accumulatedActiveMs).toBe(12345)
 		expect(migrated.save.completedPuzzleIds).toEqual([
 			'mini-beginner-bar',
 			'mini-beginner-full',
 		])
+		expect(migrated.save.solvedPuzzleIds).toEqual([
+			'mini-beginner-bar',
+			'mini-beginner-full',
+		])
 		expect(migrated.save.statistics.totalUndoActions).toBe(4)
+		expect(migrated.save.dailyStartedDay).toBeNull()
 
 		const storage = createMemoryStorage({
 			'nonogram.save.v1': JSON.stringify(phase4Save),
@@ -172,9 +177,9 @@ describe('fingerprint metadata invariance', () => {
 	})
 })
 
-describe('default save still schema v1', () => {
-	it('createDefaultSave schema remains 1', () => {
-		expect(createDefaultSave().schemaVersion).toBe(1)
-		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(1)
+describe('default save schema v2', () => {
+	it('createDefaultSave schema is 2', () => {
+		expect(createDefaultSave().schemaVersion).toBe(2)
+		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(2)
 	})
 })

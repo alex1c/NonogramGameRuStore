@@ -145,8 +145,8 @@ Difficulty analysis is **not** on the paint/input path (header label only).
 | `src/progress` | App hydration provider |
 | `src/presentation` | Home / Levels / Statistics view-models, time + progress formatters |
 
-- Storage key: `nonogram.save.v1` · schema version constant `CURRENT_SAVE_SCHEMA_VERSION`
-- Single in-progress party; completion clears active game atomically
+- Storage key: `nonogram.save.v1` · schema version constant `CURRENT_SAVE_SCHEMA_VERSION` (v2)
+- Campaign `activeGame` and Daily `activeDailyGame` may coexist
 - Undo/Redo history is session-only (empty after Continue / relaunch)
 - Active timer pauses in background; wall-clock downtime does not count
 - Content fingerprint protects against solution/clue changes for the same ID
@@ -159,12 +159,23 @@ Difficulty analysis is **not** on the paint/input path (header label only).
 | `src/achievements` | Definitions, pure evaluator, transitions, audit |
 | Screens | Gallery (sectioned FlatList), Gallery Detail, Achievements |
 
-- Unlock source of truth: `completedPuzzleIds` (no gallery persistence)
+- Unlock source of truth (Phase 6+): `solvedPuzzleIds` (Gallery); Campaign progress still `completedPuzzleIds`
 - Achievements derived; newly-unlocked only around completion events
-- Save schema remains **v1** — Phase 4 saves load without migration
 - Fingerprint ignores presentation title/collection metadata
 
 Details: [GALLERY.md](GALLERY.md).
+
+## Phase 6 — Daily Challenge
+
+| Layer | Role |
+| --- | --- |
+| `src/daily` | Local date utils, deterministic selector, streak/restore, calendar projection |
+| `src/persistence` | Schema v2, dual active, Daily completion reducers/service |
+| Screens | Daily (calendar), Home Daily card, Game mode CAMPAIGN \| DAILY \| REPLAY |
+
+Flow: selector → Daily service → existing Game engine → completion → save / Gallery / achievements.
+
+Details: [DAILY.md](DAILY.md), [PERSISTENCE.md](PERSISTENCE.md).
 
 ## Empty-line clue convention
 
@@ -172,6 +183,6 @@ Empty lines use `[]`, never `[0]`.
 
 ## Out of scope (later phases)
 
-Daily / streak, hints / «Научи меня», lives/error mode,
+Hints / «Научи меня», lives/error mode, notifications,
 ad SDK / AppMetrica, mass generator, color nonograms, RuStore screenshots,
 release signing secrets.

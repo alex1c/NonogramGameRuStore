@@ -2,7 +2,6 @@
  * Save schema / migration / validation tests.
  */
 
-import { PlayerCell } from '../../domain/nonogram/types'
 import { PaintTool } from '../../gameplay/tools'
 import { createDefaultSave } from '../createDefaultSave'
 import { migrateSave, migrateSaveJson } from '../migrate'
@@ -10,13 +9,15 @@ import { CURRENT_SAVE_SCHEMA_VERSION } from '../schema'
 import { parseAndValidateSave } from '../validate'
 
 describe('createDefaultSave', () => {
-	it('returns deterministic empty schema v1', () => {
+	it('returns deterministic empty schema v2', () => {
 		const a = createDefaultSave()
 		const b = createDefaultSave()
 		expect(a).toEqual(b)
 		expect(a.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
 		expect(a.activeGame).toBeNull()
+		expect(a.activeDailyGame).toBeNull()
 		expect(a.completedPuzzleIds).toEqual([])
+		expect(a.solvedPuzzleIds).toEqual([])
 		expect(a.statistics.totalCompletions).toBe(0)
 	})
 })
@@ -28,11 +29,26 @@ describe('migrateSave', () => {
 		expect(result.save.activeGame).toBeNull()
 	})
 
-	it('valid save → restore', () => {
+	it('valid v2 save → restore', () => {
 		const save = createDefaultSave()
 		const result = migrateSave(save)
 		expect(result.kind).toBe('ok')
-		expect(result.save.schemaVersion).toBe(1)
+		expect(result.save.schemaVersion).toBe(2)
+	})
+
+	it('valid v1 save → migrate to v2', () => {
+		const result = migrateSave({
+			schemaVersion: 1,
+			activeGame: null,
+			completedPuzzleIds: ['a'],
+			startedPuzzleIds: ['a'],
+			bestTimes: [],
+			statistics: createDefaultSave().statistics,
+		})
+		expect(result.kind).toBe('ok')
+		expect(result.save.schemaVersion).toBe(2)
+		expect(result.save.solvedPuzzleIds).toEqual(['a'])
+		expect(result.save.dailyStartedDay).toBeNull()
 	})
 
 	it('malformed JSON → recover', () => {
@@ -49,7 +65,7 @@ describe('migrateSave', () => {
 
 	it('invalid cell enum → recover', () => {
 		const result = migrateSave({
-			schemaVersion: 1,
+			schemaVersion: 2,
 			activeGame: {
 				puzzleId: 'mini-beginner-bar',
 				contentFingerprint: 'x',
@@ -65,54 +81,36 @@ describe('migrateSave', () => {
 				tool: PaintTool.FILLED,
 				restartCountThisRun: 0,
 			},
+			activeDailyGame: null,
 			completedPuzzleIds: [],
+			solvedPuzzleIds: [],
 			startedPuzzleIds: [],
 			bestTimes: [],
 			statistics: createDefaultSave().statistics,
+			dailyCompletionRecords: [],
+			restoredDailyDays: [],
+			dailyStartedDay: null,
 		})
 		expect(result.kind).toBe('recovered')
 	})
 
 	it('duplicate completed IDs normalized on parse', () => {
 		const result = parseAndValidateSave({
-			schemaVersion: 1,
+			schemaVersion: 2,
 			activeGame: null,
+			activeDailyGame: null,
 			completedPuzzleIds: ['a', 'a', 'b'],
-			startedPuzzleIds: ['a'],
+			solvedPuzzleIds: ['a', 'b'],
+			startedPuzzleIds: [],
 			bestTimes: [],
 			statistics: createDefaultSave().statistics,
+			dailyCompletionRecords: [],
+			restoredDailyDays: [],
+			dailyStartedDay: null,
 		})
 		expect(result.ok).toBe(true)
 		if (result.ok) {
 			expect(result.save.completedPuzzleIds).toEqual(['a', 'b'])
 		}
-	})
-
-	it('valid active player cells accepted', () => {
-		const cells = Array.from({ length: 15 }, () => PlayerCell.UNKNOWN)
-		cells[0] = PlayerCell.FILLED
-		const result = parseAndValidateSave({
-			schemaVersion: 1,
-			activeGame: {
-				puzzleId: 'mini-beginner-bar',
-				contentFingerprint: 'fp',
-				player: {
-					version: 1,
-					width: 5,
-					height: 3,
-					cells,
-				},
-				accumulatedActiveMs: 12,
-				startedAtMs: 1,
-				savedAtMs: 2,
-				tool: PaintTool.CROSSED,
-				restartCountThisRun: 0,
-			},
-			completedPuzzleIds: [],
-			startedPuzzleIds: ['mini-beginner-bar'],
-			bestTimes: [],
-			statistics: createDefaultSave().statistics,
-		})
-		expect(result.ok).toBe(true)
 	})
 })

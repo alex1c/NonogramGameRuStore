@@ -1,13 +1,18 @@
 /**
- * Versioned save schema (Phase 4).
- * Persist only IDs + player progress — never solution/clues/catalog blobs.
+ * Versioned save schema.
+ * Phase 4–5: v1. Phase 6: v2 (Daily + solvedPuzzleIds).
+ * Persist IDs + player progress — never solution/clues/catalog blobs.
+ *
+ * Storage key remains `nonogram.save.v1` (historical suffix); schemaVersion
+ * inside the document is authoritative.
  */
 
 import type { SerializedPlayerState } from '../domain/nonogram/types'
 import type { PaintTool } from '../gameplay/tools'
+import type { DayKey } from '../daily/dateUtils'
 
 /** Single source of truth for the current save schema version. */
-export const CURRENT_SAVE_SCHEMA_VERSION = 1 as const
+export const CURRENT_SAVE_SCHEMA_VERSION = 2 as const
 
 export type SaveSchemaVersion = typeof CURRENT_SAVE_SCHEMA_VERSION
 
@@ -29,6 +34,20 @@ export interface ActiveGameSave {
 	readonly restartCountThisRun: number
 }
 
+/** Unfinished Daily party — coexists with Campaign activeGame. */
+export interface ActiveDailyGameSave {
+	readonly dayKey: DayKey
+	readonly puzzleId: string
+	readonly selectionVersion: string
+	readonly contentFingerprint: string
+	readonly player: SerializedPlayerState
+	readonly accumulatedActiveMs: number
+	readonly startedAtMs: number
+	readonly savedAtMs: number
+	readonly tool: PaintTool
+	readonly restartCountThisRun: number
+}
+
 export interface PuzzleBestTime {
 	readonly puzzleId: string
 	readonly bestActiveTimeMs: number
@@ -42,17 +61,38 @@ export interface ProgressStatistics {
 	readonly totalRedoActions: number
 }
 
+/** Historical Daily completion — stores puzzleId for future selector changes. */
+export interface DailyCompletionRecordSave {
+	readonly dayKey: DayKey
+	readonly puzzleId: string
+	readonly selectionVersion: string
+	readonly activeTimeMs: number
+}
+
 /**
- * Root persisted document.
- * Keep derived counts out of storage — compute from ID sets + catalog.
+ * Root persisted document (schema v2).
+ *
+ * Semantics:
+ * - completedPuzzleIds = Campaign completions only
+ * - solvedPuzzleIds = unique puzzles solved in any mode (Gallery source)
+ * - dailyCompletionRecords = actual Daily calendar completions
+ * - restoredDailyDays = streak bridges (not puzzle solves)
+ * - dailyStartedDay = user participation start (null until first Daily screen open)
+ * - activeGame = Campaign unfinished party
+ * - activeDailyGame = Daily unfinished party
  */
 export interface SaveRoot {
 	readonly schemaVersion: SaveSchemaVersion
 	readonly activeGame: ActiveGameSave | null
+	readonly activeDailyGame: ActiveDailyGameSave | null
 	readonly completedPuzzleIds: readonly string[]
+	readonly solvedPuzzleIds: readonly string[]
 	readonly startedPuzzleIds: readonly string[]
 	readonly bestTimes: readonly PuzzleBestTime[]
 	readonly statistics: ProgressStatistics
+	readonly dailyCompletionRecords: readonly DailyCompletionRecordSave[]
+	readonly restoredDailyDays: readonly DayKey[]
+	readonly dailyStartedDay: DayKey | null
 }
 
 export type HydrationStatus =

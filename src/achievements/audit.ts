@@ -78,7 +78,7 @@ function isReachable(
 ): boolean {
 	const { condition } = def
 	switch (condition.kind) {
-		case 'unique_completed':
+		case 'unique_solved':
 			return condition.target <= cap.unique
 		case 'difficulty_count':
 		case 'difficulty_any': {
@@ -92,6 +92,11 @@ function isReachable(
 			return condition.target > 0
 		case 'large_grid':
 			return cap.largeGrid >= condition.target
+		case 'daily_completions':
+			// Offline Daily — reachable over calendar time with any pool size > 0.
+			return condition.target > 0 && cap.unique > 0
+		case 'daily_streak':
+			return condition.target > 0 && cap.unique > 0
 		default:
 			return false
 	}
