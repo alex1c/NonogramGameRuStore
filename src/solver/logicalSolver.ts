@@ -8,6 +8,19 @@
  * This solver NEVER branches / backtracks / trial-and-errors. If no forced
  * move remains, the status is STALLED — callers must not silently escalate
  * to the complete solver and claim a logical solve.
+ *
+ * ## Reason semantics (Phase 1–2)
+ *
+ * Reasons classify the *result* of line-candidate intersection on one line.
+ * They are not separate human techniques with independent proofs:
+ *
+ * - `completed_line` — only one candidate remains for the line
+ * - `overlap` — single-run clue whose placements share filled cells
+ *   (classic “block overlap”, e.g. [8] on length 10)
+ * - `forced_filled` — all remaining candidates agree on FILLED cells
+ * - `forced_empty` — all remaining candidates agree on EMPTY cells
+ * - `impossible_positions_eliminated` — mixed FILLED+EMPTY agreements
+ *   from the same intersection pass
  */
 
 import { assertValidSpec, cellIndex } from '../domain/nonogram/grid'
@@ -46,12 +59,62 @@ export interface LogicalStep {
 	readonly candidateCountBefore: number
 }
 
+export type ReasonCounts = Readonly<Record<DeductionReason, number>>
+
+/** Extra diagnostics for difficulty analysis — does not change deductions. */
+export interface LogicalTelemetry {
+	readonly reasonCounts: ReasonCounts
+	/** Distinct (orientation,index) lines that produced at least one step. */
+	readonly linesWithDeductions: number
+	/** Cells painted by the very first successful deduction step. */
+	readonly firstStepCellCount: number
+	/**
+	 * Cells known after the first logical step (diagnostic only).
+	 * Full empty-grid initial force is measured via `analyzeInitialForced`.
+	 */
+	readonly cellsKnownAfterFirstStep: number
+}
+
 export interface LogicalSolveResult {
 	readonly status: LogicalStatus
 	readonly grid: readonly SolverCell[]
 	readonly steps: readonly LogicalStep[]
 	readonly iterations: number
 	readonly deductionCount: number
+	readonly telemetry: LogicalTelemetry
+}
+
+function emptyReasonCounts(): Record<DeductionReason, number> {
+	return {
+		overlap: 0,
+		completed_line: 0,
+		impossible_positions_eliminated: 0,
+		forced_filled: 0,
+		forced_empty: 0,
+	}
+}
+
+function buildTelemetry(
+	steps: readonly LogicalStep[],
+	grid: readonly SolverCell[],
+): LogicalTelemetry {
+	const reasonCounts = emptyReasonCounts()
+	const lineKeys = new Set<string>()
+	for (const step of steps) {
+		reasonCounts[step.reason] += 1
+		lineKeys.add(`${step.orientation}:${step.lineIndex}`)
+	}
+	const first = steps[0]
+	const firstStepCellCount = first?.cells.length ?? 0
+	return {
+		reasonCounts: Object.freeze({ ...reasonCounts }),
+		linesWithDeductions: lineKeys.size,
+		firstStepCellCount,
+		cellsKnownAfterFirstStep:
+			firstStepCellCount > 0
+				? grid.filter((cell) => cell !== 0).length
+				: 0,
+	}
 }
 
 function toKnown(cell: SolverCell): LineKnown {
@@ -113,6 +176,23 @@ function readLineKnown(
 
 function isGridSolved(grid: readonly SolverCell[]): boolean {
 	return grid.every((cell) => cell !== 0)
+}
+
+function resultWithTelemetry(
+	status: LogicalStatus,
+	grid: SolverCell[],
+	steps: readonly LogicalStep[],
+	iterations: number,
+	deductionCount: number,
+): LogicalSolveResult {
+	return {
+		status,
+		grid: Object.freeze(grid.slice()),
+		steps,
+		iterations,
+		deductionCount,
+		telemetry: buildTelemetry(steps, grid),
+	}
 }
 
 /**
@@ -267,21 +347,21 @@ export function solveLogically(
 		}
 		const consistency = nextLogicalStep(spec, grid)
 		if (consistency === 'INVALID') {
-			return {
-				status: 'INVALID',
-				grid: Object.freeze(grid.slice()),
+			return resultWithTelemetry(
+				'INVALID',
+				grid,
 				steps,
 				iterations,
 				deductionCount,
-			}
+			)
 		}
-		return {
-			status: 'SOLVED',
-			grid: Object.freeze(grid.slice()),
+		return resultWithTelemetry(
+			'SOLVED',
+			grid,
 			steps,
 			iterations,
 			deductionCount,
-		}
+		)
 	}
 
 	const alreadyComplete = finalizeIfComplete()
@@ -294,26 +374,26 @@ export function solveLogically(
 		iterations += 1
 		const step = nextLogicalStep(spec, grid)
 		if (step === 'INVALID') {
-			return {
-				status: 'INVALID',
-				grid: Object.freeze(grid.slice()),
+			return resultWithTelemetry(
+				'INVALID',
+				grid,
 				steps,
 				iterations,
 				deductionCount,
-			}
+			)
 		}
 		if (step === null) {
 			const complete = finalizeIfComplete()
 			if (complete !== null) {
 				return complete
 			}
-			return {
-				status: 'STALLED',
-				grid: Object.freeze(grid.slice()),
+			return resultWithTelemetry(
+				'STALLED',
+				grid,
 				steps,
 				iterations,
 				deductionCount,
-			}
+			)
 		}
 
 		applyStep(grid, spec.width, step)

@@ -1,10 +1,17 @@
 /**
  * Unified puzzle validation pipeline for production quality gates.
  *
- * Gates of interest:
- * - valid (structure + clues match solution when present)
- * - unique (exactly one solution from clues alone)
- * - logicallySolvable (logical solver reaches SOLVED without guessing)
+ * Low-level flags:
+ * - valid — structure OK and at least one solution exists
+ * - unique — exactly one solution from clues
+ * - logicallySolvable — logical solver reaches SOLVED (no guessing)
+ *
+ * Production gate (authored Puzzle only via validateProductionPuzzle):
+ * - productionReady — valid && unique && logicallySolvable && authored
+ *   solution matches the unique complete-solver solution
+ *
+ * Clue-only specs never claim productionReady; use validatePuzzleSpec and
+ * read the three booleans explicitly (documented in docs/CONTENT.md).
  */
 
 import {
@@ -25,9 +32,15 @@ export interface ValidationResult {
 	readonly valid: boolean
 	readonly unique: boolean
 	readonly logicallySolvable: boolean
+	/**
+	 * True only for authored puzzles that pass the full production gate.
+	 * Always false for clue-only `validatePuzzleSpec` results.
+	 */
+	readonly productionReady: boolean
 	readonly hasSolution: boolean
 	readonly solutionCount: number
 	readonly logicalStatus: LogicalStatus | 'SKIPPED'
+	readonly authoredSolutionMatchesUnique: boolean | null
 	readonly issues: readonly ValidationIssue[]
 }
 
@@ -86,7 +99,21 @@ function validateSpecStructure(spec: PuzzleSpec): ValidationIssue[] {
 	return issues
 }
 
-/** Validate a clue-only puzzle specification (no authored solution required). */
+function isProductionReady(result: {
+	readonly valid: boolean
+	readonly unique: boolean
+	readonly logicallySolvable: boolean
+	readonly authoredSolutionMatchesUnique: boolean | null
+}): boolean {
+	return (
+		result.valid &&
+		result.unique &&
+		result.logicallySolvable &&
+		result.authoredSolutionMatchesUnique === true
+	)
+}
+
+/** Validate a clue-only puzzle specification (no authored solution). */
 export function validatePuzzleSpec(spec: PuzzleSpec): ValidationResult {
 	const issues = validateSpecStructure(spec)
 	if (issues.length > 0) {
@@ -94,9 +121,11 @@ export function validatePuzzleSpec(spec: PuzzleSpec): ValidationResult {
 			valid: false,
 			unique: false,
 			logicallySolvable: false,
+			productionReady: false,
 			hasSolution: false,
 			solutionCount: 0,
 			logicalStatus: 'SKIPPED',
+			authoredSolutionMatchesUnique: null,
 			issues,
 		}
 	}
@@ -131,28 +160,34 @@ export function validatePuzzleSpec(spec: PuzzleSpec): ValidationResult {
 
 	const unique = complete.unique
 	const logicallySolvable = logical.status === 'SOLVED'
+	const valid =
+		issues.find((issue) =>
+			[
+				'INVALID_SPEC',
+				'CLUE_SUM_MISMATCH',
+				'NO_SOLUTION',
+				'LOGICAL_INVALID',
+			].includes(issue.code),
+		) === undefined && complete.solutionCount >= 1
 
-	// Production quality gate: valid structure with at least one solution.
-	// unique / logicallySolvable are explicit separate characteristics.
 	return {
-		valid:
-			issues.find((issue) =>
-				['INVALID_SPEC', 'CLUE_SUM_MISMATCH', 'NO_SOLUTION', 'LOGICAL_INVALID'].includes(
-					issue.code,
-				),
-			) === undefined && complete.solutionCount >= 1,
+		valid,
 		unique,
 		logicallySolvable,
+		// Clue-only specs cannot be production-published through this API.
+		productionReady: false,
 		hasSolution: complete.solutionCount >= 1,
 		solutionCount: complete.solutionCount,
 		logicalStatus: logical.status,
+		authoredSolutionMatchesUnique: null,
 		issues,
 	}
 }
 
 /**
  * Validate a full authored puzzle (solution + clues).
- * Checks that clues match the solution bitmap, then runs the clue-only pipeline.
+ * Checks that clues match the solution bitmap, then runs the clue-only pipeline
+ * and compares the unique complete-solver solution to the authored bitmap.
  */
 export function validatePuzzle(puzzle: Puzzle): ValidationResult {
 	const issues: ValidationIssue[] = []
@@ -216,44 +251,70 @@ export function validatePuzzle(puzzle: Puzzle): ValidationResult {
 			valid: false,
 			unique: false,
 			logicallySolvable: false,
+			productionReady: false,
 			hasSolution: false,
 			solutionCount: 0,
 			logicalStatus: 'SKIPPED',
+			authoredSolutionMatchesUnique: null,
 			issues,
 		}
 	}
 
-	const specResult = validatePuzzleSpec(puzzleToSpec(puzzle))
+	const spec = puzzleToSpec(puzzle)
+	const specResult = validatePuzzleSpec(spec)
+	const mergedIssues = [...issues, ...specResult.issues]
 
-	// When unique, confirm the complete solver's solution matches the authored one.
+	let authoredSolutionMatchesUnique: boolean | null = null
 	if (specResult.unique && specResult.solutionCount === 1) {
-		const solved = specResult
-		void solved
-		const complete = solveComplete(puzzleToSpec(puzzle), { maxSolutions: 2 })
+		const complete = solveComplete(spec, { maxSolutions: 2 })
 		const only = complete.solutions[0]
+		authoredSolutionMatchesUnique = true
 		if (only !== undefined) {
 			for (let i = 0; i < puzzle.solution.length; i += 1) {
 				if (only[i] !== puzzle.solution[i]) {
-					return {
-						...specResult,
-						valid: false,
-						issues: [
-							...specResult.issues,
-							{
-								code: 'SOLUTION_MISMATCH',
-								message:
-									'Unique solver result does not match authored solution',
-							},
-						],
-					}
+					authoredSolutionMatchesUnique = false
+					mergedIssues.push({
+						code: 'SOLUTION_MISMATCH',
+						message:
+							'Unique solver result does not match authored solution',
+					})
+					break
 				}
 			}
 		}
+	} else if (specResult.hasSolution) {
+		authoredSolutionMatchesUnique = false
+	}
+
+	const valid =
+		specResult.valid && authoredSolutionMatchesUnique !== false
+	const result = {
+		valid,
+		unique: specResult.unique,
+		logicallySolvable: specResult.logicallySolvable,
+		hasSolution: specResult.hasSolution,
+		solutionCount: specResult.solutionCount,
+		logicalStatus: specResult.logicalStatus,
+		authoredSolutionMatchesUnique,
+		issues: mergedIssues,
+		productionReady: false,
 	}
 
 	return {
-		...specResult,
-		valid: specResult.valid,
-		issues: [...issues, ...specResult.issues],
+		...result,
+		productionReady: isProductionReady(result),
 	}
+}
+
+/**
+ * Single-call production content gate for mass import / catalog pipelines.
+ * Prefer this over manually ANDing valid/unique/logicallySolvable.
+ */
+export function validateProductionPuzzle(puzzle: Puzzle): ValidationResult {
+	return validatePuzzle(puzzle)
+}
+
+/** Convenience boolean for catalog publishers. */
+export function isProductionPuzzle(puzzle: Puzzle): boolean {
+	return validateProductionPuzzle(puzzle).productionReady
 }

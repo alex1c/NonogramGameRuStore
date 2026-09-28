@@ -18,11 +18,12 @@ import {
 } from '../../domain/nonogram'
 
 describe('validatePuzzle / validatePuzzleSpec', () => {
-	it('marks fixture A as valid, unique, logically solvable', () => {
+	it('marks fixture A as valid, unique, logically solvable, productionReady', () => {
 		const result = validatePuzzle(FIXTURE_A_SIMPLE_5X5)
 		expect(result.valid).toBe(true)
 		expect(result.unique).toBe(true)
 		expect(result.logicallySolvable).toBe(true)
+		expect(result.productionReady).toBe(true)
 		expect(result.hasSolution).toBe(true)
 		expect(result.logicalStatus).toBe('SOLVED')
 	})
@@ -69,6 +70,7 @@ describe('validatePuzzle / validatePuzzleSpec', () => {
 		expect(result.hasSolution).toBe(true)
 		expect(result.unique).toBe(true)
 		expect(result.logicallySolvable).toBe(false)
+		expect(result.productionReady).toBe(false)
 		expect(result.logicalStatus).toBe('STALLED')
 		expect(
 			result.issues.some((issue) => issue.code === 'NOT_LOGICALLY_SOLVABLE'),

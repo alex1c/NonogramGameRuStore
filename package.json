@@ -30,6 +30,8 @@
     "lint": "eslint . --max-warnings 0",
     "test": "jest",
     "audit:solver": "tsx scripts/audit-solver-perf.ts",
+    "audit:content": "tsx scripts/audit-content.ts",
+    "audit:random": "tsx scripts/audit-random.ts",
     "android:qa": "powershell -ExecutionPolicy Bypass -File ./scripts/android/android-device-qa.ps1"
   },
   "private": true

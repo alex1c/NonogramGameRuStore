@@ -9,10 +9,12 @@ Scheme: `nonogram`
 | Area | Role |
 | --- | --- |
 | `src/domain/nonogram` | Pure TypeScript puzzle / player models. No React Native. |
+| `src/domain/difficulty` | Difficulty score / tiers / initial-forced analysis. |
 | `src/solver` | Complete solver, logical solver, validator. No UI / Android. |
+| `src/content` | Catalog model, build-from-solution, mini catalog, audit helpers. |
 | `src/navigation`, `src/screens`, `src/components` | Minimal UI shell (not Expo Router). |
 | `src/theme`, `src/storage`, `src/services` | Foundations for later phases. |
-| `src/tests/fixtures` | Hand-checked puzzles for gates and audits. |
+| `src/tests/fixtures` | Hand-checked puzzles for gates and calibration. |
 
 Game logic must never live inside React components.
 
@@ -24,7 +26,6 @@ Game logic must never live inside React components.
 - Algorithm: line-candidate generation → constraint propagation → search on the
   line with the fewest remaining candidates.
 - Uniqueness: `maxSolutions: 2` with early stop after the second solution.
-- Outcomes of interest: `0`, `1`, or `>1` solutions.
 
 The complete solver may use controlled backtracking. That is intentional and
 does **not** mean a puzzle is logically solvable.
@@ -33,51 +34,53 @@ does **not** mean a puzzle is logically solvable.
 
 **Purpose:** apply only deductions that are forced without guessing.
 
-Phase 1 techniques:
+Phase 1–2 techniques:
 
 - generate legal line candidates under current known cells;
-- paint cells that are identical in every candidate (overlap / forced filled /
-  forced empty / completed line / impossible positions eliminated);
-- repeat to a fixed point.
+- paint cells identical in every candidate;
+- repeat to a fixed point;
+- full-grid consistency check before claiming `SOLVED`.
 
-Statuses:
-
-- `SOLVED` — every cell forced;
-- `STALLED` — no further forced move (may still be unique under search);
-- `INVALID` — contradiction (a line has zero candidates).
+Statuses: `SOLVED` | `STALLED` | `INVALID`.
 
 ### NO GUESSING contract
 
-`solveLogically` must never silently switch to search/backtracking and then
-return `SOLVED`. `STALLED` stays `STALLED`. Production quality gate
-`logicallySolvable` is true only when the logical solver returns `SOLVED`.
+`solveLogically` never switches to search/backtracking. `STALLED` stays
+`STALLED`. Telemetry (`reasonCounts`, first-step stats) is diagnostic only.
 
-## Unique solution vs logically solvable
+### Reason semantics
 
-- **Unique** — complete solver finds exactly one grid for the clues.
-- **Logically solvable** — logical solver finishes without guessing.
+Reasons classify intersection outcomes (`overlap`, `completed_line`,
+`forced_filled`, `forced_empty`, `impossible_positions_eliminated`). They are
+not stronger independent proofs — see `docs/CONTENT.md`.
 
-A puzzle can be unique and still `STALLED` under the current technique set
-(see fixture I). Those puzzles are not Phase 1 production-ready content.
+## Production gate
 
-## «Научи меня» foundation
+| Flag | Role |
+| --- | --- |
+| `valid` | Low-level: structure + ≥1 solution |
+| `unique` | Exactly one solution |
+| `logicallySolvable` | Logical `SOLVED` |
+| `productionReady` | Full authored gate — use `validateProductionPuzzle` |
 
-`nextLogicalStep(spec, grid)` returns one machine-readable deduction:
+Details: [CONTENT.md](CONTENT.md).
 
-- affected line orientation + index;
-- clue;
-- cell actions (`FILLED` / `EMPTY`);
-- reason (`overlap`, `completed_line`, `forced_filled`, `forced_empty`,
-  `impossible_positions_eliminated`).
+## Difficulty
 
-UI copy can be layered later; the solver already returns structured reasons.
+`analyzeDifficulty` produces a preliminary `phase2-v1` score and tier.
+STALLED / ambiguous / invalid → `UNRATED` (never fake EXPERT).
+
+## Content
+
+- Solution bitmap is source of truth; clues are generated at build time.
+- Stable string puzzle IDs; duplicate detection in `validateCatalog`.
+- Mini catalog (~20) exercises the pipeline — not the future 1000-level set.
 
 ## Empty-line clue convention
 
-Empty lines use `[]`, never `[0]`. Sum of clue runs equals filled-cell count,
-and candidate generation stays simpler.
+Empty lines use `[]`, never `[0]`.
 
 ## Out of scope (later phases)
 
-Ads, AppMetrica, Skia board, campaign/Daily, color nonograms, mass generation,
-RuStore screenshots, release signing secrets.
+Skia board, campaign UI, Daily, ads, AppMetrica, mass generator, color
+nonograms, RuStore screenshots, release signing secrets.

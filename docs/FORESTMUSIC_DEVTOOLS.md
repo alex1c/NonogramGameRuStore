@@ -1,19 +1,19 @@
 # ForestMusic DevTools pin
 
-This project was bootstrapped against:
+This project was bootstrapped / Phase 2-checked against:
 
 - Repository: https://github.com/alex1c/forestMusicDevTools
 - Version: **1.1.0**
 - `main` SHA: **527d089ac229e4f7af15d8e4ca04efaaa85acd92**
 
-Applied in Phase 0–1:
+Unchanged since Phase 1 checkpoint.
+
+Applied in Phase 0–2:
 
 - README.md
 - VERSION
 - checklists/PROJECT_BOOTSTRAP.md
-- playbooks/FORESTMUSIC_DEV_PLAYBOOK.md (canonical v1.1.0 section + safe area / Metro / Git)
-- playbooks/ADS_AND_BOTTOM_LAYOUT.md (BannerSlot geometry reserved; no ad SDK yet)
+- playbooks/FORESTMUSIC_DEV_PLAYBOOK.md
+- playbooks/ADS_AND_BOTTOM_LAYOUT.md
 - templates/react-native-expo/README.md
-- scripts/android/android-device-qa.ps1 (copied)
-- scripts/android/android-screenshot.ps1 (copied)
-- scripts/android/README.md (copied)
+- scripts/android/* (copied into project)
