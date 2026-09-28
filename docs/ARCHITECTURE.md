@@ -132,7 +132,24 @@ Difficulty analysis is **not** on the paint/input path (header label only).
 
 - Solution bitmap is source of truth; clues are generated at build time.
 - Stable string puzzle IDs; duplicate detection in `validateCatalog`.
-- Mini catalog (~20) exercises the pipeline — not the future 1000-level set.
+- Mini catalog (21) is the temporary Phase 4 campaign baseline — not the
+  final RuStore 1000-level pack. See [PERSISTENCE.md](PERSISTENCE.md).
+
+## Phase 4 — campaign + persistence
+
+| Layer | Role |
+| --- | --- |
+| `src/storage` | `KeyValueStorage` + AsyncStorage adapter (UI/domain never import AsyncStorage) |
+| `src/persistence` | Versioned save schema, migrate, repository write queue, progress reducers/service, active timer |
+| `src/campaign` | Display-order projection, unlock policy, audit |
+| `src/progress` | App hydration provider |
+| `src/presentation` | Home / Levels / Statistics view-models, time + progress formatters |
+
+- Storage key: `nonogram.save.v1` · schema version constant `CURRENT_SAVE_SCHEMA_VERSION`
+- Single in-progress party; completion clears active game atomically
+- Undo/Redo history is session-only (empty after Continue / relaunch)
+- Active timer pauses in background; wall-clock downtime does not count
+- Content fingerprint protects against solution/clue changes for the same ID
 
 ## Empty-line clue convention
 
@@ -140,6 +157,6 @@ Empty lines use `[]`, never `[0]`.
 
 ## Out of scope (later phases)
 
-Persistence, campaign/Daily, hints / «Научи меня», lives/error mode, ads,
-AppMetrica, mass generator, color nonograms, RuStore screenshots, release
-signing secrets.
+Daily / streak, Gallery, achievements, hints / «Научи меня», lives/error mode,
+ad SDK / AppMetrica, mass generator, color nonograms, RuStore screenshots,
+release signing secrets.

@@ -102,6 +102,35 @@ export function createGameSession(
 	})
 }
 
+/**
+ * Restore a live session from persisted player cells.
+ * Undo/Redo history intentionally starts empty after Continue / relaunch.
+ */
+export function restoreGameSession(
+	puzzle: Puzzle,
+	player: PlayerState,
+	tool: PaintTool = PaintTool.FILLED,
+	nowMs: number = Date.now(),
+): GameSession {
+	if (player.width !== puzzle.width || player.height !== puzzle.height) {
+		throw new Error(
+			`Cannot restore session: player ${player.width}x${player.height} vs puzzle ${puzzle.width}x${puzzle.height}`,
+		)
+	}
+	const base = Object.freeze({
+		puzzle,
+		player,
+		tool,
+		history: createHistory(),
+		completed: false,
+		activeGesture: null,
+		gestureBaseline: null,
+		startedAtMs: nowMs,
+		completedAtMs: null,
+	})
+	return withCompletion(base)
+}
+
 export function setTool(session: GameSession, tool: PaintTool): GameSession {
 	if (session.completed) {
 		return session

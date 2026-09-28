@@ -6,20 +6,30 @@ import { MINI_PRODUCTION_CATALOG } from './miniCatalog'
 import type { CatalogPuzzle } from './types'
 import { validateProductionPuzzle } from '../solver/validator'
 
+/** Immutable validated catalog cache — avoid re-running solvers on every lookup. */
+let validatedCatalogCache: ReadonlyMap<string, CatalogPuzzle> | null = null
+
+function getValidatedCatalogMap(): ReadonlyMap<string, CatalogPuzzle> {
+	if (validatedCatalogCache !== null) {
+		return validatedCatalogCache
+	}
+	const map = new Map<string, CatalogPuzzle>()
+	for (const puzzle of MINI_PRODUCTION_CATALOG) {
+		const gate = validateProductionPuzzle(puzzle)
+		if (gate.productionReady) {
+			map.set(puzzle.id, puzzle)
+		}
+	}
+	validatedCatalogCache = map
+	return map
+}
+
 export function getProductionCatalog(): readonly CatalogPuzzle[] {
-	return MINI_PRODUCTION_CATALOG
+	return Array.from(getValidatedCatalogMap().values())
 }
 
 export function getProductionPuzzleById(id: string): CatalogPuzzle | null {
-	const puzzle = MINI_PRODUCTION_CATALOG.find((item) => item.id === id)
-	if (puzzle === undefined) {
-		return null
-	}
-	const gate = validateProductionPuzzle(puzzle)
-	if (!gate.productionReady) {
-		return null
-	}
-	return puzzle
+	return getValidatedCatalogMap().get(id) ?? null
 }
 
 /** Curated Home shortcuts — only productionReady catalog entries. */

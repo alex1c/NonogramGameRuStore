@@ -1,16 +1,26 @@
 /**
- * Game screen — playable nonogram board with paint / zoom / pan.
+ * Game screen — playable nonogram board with paint / zoom / pan + persistence.
  *
- * Gesture contract:
+ * Gesture contract (unchanged from Phase 3):
  * - 1 finger → paint (tap / drag + line lock)
  * - 2 fingers → pan / pinch zoom (does not mutate player state)
  * - Fit button restores fit-to-screen transform
+ *
+ * Persistence:
+ * - Save after completed paint / undo / redo transactions (not mid-drag)
+ * - Flush on Back and AppState background
+ * - Active timer pauses while backgrounded / away from Game
+ * - Undo history is NOT persisted across relaunch
+ * - Completion is persisted at solve time (not when overlay is dismissed)
  *
  * No BannerSlot on Game (product decision).
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+	Alert,
+	AppState,
+	type AppStateStatus,
 	BackHandler,
 	LayoutChangeEvent,
 	Pressable,
@@ -42,9 +52,9 @@ import { getProductionPuzzleById } from '../content/playable'
 import {
 	continueGesture,
 	createGameSession,
-	elapsedMs,
 	endGesture,
 	redo,
+	restoreGameSession,
 	sessionCanRedo,
 	sessionCanUndo,
 	sessionSatisfiedColumns,
@@ -56,18 +66,22 @@ import {
 } from '../gameplay/session'
 import { analyzeDifficulty } from '../domain/difficulty/analyzer'
 import { difficultyLabelRu } from '../presentation/difficultyLabels'
+import { formatGameElapsed } from '../presentation/timeFormat'
+import {
+	createPausedTimer,
+	pauseTimer,
+	readActiveElapsedMs,
+	startOrResumeTimer,
+	type ActiveTimerState,
+} from '../persistence/timer'
+import { useProgress } from '../progress/ProgressProvider'
+import type { GameLaunchMode } from '../navigation/RootNavigation'
 
 export interface GameScreenProps {
 	readonly puzzleId: string
+	readonly mode: GameLaunchMode
 	readonly onExit: () => void
 	readonly darkMode?: boolean
-}
-
-function formatElapsed(ms: number): string {
-	const totalSec = Math.floor(ms / 1000)
-	const min = Math.floor(totalSec / 60)
-	const sec = totalSec % 60
-	return `${min}:${sec.toString().padStart(2, '0')}`
 }
 
 /**
@@ -79,12 +93,25 @@ let pinchBaseScale = 1
 let panLastX = 0
 let panLastY = 0
 
+/**
+ * Mutable live snapshot for AppState / flush (updated in effects, not render).
+ * Avoids react-hooks/refs and react-hooks/globals render reassignment rules.
+ */
+const liveGame = {
+	session: null as GameSession | null,
+	timer: createPausedTimer(0) as ActiveTimerState,
+	restartCount: 0,
+	completionPersisted: false,
+}
+
 export function GameScreen({
 	puzzleId,
+	mode,
 	onExit,
 	darkMode = false,
 }: GameScreenProps) {
 	const insets = useSafeAreaInsets()
+	const { service, refresh } = useProgress()
 	const palette: BoardPalette = darkMode
 		? DARK_BOARD_PALETTE
 		: LIGHT_BOARD_PALETTE
@@ -96,19 +123,49 @@ export function GameScreen({
 			: null
 
 	const [session, setSession] = useState<GameSession | null>(null)
-	const [boundPuzzleId, setBoundPuzzleId] = useState<string | null>(null)
+	const [boundKey, setBoundKey] = useState<string | null>(null)
 	const [viewport, setViewport] = useState({ width: 0, height: 0 })
 	const [transform, setTransform] = useState<ViewTransform>(identityTransform())
 	const [fitKey, setFitKey] = useState('')
-	const [tick, setTick] = useState(0)
+	const [nowMs, setNowMs] = useState(0)
+	const [timer, setTimer] = useState<ActiveTimerState>(createPausedTimer(0))
+	const [restartCountThisRun, setRestartCountThisRun] = useState(0)
+	const [completionPersisted, setCompletionPersisted] = useState(false)
 
-	// Adjust session when the opened puzzle identity changes (render-time sync).
-	if (puzzle !== null && boundPuzzleId !== puzzle.id) {
-		setSession(createGameSession(puzzle))
-		setBoundPuzzleId(puzzle.id)
-	} else if (puzzle === null && boundPuzzleId !== null) {
+	const bindKey = `${puzzleId}:${mode}`
+
+	useEffect(() => {
+		liveGame.session = session
+		liveGame.timer = timer
+		liveGame.restartCount = restartCountThisRun
+		liveGame.completionPersisted = completionPersisted
+	}, [session, timer, restartCountThisRun, completionPersisted])
+
+	// Bootstrap / restore session when route identity changes.
+	if (puzzle !== null && boundKey !== bindKey) {
+		if (mode === 'resume') {
+			const resumed = service.resumeActivePuzzle()
+			if (resumed !== null && resumed.puzzle.id === puzzle.id) {
+				setSession(
+					restoreGameSession(puzzle, resumed.player, resumed.tool),
+				)
+				setTimer(createPausedTimer(resumed.accumulatedActiveMs))
+				setRestartCountThisRun(resumed.restartCountThisRun)
+			} else {
+				setSession(createGameSession(puzzle))
+				setTimer(createPausedTimer(0))
+				setRestartCountThisRun(0)
+			}
+		} else {
+			setSession(createGameSession(puzzle))
+			setTimer(createPausedTimer(0))
+			setRestartCountThisRun(0)
+		}
+		setCompletionPersisted(false)
+		setBoundKey(bindKey)
+	} else if (puzzle === null && boundKey !== null) {
 		setSession(null)
-		setBoundPuzzleId(null)
+		setBoundKey(null)
 	}
 
 	const layout = useMemo(() => {
@@ -134,18 +191,160 @@ export function GameScreen({
 		setFitKey(nextFitKey)
 	}
 
+	const persistSnapshot = useCallback(
+		async (nextSession: GameSession, nextTimer: ActiveTimerState) => {
+			if (liveGame.completionPersisted || nextSession.completed) {
+				return
+			}
+			const now = Date.now()
+			const paused = pauseTimer(nextTimer, now)
+			await service.persistGameState({
+				puzzle: nextSession.puzzle,
+				player: nextSession.player,
+				accumulatedActiveMs: paused.accumulatedMs,
+				tool: nextSession.tool,
+				restartCountThisRun: liveGame.restartCount,
+			})
+			refresh()
+		},
+		[refresh, service],
+	)
+
+	const persistCompletion = useCallback(
+		async (nextSession: GameSession, nextTimer: ActiveTimerState) => {
+			if (liveGame.completionPersisted) {
+				return
+			}
+			const now = Date.now()
+			const elapsed = readActiveElapsedMs(pauseTimer(nextTimer, now), now)
+			await service.completePuzzle({
+				puzzleId: nextSession.puzzle.id,
+				activeTimeMs: elapsed,
+			})
+			liveGame.completionPersisted = true
+			setCompletionPersisted(true)
+			setTimer(createPausedTimer(elapsed))
+			refresh()
+		},
+		[refresh, service],
+	)
+
+	const applySessionUpdate = useCallback(
+		(
+			updater: (current: GameSession) => GameSession,
+			options?: { readonly recordUndo?: boolean; readonly recordRedo?: boolean },
+		) => {
+			setSession((current) => {
+				if (current === null) {
+					return current
+				}
+				const previousCompleted = current.completed
+				const next = updater(current)
+				const gestureEnded =
+					current.activeGesture !== null && next.activeGesture === null
+				const historyChanged =
+					next.history !== current.history && next.activeGesture === null
+				const shouldPersist =
+					!next.completed && (gestureEnded || historyChanged)
+
+				if (!previousCompleted && next.completed) {
+					void persistCompletion(next, liveGame.timer)
+				} else if (shouldPersist) {
+					void persistSnapshot(next, liveGame.timer)
+				}
+
+				if (options?.recordUndo) {
+					void service.recordUndo().then(() => refresh())
+				}
+				if (options?.recordRedo) {
+					void service.recordRedo().then(() => refresh())
+				}
+
+				return next
+			})
+		},
+		[persistCompletion, persistSnapshot, refresh, service],
+	)
+
+	// UI clock tick — resume active timer asynchronously (not sync in effect body).
 	useEffect(() => {
-		const id = setInterval(() => setTick((value) => value + 1), 1000)
-		return () => clearInterval(id)
-	}, [])
+		const applyNow = () => {
+			const now = Date.now()
+			setNowMs(now)
+			if (!liveGame.completionPersisted) {
+				setTimer((current) => startOrResumeTimer(current, now))
+			}
+		}
+		const bootId = setTimeout(applyNow, 0)
+		const id = setInterval(applyNow, 1000)
+		return () => {
+			clearTimeout(bootId)
+			clearInterval(id)
+			liveGame.timer = pauseTimer(liveGame.timer, Date.now())
+		}
+	}, [bindKey])
+
+	useEffect(() => {
+		const onChange = (state: AppStateStatus) => {
+			if (state === 'active') {
+				if (!liveGame.completionPersisted) {
+					const now = Date.now()
+					setNowMs(now)
+					setTimer((current) => startOrResumeTimer(current, now))
+				}
+				return
+			}
+			setTimer((current) => {
+				const paused = pauseTimer(current, Date.now())
+				liveGame.timer = paused
+				const currentSession = liveGame.session
+				if (
+					currentSession !== null &&
+					!currentSession.completed &&
+					!liveGame.completionPersisted
+				) {
+					void persistSnapshot(currentSession, paused)
+				}
+				return paused
+			})
+		}
+		const sub = AppState.addEventListener('change', onChange)
+		return () => sub.remove()
+	}, [persistSnapshot])
+
+	const exitWithFlush = useCallback(() => {
+		const currentSession = liveGame.session
+		const now = Date.now()
+		const paused = pauseTimer(liveGame.timer, now)
+		setTimer(paused)
+		liveGame.timer = paused
+		if (
+			currentSession !== null &&
+			!currentSession.completed &&
+			!liveGame.completionPersisted
+		) {
+			void persistSnapshot(currentSession, paused).finally(() => {
+				refresh()
+				onExit()
+			})
+			return
+		}
+		refresh()
+		onExit()
+	}, [onExit, persistSnapshot, refresh])
 
 	useEffect(() => {
 		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-			onExit()
+			if (liveGame.session?.completed) {
+				refresh()
+				onExit()
+				return true
+			}
+			exitWithFlush()
 			return true
 		})
 		return () => sub.remove()
-	}, [onExit])
+	}, [exitWithFlush, onExit, refresh])
 
 	const handleViewportLayout = useCallback((event: LayoutChangeEvent) => {
 		const { width, height } = event.nativeEvent.layout
@@ -168,9 +367,9 @@ export function GameScreen({
 			if (cell === null) {
 				return
 			}
-			setSession(tapCell(session, cell, { x, y }))
+			applySessionUpdate((current) => tapCell(current, cell, { x, y }))
 		},
-		[layout, session, transform],
+		[applySessionUpdate, layout, session, transform],
 	)
 
 	const onPaintMove = useCallback(
@@ -179,19 +378,21 @@ export function GameScreen({
 				return
 			}
 			const cell = pointerToCell(x, y, layout, transform)
-			setSession(continueGesture(session, cell, { x, y }))
+			applySessionUpdate((current) =>
+				continueGesture(current, cell, { x, y }),
+			)
 		},
-		[layout, session, transform],
+		[applySessionUpdate, layout, session, transform],
 	)
 
 	const onPaintEnd = useCallback(() => {
-		setSession((current) => {
-			if (current === null || current.activeGesture === null) {
+		applySessionUpdate((current) => {
+			if (current.activeGesture === null) {
 				return current
 			}
 			return endGesture(current)
 		})
-	}, [])
+	}, [applySessionUpdate])
 
 	const beginPinch = useCallback(() => {
 		setTransform((current) => {
@@ -247,6 +448,28 @@ export function GameScreen({
 		},
 		[layout, viewport.height, viewport.width],
 	)
+
+	const handleRestart = useCallback(() => {
+		if (puzzle === null || session === null || session.completed) {
+			return
+		}
+		Alert.alert('Начать этот кроссворд заново?', undefined, [
+			{ text: 'Отмена', style: 'cancel' },
+			{
+				text: 'Начать заново',
+				style: 'destructive',
+				onPress: () => {
+					void service.restartPuzzle(puzzle).then(() => {
+						setSession(createGameSession(puzzle))
+						setTimer(startOrResumeTimer(createPausedTimer(0), Date.now()))
+						setRestartCountThisRun((value) => value + 1)
+						setCompletionPersisted(false)
+						refresh()
+					})
+				},
+			},
+		])
+	}, [puzzle, refresh, service, session])
 
 	const difficultyTier = useMemo(
 		() => (puzzle === null ? null : analyzeDifficulty(puzzle).tier),
@@ -339,8 +562,11 @@ export function GameScreen({
 		)
 	}
 
-	const elapsed = formatElapsed(elapsedMs(session))
-	void tick
+	const elapsedMs = readActiveElapsedMs(
+		timer,
+		nowMs > 0 ? nowMs : timer.accumulatedMs,
+	)
+	const elapsed = formatGameElapsed(elapsedMs)
 
 	return (
 		<View
@@ -356,7 +582,7 @@ export function GameScreen({
 				<Pressable
 					accessibilityRole="button"
 					accessibilityLabel="Назад"
-					onPress={onExit}
+					onPress={exitWithFlush}
 					hitSlop={12}
 					style={styles.backButton}
 				>
@@ -369,16 +595,32 @@ export function GameScreen({
 						style={[styles.title, { color: palette.headerText }]}
 						numberOfLines={1}
 					>
-						{puzzle.metadata.title ?? puzzle.id}
+						{puzzle.width}×{puzzle.height}
 					</Text>
 					<Text style={[styles.meta, { color: palette.clueTextDimmed }]}>
-						{puzzle.width}×{puzzle.height} ·{' '}
 						{difficultyTier === null
 							? '—'
 							: difficultyLabelRu(difficultyTier)}{' '}
 						· {elapsed}
 					</Text>
 				</View>
+				{!session.completed ? (
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel="Начать заново"
+						onPress={handleRestart}
+						hitSlop={8}
+						style={styles.restartButton}
+					>
+						<Text
+							style={[styles.restartText, { color: palette.clueTextDimmed }]}
+						>
+							Заново
+						</Text>
+					</Pressable>
+				) : (
+					<View style={styles.restartButton} />
+				)}
 			</View>
 
 			<GestureDetector gesture={composed}>
@@ -407,21 +649,46 @@ export function GameScreen({
 					canRedo={sessionCanRedo(session)}
 					palette={palette}
 					disabled={session.completed}
-					onTool={(tool) => setSession(setTool(session, tool))}
-					onUndo={() => setSession(undo(session))}
-					onRedo={() => setSession(redo(session))}
+					onTool={(tool) =>
+						applySessionUpdate((current) => setTool(current, tool))
+					}
+					onUndo={() =>
+						applySessionUpdate((current) => undo(current), {
+							recordUndo: true,
+						})
+					}
+					onRedo={() =>
+						applySessionUpdate((current) => redo(current), {
+							recordRedo: true,
+						})
+					}
 					onFit={fitBoard}
 				/>
 			</View>
 
 			<CompletionOverlay
 				visible={session.completed}
-				title={puzzle.metadata.title ?? puzzle.id}
-				sizeLabel={`${puzzle.width}×${puzzle.height}`}
+				title={`${puzzle.width}×${puzzle.height}`}
+				sizeLabel={
+					difficultyTier === null
+						? `${puzzle.width}×${puzzle.height}`
+						: `${puzzle.width}×${puzzle.height} · ${difficultyLabelRu(difficultyTier)}`
+				}
 				elapsedLabel={elapsed}
 				palette={palette}
-				onDone={onExit}
-				onPlayAgain={() => setSession(createGameSession(puzzle))}
+				onDone={() => {
+					refresh()
+					onExit()
+				}}
+				onPlayAgain={() => {
+					void service.replaceActivePuzzle(puzzle.id).then(() => {
+						setSession(createGameSession(puzzle))
+						setTimer(startOrResumeTimer(createPausedTimer(0), Date.now()))
+						setRestartCountThisRun(0)
+						setCompletionPersisted(false)
+						refresh()
+					})
+				}}
 			/>
 		</View>
 	)
@@ -457,6 +724,16 @@ const styles = StyleSheet.create({
 	meta: {
 		fontSize: 12,
 		marginTop: 2,
+	},
+	restartButton: {
+		minWidth: 64,
+		minHeight: 44,
+		justifyContent: 'center',
+		alignItems: 'flex-end',
+	},
+	restartText: {
+		fontSize: 13,
+		fontWeight: '600',
 	},
 	boardViewport: {
 		flex: 1,

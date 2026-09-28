@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@shopify/react-native-skia": "2.6.2",
     "babel-preset-expo": "~57.0.0",
     "expo": "~57.0.25",
@@ -38,6 +39,7 @@
     "audit:solver": "tsx scripts/audit-solver-perf.ts",
     "audit:content": "tsx scripts/audit-content.ts",
     "audit:random": "tsx scripts/audit-random.ts",
+    "audit:campaign": "tsx scripts/audit-campaign.ts",
     "android:qa": "powershell -ExecutionPolicy Bypass -File ./scripts/android/android-device-qa.ps1"
   },
   "private": true

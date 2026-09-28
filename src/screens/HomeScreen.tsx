@@ -1,30 +1,38 @@
 /**
- * Home shell — open curated production-ready puzzles.
- * Keeps reserved BannerSlot via App shell (not on Game).
+ * Home — real game entry (Continue / Play / Levels / Statistics).
+ * BannerSlot remains in App shell. DEV controls stay under __DEV__.
  */
 
-import { useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { getHomePlayablePuzzles } from '../content/playable'
+import { getCampaignProgressSummary } from '../campaign'
+import { buildHomeViewModel } from '../presentation/homeViewModel'
+import { useProgress } from '../progress/ProgressProvider'
 import { colors, spacing, typography } from '../theme'
-import { analyzeDifficulty } from '../domain/difficulty/analyzer'
-import type { CatalogPuzzle } from '../content/types'
-import { difficultyLabelRu } from '../presentation/difficultyLabels'
 
 interface HomeScreenProps {
-	readonly onOpenPuzzle: (puzzleId: string) => void
+	readonly onContinue: () => void
+	readonly onPlay: () => void
+	readonly onOpenLevels: () => void
+	readonly onOpenStatistics: () => void
 	readonly darkMode: boolean
 	readonly onToggleDarkMode: () => void
 }
 
 export function HomeScreen({
-	onOpenPuzzle,
+	onContinue,
+	onPlay,
+	onOpenLevels,
+	onOpenStatistics,
 	darkMode,
 	onToggleDarkMode,
 }: HomeScreenProps) {
 	const insets = useSafeAreaInsets()
-	const [puzzles] = useState(() => getHomePlayablePuzzles())
+	const { save, service, refresh } = useProgress()
+	const home = buildHomeViewModel(save)
+	const progress = getCampaignProgressSummary(save)
+	const progressRatio =
+		progress.total === 0 ? 0 : progress.completed / progress.total
 
 	return (
 		<View
@@ -34,61 +42,127 @@ export function HomeScreen({
 			<Text style={styles.title} accessibilityRole="header">
 				Японские кроссворды
 			</Text>
-			<Text style={styles.subtitle}>NonogramGame</Text>
-			<Text style={styles.badge} testID="boot-ok">
-				BOOT_OK
-			</Text>
 
-			<Text style={styles.section}>Выберите уровень</Text>
-			<View style={styles.list}>
-				{puzzles.map((puzzle) => (
-					<PuzzleButton
-						key={puzzle.id}
-						puzzle={puzzle}
-						onPress={() => onOpenPuzzle(puzzle.id)}
-					/>
-				))}
+			<Text style={styles.progress} accessibilityLabel={progress.label}>
+				{progress.label}
+			</Text>
+			<View
+				style={styles.progressTrack}
+				accessibilityRole="progressbar"
+				accessibilityLabel={progress.label}
+				accessibilityValue={{
+					min: 0,
+					max: 100,
+					now: Math.round(progressRatio * 100),
+				}}
+			>
+				<View
+					style={[
+						styles.progressFill,
+						{ width: `${Math.round(progressRatio * 100)}%` },
+					]}
+				/>
 			</View>
 
-			{__DEV__ ? (
+			{home.continueCard !== null ? (
 				<Pressable
-					onPress={onToggleDarkMode}
-					style={styles.devToggle}
 					accessibilityRole="button"
+					accessibilityLabel={`${home.primaryLabel}. ${home.continueCard.sizeLabel}. ${home.continueCard.difficultyLabel}. ${home.continueCard.markedLabel}. ${home.continueCard.elapsedLabel}`}
+					onPress={onContinue}
+					style={({ pressed }) => [
+						styles.primaryCard,
+						{ opacity: pressed ? 0.9 : 1 },
+					]}
+					testID="home-continue"
 				>
-					<Text style={styles.devToggleText}>
-						DEV: {darkMode ? 'Dark board' : 'Light board'}
+					<Text style={styles.primaryLabel}>{home.primaryLabel}</Text>
+					<Text style={styles.primaryMeta}>
+						{home.continueCard.sizeLabel} ·{' '}
+						{home.continueCard.difficultyLabel}
+					</Text>
+					<Text style={styles.primaryMeta}>
+						{home.continueCard.markedLabel} ·{' '}
+						{home.continueCard.elapsedLabel}
 					</Text>
 				</Pressable>
+			) : (
+				<Pressable
+					accessibilityRole="button"
+					accessibilityLabel={home.primaryLabel}
+					onPress={onPlay}
+					style={({ pressed }) => [
+						styles.primaryCard,
+						{ opacity: pressed ? 0.9 : 1 },
+					]}
+					testID="home-play"
+				>
+					<Text style={styles.primaryLabel}>{home.primaryLabel}</Text>
+					<Text style={styles.primaryMeta}>Выберите уровень</Text>
+				</Pressable>
+			)}
+
+			<Pressable
+				accessibilityRole="button"
+				accessibilityLabel="Уровни"
+				onPress={onOpenLevels}
+				style={({ pressed }) => [
+					styles.secondaryButton,
+					{ opacity: pressed ? 0.85 : 1 },
+				]}
+			>
+				<Text style={styles.secondaryText}>Уровни</Text>
+			</Pressable>
+
+			<Pressable
+				accessibilityRole="button"
+				accessibilityLabel="Статистика"
+				onPress={onOpenStatistics}
+				style={({ pressed }) => [
+					styles.secondaryButton,
+					{ opacity: pressed ? 0.85 : 1 },
+				]}
+			>
+				<Text style={styles.secondaryText}>Статистика</Text>
+			</Pressable>
+
+			{__DEV__ ? (
+				<View style={styles.devBlock}>
+					<Pressable
+						onPress={onToggleDarkMode}
+						style={styles.devToggle}
+						accessibilityRole="button"
+					>
+						<Text style={styles.devToggleText}>
+							DEV: {darkMode ? 'Dark board' : 'Light board'}
+						</Text>
+					</Pressable>
+					<Pressable
+						onPress={() => {
+							Alert.alert(
+								'Сбросить прогресс?',
+								'Только для DEV QA.',
+								[
+									{ text: 'Отмена', style: 'cancel' },
+									{
+										text: 'Сбросить',
+										style: 'destructive',
+										onPress: () => {
+											void service.resetProgressDevOnly().then(() => {
+												refresh()
+											})
+										},
+									},
+								],
+							)
+						}}
+						style={styles.devToggle}
+						accessibilityRole="button"
+					>
+						<Text style={styles.devToggleText}>DEV: Сбросить прогресс</Text>
+					</Pressable>
+				</View>
 			) : null}
 		</View>
-	)
-}
-
-function PuzzleButton({
-	puzzle,
-	onPress,
-}: {
-	puzzle: CatalogPuzzle
-	onPress: () => void
-}) {
-	const difficulty = analyzeDifficulty(puzzle)
-	return (
-		<Pressable
-			accessibilityRole="button"
-			onPress={onPress}
-			style={({ pressed }) => [
-				styles.puzzleButton,
-				{ opacity: pressed ? 0.85 : 1 },
-			]}
-		>
-			<Text style={styles.puzzleTitle}>
-				{puzzle.metadata.title ?? puzzle.id}
-			</Text>
-			<Text style={styles.puzzleMeta}>
-				{puzzle.width}×{puzzle.height} · {difficultyLabelRu(difficulty.tier)}
-			</Text>
-		</Pressable>
 	)
 }
 
@@ -96,7 +170,6 @@ const styles = StyleSheet.create({
 	root: {
 		flex: 1,
 		paddingHorizontal: spacing.lg,
-		paddingTop: spacing.xl,
 		backgroundColor: colors.background,
 		gap: spacing.sm,
 	},
@@ -104,51 +177,65 @@ const styles = StyleSheet.create({
 		...typography.title,
 		color: colors.text,
 		textAlign: 'center',
+		marginBottom: spacing.sm,
 	},
-	subtitle: {
+	progress: {
 		...typography.subtitle,
 		color: colors.textMuted,
 		textAlign: 'center',
 	},
-	badge: {
-		...typography.badge,
-		color: colors.accent,
-		textAlign: 'center',
+	progressTrack: {
+		height: 8,
+		borderRadius: 4,
+		backgroundColor: colors.surface,
+		overflow: 'hidden',
+		marginBottom: spacing.md,
+	},
+	progressFill: {
+		height: '100%',
+		backgroundColor: colors.accent,
+	},
+	primaryCard: {
+		backgroundColor: colors.accent,
+		borderRadius: 16,
+		paddingHorizontal: 18,
+		paddingVertical: 18,
+		minHeight: 88,
+		justifyContent: 'center',
 		marginTop: spacing.sm,
 	},
-	section: {
-		marginTop: spacing.lg,
-		fontSize: 15,
+	primaryLabel: {
+		fontSize: 22,
 		fontWeight: '700',
-		color: colors.text,
+		color: '#FFFFFF',
 	},
-	list: {
-		gap: 10,
-		marginTop: spacing.sm,
+	primaryMeta: {
+		marginTop: 4,
+		fontSize: 14,
+		color: '#E7F5EE',
 	},
-	puzzleButton: {
+	secondaryButton: {
 		backgroundColor: '#FFFFFF',
 		borderRadius: 14,
 		borderWidth: 1,
 		borderColor: colors.border,
 		paddingHorizontal: 16,
 		paddingVertical: 14,
-		minHeight: 64,
+		minHeight: 52,
 		justifyContent: 'center',
 	},
-	puzzleTitle: {
-		fontSize: 16,
+	secondaryText: {
+		fontSize: 17,
 		fontWeight: '700',
 		color: colors.text,
+		textAlign: 'center',
 	},
-	puzzleMeta: {
-		marginTop: 4,
-		fontSize: 13,
-		color: colors.textMuted,
-	},
-	devToggle: {
+	devBlock: {
 		marginTop: 'auto',
 		marginBottom: spacing.md,
+		gap: 4,
+	},
+	devToggle: {
 		alignSelf: 'center',
 		minHeight: 44,
 		justifyContent: 'center',
