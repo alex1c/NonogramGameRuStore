@@ -76,11 +76,16 @@ import {
 } from '../persistence/timer'
 import { useProgress } from '../progress/ProgressProvider'
 import type { GameLaunchMode } from '../navigation/RootNavigation'
+import type { CompletionEventResult } from '../persistence/completionResult'
+import { cropSolutionBitmap } from '../gallery/crop'
+import { getGalleryItemDef } from '../gallery/definitions'
 
 export interface GameScreenProps {
 	readonly puzzleId: string
 	readonly mode: GameLaunchMode
 	readonly onExit: () => void
+	readonly onOpenGallery: () => void
+	readonly onNextPuzzle: (puzzleId: string) => void
 	readonly darkMode?: boolean
 }
 
@@ -108,6 +113,8 @@ export function GameScreen({
 	puzzleId,
 	mode,
 	onExit,
+	onOpenGallery,
+	onNextPuzzle,
 	darkMode = false,
 }: GameScreenProps) {
 	const insets = useSafeAreaInsets()
@@ -131,6 +138,8 @@ export function GameScreen({
 	const [timer, setTimer] = useState<ActiveTimerState>(createPausedTimer(0))
 	const [restartCountThisRun, setRestartCountThisRun] = useState(0)
 	const [completionPersisted, setCompletionPersisted] = useState(false)
+	const [completionEvent, setCompletionEvent] =
+		useState<CompletionEventResult | null>(null)
 
 	const bindKey = `${puzzleId}:${mode}`
 
@@ -162,6 +171,7 @@ export function GameScreen({
 			setRestartCountThisRun(0)
 		}
 		setCompletionPersisted(false)
+		setCompletionEvent(null)
 		setBoundKey(bindKey)
 	} else if (puzzle === null && boundKey !== null) {
 		setSession(null)
@@ -217,12 +227,13 @@ export function GameScreen({
 			}
 			const now = Date.now()
 			const elapsed = readActiveElapsedMs(pauseTimer(nextTimer, now), now)
-			await service.completePuzzle({
+			const { event } = await service.completePuzzle({
 				puzzleId: nextSession.puzzle.id,
 				activeTimeMs: elapsed,
 			})
 			liveGame.completionPersisted = true
 			setCompletionPersisted(true)
+			setCompletionEvent(event)
 			setTimer(createPausedTimer(elapsed))
 			refresh()
 		},
@@ -464,6 +475,7 @@ export function GameScreen({
 						setTimer(startOrResumeTimer(createPausedTimer(0), Date.now()))
 						setRestartCountThisRun((value) => value + 1)
 						setCompletionPersisted(false)
+						setCompletionEvent(null)
 						refresh()
 					})
 				},
@@ -668,7 +680,10 @@ export function GameScreen({
 
 			<CompletionOverlay
 				visible={session.completed}
-				title={`${puzzle.width}×${puzzle.height}`}
+				title={
+					getGalleryItemDef(puzzle.id)?.titleRu ??
+					`${puzzle.width}×${puzzle.height}`
+				}
 				sizeLabel={
 					difficultyTier === null
 						? `${puzzle.width}×${puzzle.height}`
@@ -676,19 +691,27 @@ export function GameScreen({
 				}
 				elapsedLabel={elapsed}
 				palette={palette}
-				onDone={() => {
+				preview={
+					session.completed
+						? cropSolutionBitmap(
+								puzzle.width,
+								puzzle.height,
+								puzzle.solution,
+							)
+						: null
+				}
+				event={completionEvent}
+				onHome={() => {
 					refresh()
 					onExit()
 				}}
-				onPlayAgain={() => {
-					void service.replaceActivePuzzle(puzzle.id).then(() => {
-						setSession(createGameSession(puzzle))
-						setTimer(startOrResumeTimer(createPausedTimer(0), Date.now()))
-						setRestartCountThisRun(0)
-						setCompletionPersisted(false)
-						refresh()
-					})
-				}}
+				onGallery={onOpenGallery}
+				onNext={
+					completionEvent?.nextCampaignPuzzleId
+						? () =>
+								onNextPuzzle(completionEvent.nextCampaignPuzzleId as string)
+						: null
+				}
 			/>
 		</View>
 	)

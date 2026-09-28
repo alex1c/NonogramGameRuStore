@@ -16,6 +16,8 @@ import type { SaveRepository } from './repository'
 import type { HydrationStatus, SaveRoot } from './schema'
 import { createDefaultSave } from './createDefaultSave'
 import { sanitizeSaveAgainstCatalog } from './sanitize'
+import type { CompletionEventResult } from './completionResult'
+import { findNextCampaignPuzzleId } from './nextCampaign'
 import {
 	completePuzzle,
 	createActiveGameSave,
@@ -27,6 +29,13 @@ import {
 	resetProgress,
 	setActiveGame,
 } from './progressReducers'
+import {
+	contextFromSave,
+	evaluateAchievements,
+	getNewlyUnlockedAchievements,
+} from '../achievements/evaluate'
+import { collectionJustCompleted } from '../gallery/viewModel'
+import { getGalleryItemDef } from '../gallery/definitions'
 
 export interface PersistGameSnapshotInput {
 	readonly puzzle: Puzzle
@@ -52,7 +61,7 @@ export interface GameProgressService {
 	completePuzzle(input: {
 		readonly puzzleId: string
 		readonly activeTimeMs: number
-	}): Promise<SaveRoot>
+	}): Promise<{ readonly save: SaveRoot; readonly event: CompletionEventResult }>
 	replaceActivePuzzle(puzzleId: string): Promise<SaveRoot>
 	recordUndo(): Promise<SaveRoot>
 	recordRedo(): Promise<SaveRoot>
@@ -178,8 +187,51 @@ export function createGameProgressService(
 
 		async completePuzzle(input) {
 			ensureHydrated(hydrated)
-			const next = completePuzzle(current, input)
-			return commit(next)
+			const beforeSave = current
+			const beforeAchievements = evaluateAchievements(
+				contextFromSave(beforeSave),
+			)
+			const firstCompletion = !beforeSave.completedPuzzleIds.includes(
+				input.puzzleId,
+			)
+			const previousBest =
+				beforeSave.bestTimes.find(
+					(item) => item.puzzleId === input.puzzleId,
+				)?.bestActiveTimeMs ?? null
+
+			const next = completePuzzle(beforeSave, input)
+			await commit(next)
+
+			const afterAchievements = evaluateAchievements(contextFromSave(next))
+			const newlyUnlocked = getNewlyUnlockedAchievements(
+				beforeAchievements,
+				afterAchievements,
+			)
+			const newBest =
+				next.bestTimes.find((item) => item.puzzleId === input.puzzleId)
+					?.bestActiveTimeMs ?? input.activeTimeMs
+			const bestTimeImproved =
+				previousBest === null || newBest < previousBest
+
+			const event: CompletionEventResult = {
+				puzzleId: input.puzzleId,
+				firstCompletion,
+				bestTimeImproved,
+				previousBestTimeMs: previousBest,
+				newBestTimeMs: newBest,
+				newlyUnlockedAchievements: newlyUnlocked,
+				collectionJustCompletedTitle: collectionJustCompleted(
+					beforeSave.completedPuzzleIds,
+					next.completedPuzzleIds,
+					input.puzzleId,
+				),
+				nextCampaignPuzzleId: findNextCampaignPuzzleId(
+					next,
+					input.puzzleId,
+				),
+				galleryIncluded: getGalleryItemDef(input.puzzleId) !== null,
+			}
+			return { save: next, event }
 		},
 
 		async replaceActivePuzzle(puzzleId: string) {

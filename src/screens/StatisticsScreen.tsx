@@ -3,8 +3,20 @@
  */
 
 import { useEffect } from 'react'
-import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import {
+	BackHandler,
+	Pressable,
+	ScrollView,
+	StyleSheet,
+	Text,
+	View,
+} from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import {
+	contextFromSave,
+	evaluateAchievements,
+} from '../achievements'
+import { countGalleryUnlocked } from '../gallery'
 import { buildStatisticsViewModel } from '../presentation/statisticsViewModel'
 import { useProgress } from '../progress/ProgressProvider'
 import { colors, spacing, typography } from '../theme'
@@ -17,6 +29,11 @@ export function StatisticsScreen({ onBack }: StatisticsScreenProps) {
 	const insets = useSafeAreaInsets()
 	const { save } = useProgress()
 	const stats = buildStatisticsViewModel(save)
+	const gallery = countGalleryUnlocked(save.completedPuzzleIds)
+	const achievements = evaluateAchievements(contextFromSave(save))
+	const unlockedAchievements = achievements.filter(
+		(item) => item.access === 'UNLOCKED',
+	).length
 
 	useEffect(() => {
 		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -69,6 +86,14 @@ export function StatisticsScreen({ onBack }: StatisticsScreenProps) {
 				<StatRow
 					label="Начать заново"
 					value={String(stats.totalRestarts)}
+				/>
+				<StatRow
+					label="Картинки"
+					value={`${gallery.unlocked} / ${gallery.total}`}
+				/>
+				<StatRow
+					label="Достижения"
+					value={`${unlockedAchievements} / ${achievements.length}`}
 				/>
 
 				<Text style={styles.section}>По сложности</Text>

@@ -1,6 +1,6 @@
 /**
- * Minimal navigation: Home ↔ Levels ↔ Statistics ↔ Game.
- * BannerSlot visibility reported for Home / Levels / Statistics (not Game).
+ * Minimal navigation: Home ↔ Levels / Gallery / Achievements / Statistics / Game.
+ * BannerSlot on non-Game routes.
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -8,8 +8,12 @@ import { Alert } from 'react-native'
 import { HomeScreen } from '../screens/HomeScreen'
 import { LevelsScreen, type LevelOpenIntent } from '../screens/LevelsScreen'
 import { StatisticsScreen } from '../screens/StatisticsScreen'
+import { GalleryScreen } from '../screens/GalleryScreen'
+import { GalleryDetailScreen } from '../screens/GalleryDetailScreen'
+import { AchievementsScreen } from '../screens/AchievementsScreen'
 import { GameScreen } from '../screens/GameScreen'
 import { useProgress } from '../progress/ProgressProvider'
+import { isGalleryPuzzleUnlocked } from '../gallery'
 
 export type GameLaunchMode = 'resume' | 'fresh' | 'replay'
 
@@ -17,6 +21,9 @@ type Route =
 	| { readonly name: 'home' }
 	| { readonly name: 'levels' }
 	| { readonly name: 'statistics' }
+	| { readonly name: 'gallery' }
+	| { readonly name: 'galleryDetail'; readonly puzzleId: string }
+	| { readonly name: 'achievements' }
 	| {
 			readonly name: 'game'
 			readonly puzzleId: string
@@ -94,7 +101,6 @@ export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
 				return
 			}
 
-			// Same active puzzle reopened as available → continue, do not reset.
 			if (active !== null && active.puzzleId === intent.puzzleId) {
 				openGame(intent.puzzleId, 'resume')
 				return
@@ -105,12 +111,40 @@ export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
 		[openGame, refresh, save.activeGame, save.completedPuzzleIds, service],
 	)
 
+	const handleGalleryReplay = useCallback(
+		(puzzleId: string) => {
+			if (!isGalleryPuzzleUnlocked(puzzleId, save.completedPuzzleIds)) {
+				return
+			}
+			void service.replaceActivePuzzle(puzzleId).then(() => {
+				refresh()
+				openGame(puzzleId, 'replay')
+			})
+		},
+		[openGame, refresh, save.completedPuzzleIds, service],
+	)
+
+	const handleCompletionNext = useCallback(
+		(puzzleId: string) => {
+			void service.replaceActivePuzzle(puzzleId).then(() => {
+				refresh()
+				openGame(puzzleId, 'fresh')
+			})
+		},
+		[openGame, refresh, service],
+	)
+
 	if (route.name === 'game') {
 		return (
 			<GameScreen
 				puzzleId={route.puzzleId}
 				mode={route.mode}
 				onExit={goHome}
+				onOpenGallery={() => {
+					refresh()
+					setRoute({ name: 'gallery' })
+				}}
+				onNextPuzzle={handleCompletionNext}
 				darkMode={darkMode}
 			/>
 		)
@@ -118,10 +152,7 @@ export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
 
 	if (route.name === 'levels') {
 		return (
-			<LevelsScreen
-				onBack={goHome}
-				onOpenLevel={handleLevelOpen}
-			/>
+			<LevelsScreen onBack={goHome} onOpenLevel={handleLevelOpen} />
 		)
 	}
 
@@ -129,11 +160,38 @@ export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
 		return <StatisticsScreen onBack={goHome} />
 	}
 
+	if (route.name === 'gallery') {
+		return (
+			<GalleryScreen
+				onBack={goHome}
+				onOpenDetail={(puzzleId) =>
+					setRoute({ name: 'galleryDetail', puzzleId })
+				}
+			/>
+		)
+	}
+
+	if (route.name === 'galleryDetail') {
+		return (
+			<GalleryDetailScreen
+				puzzleId={route.puzzleId}
+				onBack={() => setRoute({ name: 'gallery' })}
+				onReplay={handleGalleryReplay}
+			/>
+		)
+	}
+
+	if (route.name === 'achievements') {
+		return <AchievementsScreen onBack={goHome} />
+	}
+
 	return (
 		<HomeScreen
 			onContinue={handleContinue}
 			onPlay={() => setRoute({ name: 'levels' })}
 			onOpenLevels={() => setRoute({ name: 'levels' })}
+			onOpenGallery={() => setRoute({ name: 'gallery' })}
+			onOpenAchievements={() => setRoute({ name: 'achievements' })}
 			onOpenStatistics={() => setRoute({ name: 'statistics' })}
 			darkMode={darkMode}
 			onToggleDarkMode={() => setDarkMode((value) => !value)}

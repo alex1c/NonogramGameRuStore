@@ -17,6 +17,7 @@ export { createSaveRepository } from './repository'
 export type { SaveRepository } from './repository'
 export { createGameProgressService } from './progressService'
 export type { GameProgressService, PersistGameSnapshotInput } from './progressService'
+export type { CompletionEventResult } from './completionResult'
 export { buildPuzzleContentFingerprint } from './fingerprint'
 export { sanitizeSaveAgainstCatalog } from './sanitize'
 export {

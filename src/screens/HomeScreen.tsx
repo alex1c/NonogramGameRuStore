@@ -6,6 +6,11 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getCampaignProgressSummary } from '../campaign'
+import {
+	contextFromSave,
+	evaluateAchievements,
+} from '../achievements'
+import { countGalleryUnlocked } from '../gallery'
 import { buildHomeViewModel } from '../presentation/homeViewModel'
 import { useProgress } from '../progress/ProgressProvider'
 import { colors, spacing, typography } from '../theme'
@@ -14,6 +19,8 @@ interface HomeScreenProps {
 	readonly onContinue: () => void
 	readonly onPlay: () => void
 	readonly onOpenLevels: () => void
+	readonly onOpenGallery: () => void
+	readonly onOpenAchievements: () => void
 	readonly onOpenStatistics: () => void
 	readonly darkMode: boolean
 	readonly onToggleDarkMode: () => void
@@ -23,6 +30,8 @@ export function HomeScreen({
 	onContinue,
 	onPlay,
 	onOpenLevels,
+	onOpenGallery,
+	onOpenAchievements,
 	onOpenStatistics,
 	darkMode,
 	onToggleDarkMode,
@@ -33,6 +42,11 @@ export function HomeScreen({
 	const progress = getCampaignProgressSummary(save)
 	const progressRatio =
 		progress.total === 0 ? 0 : progress.completed / progress.total
+	const gallery = countGalleryUnlocked(save.completedPuzzleIds)
+	const achievements = evaluateAchievements(contextFromSave(save))
+	const unlockedAchievements = achievements.filter(
+		(item) => item.access === 'UNLOCKED',
+	).length
 
 	return (
 		<View
@@ -63,6 +77,10 @@ export function HomeScreen({
 					]}
 				/>
 			</View>
+			<Text style={styles.metaLine}>
+				Галерея {gallery.unlocked}/{gallery.total} · Достижения{' '}
+				{unlockedAchievements}/{achievements.length}
+			</Text>
 
 			{home.continueCard !== null ? (
 				<Pressable
@@ -112,6 +130,37 @@ export function HomeScreen({
 			>
 				<Text style={styles.secondaryText}>Уровни</Text>
 			</Pressable>
+
+			<View style={styles.row}>
+				<Pressable
+					accessibilityRole="button"
+					accessibilityLabel={`Галерея ${gallery.unlocked} из ${gallery.total}`}
+					onPress={onOpenGallery}
+					style={({ pressed }) => [
+						styles.halfButton,
+						{ opacity: pressed ? 0.85 : 1 },
+					]}
+				>
+					<Text style={styles.secondaryText}>Галерея</Text>
+					<Text style={styles.halfMeta}>
+						{gallery.unlocked}/{gallery.total}
+					</Text>
+				</Pressable>
+				<Pressable
+					accessibilityRole="button"
+					accessibilityLabel={`Достижения ${unlockedAchievements} из ${achievements.length}`}
+					onPress={onOpenAchievements}
+					style={({ pressed }) => [
+						styles.halfButton,
+						{ opacity: pressed ? 0.85 : 1 },
+					]}
+				>
+					<Text style={styles.secondaryText}>Достижения</Text>
+					<Text style={styles.halfMeta}>
+						{unlockedAchievements}/{achievements.length}
+					</Text>
+				</Pressable>
+			</View>
 
 			<Pressable
 				accessibilityRole="button"
@@ -229,6 +278,34 @@ const styles = StyleSheet.create({
 		fontWeight: '700',
 		color: colors.text,
 		textAlign: 'center',
+	},
+	metaLine: {
+		textAlign: 'center',
+		color: colors.textMuted,
+		fontSize: 13,
+		marginBottom: spacing.sm,
+	},
+	row: {
+		flexDirection: 'row',
+		gap: 10,
+	},
+	halfButton: {
+		flex: 1,
+		backgroundColor: '#FFFFFF',
+		borderRadius: 14,
+		borderWidth: 1,
+		borderColor: colors.border,
+		paddingHorizontal: 12,
+		paddingVertical: 12,
+		minHeight: 56,
+		justifyContent: 'center',
+	},
+	halfMeta: {
+		marginTop: 2,
+		textAlign: 'center',
+		fontSize: 12,
+		color: colors.textMuted,
+		fontWeight: '600',
 	},
 	devBlock: {
 		marginTop: 'auto',

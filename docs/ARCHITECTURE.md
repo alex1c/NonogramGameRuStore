@@ -151,12 +151,27 @@ Difficulty analysis is **not** on the paint/input path (header label only).
 - Active timer pauses in background; wall-clock downtime does not count
 - Content fingerprint protects against solution/clue changes for the same ID
 
+## Phase 5 — gallery + achievements
+
+| Layer | Role |
+| --- | --- |
+| `src/gallery` | Collection/item defs, crop preview, privacy-safe view-model, detail guard, audit |
+| `src/achievements` | Definitions, pure evaluator, transitions, audit |
+| Screens | Gallery (sectioned FlatList), Gallery Detail, Achievements |
+
+- Unlock source of truth: `completedPuzzleIds` (no gallery persistence)
+- Achievements derived; newly-unlocked only around completion events
+- Save schema remains **v1** — Phase 4 saves load without migration
+- Fingerprint ignores presentation title/collection metadata
+
+Details: [GALLERY.md](GALLERY.md).
+
 ## Empty-line clue convention
 
 Empty lines use `[]`, never `[0]`.
 
 ## Out of scope (later phases)
 
-Daily / streak, Gallery, achievements, hints / «Научи меня», lives/error mode,
+Daily / streak, hints / «Научи меня», lives/error mode,
 ad SDK / AppMetrica, mass generator, color nonograms, RuStore screenshots,
 release signing secrets.

@@ -40,6 +40,8 @@
     "audit:content": "tsx scripts/audit-content.ts",
     "audit:random": "tsx scripts/audit-random.ts",
     "audit:campaign": "tsx scripts/audit-campaign.ts",
+    "audit:gallery": "tsx scripts/audit-gallery.ts",
+    "audit:achievements": "tsx scripts/audit-achievements.ts",
     "android:qa": "powershell -ExecutionPolicy Bypass -File ./scripts/android/android-device-qa.ps1"
   },
   "private": true
