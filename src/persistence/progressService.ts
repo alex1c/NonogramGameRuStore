@@ -46,8 +46,12 @@ import {
 	persistActiveDailyPlayerState,
 	persistActivePlayerState,
 	recordDailyRestart,
+	recordHintApplied as bumpHintApplied,
+	recordHintAssistanceUsed as bumpHintAssistanceUsed,
+	recordHintRequest as bumpHintRequest,
 	recordRedoAction,
 	recordRestart,
+	recordTeachMeView as bumpTeachMeView,
 	recordUndoAction,
 	resetProgress,
 	restoreDailyDay,
@@ -116,6 +120,21 @@ export interface GameProgressService {
 	replaceActivePuzzle(puzzleId: string): Promise<SaveRoot>
 	recordUndo(): Promise<SaveRoot>
 	recordRedo(): Promise<SaveRoot>
+	/** +1 hintRequests after STEP / CONTRADICTION / STALLED response. */
+	recordHintRequest(): Promise<SaveRoot>
+	/** +1 teachMeViews when Teach Me showed a STEP explanation. */
+	recordTeachMeView(): Promise<SaveRoot>
+	/**
+	 * Apply counters: global hintsApplied + hintsUsedThisRun on Campaign/Daily.
+	 * Replay uses branch 'none' (global only).
+	 */
+	recordHintApplied(branch: 'campaign' | 'daily' | 'none'): Promise<SaveRoot>
+	/**
+	 * Contradiction/STALLED diagnostic: bump hintsUsedThisRun without hintsApplied.
+	 */
+	recordHintAssistanceUsed(
+		branch: 'campaign' | 'daily' | 'none',
+	): Promise<SaveRoot>
 	flush(): Promise<void>
 	resetProgressDevOnly(): Promise<SaveRoot>
 
@@ -351,6 +370,26 @@ export function createGameProgressService(
 		async recordRedo() {
 			ensureHydrated(hydrated)
 			return commit(recordRedoAction(current))
+		},
+
+		async recordHintRequest() {
+			ensureHydrated(hydrated)
+			return commit(bumpHintRequest(current))
+		},
+
+		async recordTeachMeView() {
+			ensureHydrated(hydrated)
+			return commit(bumpTeachMeView(current))
+		},
+
+		async recordHintApplied(branch) {
+			ensureHydrated(hydrated)
+			return commit(bumpHintApplied(current, branch))
+		},
+
+		async recordHintAssistanceUsed(branch) {
+			ensureHydrated(hydrated)
+			return commit(bumpHintAssistanceUsed(current, branch))
 		},
 
 		async flush() {

@@ -65,7 +65,12 @@ function normalizeUniqueIds(raw: unknown): string[] | null {
 	return out
 }
 
-function parseStatistics(raw: unknown): SaveRoot['statistics'] | null {
+function parseStatistics(
+	raw: unknown,
+	options: { readonly requireHintCounters: boolean } = {
+		requireHintCounters: true,
+	},
+): SaveRoot['statistics'] | null {
 	if (raw === null || typeof raw !== 'object') {
 		return null
 	}
@@ -83,15 +88,36 @@ function parseStatistics(raw: unknown): SaveRoot['statistics'] | null {
 		totalRestarts: number
 		totalUndoActions: number
 		totalRedoActions: number
+		hintRequests: number
+		hintsApplied: number
+		teachMeViews: number
 	} = {
 		totalCompletions: 0,
 		totalActiveSolveTimeMs: 0,
 		totalRestarts: 0,
 		totalUndoActions: 0,
 		totalRedoActions: 0,
+		hintRequests: 0,
+		hintsApplied: 0,
+		teachMeViews: 0,
 	}
 	for (const key of keys) {
 		const value = record[key]
+		if (!isNonNegativeInt(value)) {
+			return null
+		}
+		stats[key] = value
+	}
+	const hintKeys = ['hintRequests', 'hintsApplied', 'teachMeViews'] as const
+	for (const key of hintKeys) {
+		const value = record[key]
+		if (value === undefined) {
+			if (options.requireHintCounters) {
+				return null
+			}
+			stats[key] = 0
+			continue
+		}
 		if (!isNonNegativeInt(value)) {
 			return null
 		}
@@ -103,6 +129,9 @@ function parseStatistics(raw: unknown): SaveRoot['statistics'] | null {
 		totalRestarts: stats.totalRestarts,
 		totalUndoActions: stats.totalUndoActions,
 		totalRedoActions: stats.totalRedoActions,
+		hintRequests: stats.hintRequests,
+		hintsApplied: stats.hintsApplied,
+		teachMeViews: stats.teachMeViews,
 	})
 }
 
@@ -171,6 +200,15 @@ function parseActiveGameShared(
 	if (!isNonNegativeInt(record.restartCountThisRun)) {
 		return false
 	}
+	const hintsUsedThisRun =
+		record.hintsUsedThisRun === undefined
+			? 0
+			: isNonNegativeInt(record.hintsUsedThisRun)
+				? record.hintsUsedThisRun
+				: null
+	if (hintsUsedThisRun === null) {
+		return false
+	}
 
 	try {
 		const player = deserializePlayerState(record.player)
@@ -193,6 +231,7 @@ function parseActiveGameShared(
 			savedAtMs: record.savedAtMs,
 			tool: record.tool as PaintTool,
 			restartCountThisRun: record.restartCountThisRun,
+			hintsUsedThisRun,
 		})
 	} catch {
 		return false
@@ -227,6 +266,7 @@ function parseActiveDailyGame(
 		savedAtMs: record.savedAtMs,
 		tool: record.tool,
 		restartCountThisRun: record.restartCountThisRun,
+		hintsUsedThisRun: record.hintsUsedThisRun,
 	})
 	if (base === false || base === null) {
 		return false
@@ -242,6 +282,7 @@ function parseActiveDailyGame(
 		savedAtMs: base.savedAtMs,
 		tool: base.tool,
 		restartCountThisRun: base.restartCountThisRun,
+		hintsUsedThisRun: base.hintsUsedThisRun,
 	})
 }
 
@@ -370,7 +411,9 @@ export function parseAndValidateSaveV1(raw: unknown): SaveParseOutcomeV1 {
 	if (startedPuzzleIds === null) {
 		return { ok: false, reason: 'Invalid startedPuzzleIds' }
 	}
-	const statistics = parseStatistics(record.statistics)
+	const statistics = parseStatistics(record.statistics, {
+		requireHintCounters: false,
+	})
 	if (statistics === null) {
 		return { ok: false, reason: 'Invalid statistics' }
 	}
@@ -395,29 +438,193 @@ export function parseAndValidateSaveV1(raw: unknown): SaveParseOutcomeV1 {
 	}
 }
 
+function withHintDefaultsOnActive(
+	active: ActiveGameSave | null,
+): ActiveGameSave | null {
+	if (active === null) {
+		return null
+	}
+	return Object.freeze({
+		...active,
+		hintsUsedThisRun: active.hintsUsedThisRun ?? 0,
+	})
+}
+
+function withHintDefaultsOnDaily(
+	active: ActiveDailyGameSave | null,
+): ActiveDailyGameSave | null {
+	if (active === null) {
+		return null
+	}
+	return Object.freeze({
+		...active,
+		hintsUsedThisRun: active.hintsUsedThisRun ?? 0,
+	})
+}
+
 /**
- * Migrate a validated v1 document to v2.
- * solvedPuzzleIds = completedPuzzleIds (pre-Daily every solve was campaign).
- * dailyStartedDay = null (no fake missed history on update).
+ * Migrate a validated v1 document to v3 (via Phase 6 Daily defaults + hint counters).
+ * solvedPuzzleIds = completedPuzzleIds; dailyStartedDay = null; hint counters = 0.
  */
 export function migrateV1DocumentToV2(v1: SaveRootV1): SaveRoot {
-	return Object.freeze({
-		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
-		activeGame: v1.activeGame,
+	// Named migrateV1DocumentToV2 historically; now produces current schema (v3).
+	return migrateV2DocumentToV3({
+		schemaVersion: 2,
+		activeGame: withHintDefaultsOnActive(v1.activeGame),
 		activeDailyGame: null,
 		completedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
 		solvedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
 		startedPuzzleIds: Object.freeze([...v1.startedPuzzleIds]),
 		bestTimes: v1.bestTimes,
-		statistics: v1.statistics,
+		statistics: Object.freeze({
+			...v1.statistics,
+			hintRequests: 0,
+			hintsApplied: 0,
+			teachMeViews: 0,
+		}),
 		dailyCompletionRecords: Object.freeze([] as DailyCompletionRecordSave[]),
 		restoredDailyDays: Object.freeze([] as DayKey[]),
 		dailyStartedDay: null,
 	})
 }
 
+/** Intermediate v2 shape used only during migration. */
+export interface SaveRootV2 {
+	readonly schemaVersion: 2
+	readonly activeGame: ActiveGameSave | null
+	readonly activeDailyGame: ActiveDailyGameSave | null
+	readonly completedPuzzleIds: readonly string[]
+	readonly solvedPuzzleIds: readonly string[]
+	readonly startedPuzzleIds: readonly string[]
+	readonly bestTimes: SaveRoot['bestTimes']
+	readonly statistics: SaveRoot['statistics']
+	readonly dailyCompletionRecords: readonly DailyCompletionRecordSave[]
+	readonly restoredDailyDays: readonly DayKey[]
+	readonly dailyStartedDay: DayKey | null
+}
+
+export type SaveParseOutcomeV2 =
+	| { readonly ok: true; readonly save: SaveRootV2 }
+	| { readonly ok: false; readonly reason: string }
+
+/** Validate Phase 6 / schema v2 document (migration source). */
+export function parseAndValidateSaveV2(raw: unknown): SaveParseOutcomeV2 {
+	if (raw === null || typeof raw !== 'object') {
+		return { ok: false, reason: 'Save root must be an object' }
+	}
+	const record = raw as Record<string, unknown>
+	if (record.schemaVersion !== 2) {
+		return {
+			ok: false,
+			reason: `Expected schemaVersion 2, got ${String(record.schemaVersion)}`,
+		}
+	}
+	const completedPuzzleIds = normalizeUniqueIds(record.completedPuzzleIds)
+	if (completedPuzzleIds === null) {
+		return { ok: false, reason: 'Invalid completedPuzzleIds' }
+	}
+	const startedPuzzleIds = normalizeUniqueIds(record.startedPuzzleIds)
+	if (startedPuzzleIds === null) {
+		return { ok: false, reason: 'Invalid startedPuzzleIds' }
+	}
+	let solvedPuzzleIds = normalizeUniqueIds(
+		record.solvedPuzzleIds ?? record.completedPuzzleIds,
+	)
+	if (solvedPuzzleIds === null) {
+		return { ok: false, reason: 'Invalid solvedPuzzleIds' }
+	}
+	const solvedSet = new Set(solvedPuzzleIds)
+	for (const id of completedPuzzleIds) {
+		if (!solvedSet.has(id)) {
+			solvedPuzzleIds = [...solvedPuzzleIds, id]
+			solvedSet.add(id)
+		}
+	}
+	const statistics = parseStatistics(record.statistics, {
+		requireHintCounters: false,
+	})
+	if (statistics === null) {
+		return { ok: false, reason: 'Invalid statistics' }
+	}
+	const bestTimes = parseBestTimes(record.bestTimes)
+	if (bestTimes === null) {
+		return { ok: false, reason: 'Invalid bestTimes' }
+	}
+	const activeGame = parseActiveGameShared(record.activeGame)
+	if (activeGame === false) {
+		return { ok: false, reason: 'Invalid activeGame' }
+	}
+	const activeDailyGame = parseActiveDailyGame(record.activeDailyGame)
+	if (activeDailyGame === false) {
+		return { ok: false, reason: 'Invalid activeDailyGame' }
+	}
+	const dailyCompletionRecords = parseDailyCompletionRecords(
+		record.dailyCompletionRecords,
+		null,
+	)
+	if (dailyCompletionRecords === null) {
+		return { ok: false, reason: 'Invalid dailyCompletionRecords' }
+	}
+	const completedDailyKeys = new Set(
+		dailyCompletionRecords.map((r) => r.dayKey),
+	)
+	const restoredDailyDays = parseRestoredDays(
+		record.restoredDailyDays,
+		null,
+		completedDailyKeys,
+	)
+	const dailyStartedDay = parseDailyStartedDay(record.dailyStartedDay)
+	if (dailyStartedDay === false) {
+		return { ok: false, reason: 'Invalid dailyStartedDay' }
+	}
+	return {
+		ok: true,
+		save: Object.freeze({
+			schemaVersion: 2 as const,
+			activeGame,
+			activeDailyGame,
+			completedPuzzleIds: Object.freeze(completedPuzzleIds),
+			solvedPuzzleIds: Object.freeze(solvedPuzzleIds),
+			startedPuzzleIds: Object.freeze(startedPuzzleIds),
+			bestTimes,
+			statistics,
+			dailyCompletionRecords,
+			restoredDailyDays,
+			dailyStartedDay,
+		}),
+	}
+}
+
+/** Migrate validated v2 → v3: hint counters default 0; hintsUsedThisRun on actives. */
+export function migrateV2DocumentToV3(v2: SaveRootV2): SaveRoot {
+	return Object.freeze({
+		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+		activeGame: withHintDefaultsOnActive(v2.activeGame),
+		activeDailyGame: withHintDefaultsOnDaily(v2.activeDailyGame),
+		completedPuzzleIds: Object.freeze([...v2.completedPuzzleIds]),
+		solvedPuzzleIds: Object.freeze([...v2.solvedPuzzleIds]),
+		startedPuzzleIds: Object.freeze([...v2.startedPuzzleIds]),
+		bestTimes: v2.bestTimes,
+		statistics: Object.freeze({
+			totalCompletions: v2.statistics.totalCompletions,
+			totalActiveSolveTimeMs: v2.statistics.totalActiveSolveTimeMs,
+			totalRestarts: v2.statistics.totalRestarts,
+			totalUndoActions: v2.statistics.totalUndoActions,
+			totalRedoActions: v2.statistics.totalRedoActions,
+			hintRequests: v2.statistics.hintRequests ?? 0,
+			hintsApplied: v2.statistics.hintsApplied ?? 0,
+			teachMeViews: v2.statistics.teachMeViews ?? 0,
+		}),
+		dailyCompletionRecords: Object.freeze(
+			v2.dailyCompletionRecords.map((item) => Object.freeze({ ...item })),
+		),
+		restoredDailyDays: Object.freeze([...v2.restoredDailyDays]),
+		dailyStartedDay: v2.dailyStartedDay,
+	})
+}
+
 /**
- * Validate an unknown object into a frozen SaveRoot (schema v2).
+ * Validate an unknown object into a frozen SaveRoot (schema v3).
  * Optional today rejects future Daily corruption; pass null to skip.
  */
 export function parseAndValidateSave(

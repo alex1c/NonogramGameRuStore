@@ -43,6 +43,7 @@
     "audit:gallery": "tsx scripts/audit-gallery.ts",
     "audit:achievements": "tsx scripts/audit-achievements.ts",
     "audit:daily": "tsx scripts/audit-daily.ts",
+    "audit:hints": "tsx scripts/audit-hints.ts",
     "android:qa": "powershell -ExecutionPolicy Bypass -File ./scripts/android/android-device-qa.ps1"
   },
   "private": true

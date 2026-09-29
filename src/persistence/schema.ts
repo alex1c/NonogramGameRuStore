@@ -1,6 +1,6 @@
 /**
  * Versioned save schema.
- * Phase 4–5: v1. Phase 6: v2 (Daily + solvedPuzzleIds).
+ * Phase 4–5: v1. Phase 6: v2 (Daily). Phase 7: v3 (Hints).
  * Persist IDs + player progress — never solution/clues/catalog blobs.
  *
  * Storage key remains `nonogram.save.v1` (historical suffix); schemaVersion
@@ -12,7 +12,7 @@ import type { PaintTool } from '../gameplay/tools'
 import type { DayKey } from '../daily/dateUtils'
 
 /** Single source of truth for the current save schema version. */
-export const CURRENT_SAVE_SCHEMA_VERSION = 2 as const
+export const CURRENT_SAVE_SCHEMA_VERSION = 3 as const
 
 export type SaveSchemaVersion = typeof CURRENT_SAVE_SCHEMA_VERSION
 
@@ -32,6 +32,8 @@ export interface ActiveGameSave {
 	 * Used only for optional no-restart completion metric (deferred if unused).
 	 */
 	readonly restartCountThisRun: number
+	/** Logical help uses this run (Hint/Teach/contradiction diagnostics). */
+	readonly hintsUsedThisRun: number
 }
 
 /** Unfinished Daily party — coexists with Campaign activeGame. */
@@ -46,6 +48,7 @@ export interface ActiveDailyGameSave {
 	readonly savedAtMs: number
 	readonly tool: PaintTool
 	readonly restartCountThisRun: number
+	readonly hintsUsedThisRun: number
 }
 
 export interface PuzzleBestTime {
@@ -59,6 +62,12 @@ export interface ProgressStatistics {
 	readonly totalRestarts: number
 	readonly totalUndoActions: number
 	readonly totalRedoActions: number
+	/** User requested Hint or Teach Me and received STEP/CONTRADICTION/STALLED. */
+	readonly hintRequests: number
+	/** User pressed Apply on a logical HintStep. */
+	readonly hintsApplied: number
+	/** Successful Teach Me STEP explanation opened. */
+	readonly teachMeViews: number
 }
 
 /** Historical Daily completion — stores puzzleId for future selector changes. */
@@ -70,16 +79,17 @@ export interface DailyCompletionRecordSave {
 }
 
 /**
- * Root persisted document (schema v2).
+ * Root persisted document (schema v3).
  *
  * Semantics:
  * - completedPuzzleIds = Campaign completions only
- * - solvedPuzzleIds = unique puzzles solved in any mode (Gallery source)
+ * - solvedPuzzleIds = unique puzzles solved in any mode (Gallery unlock source)
  * - dailyCompletionRecords = actual Daily calendar completions
  * - restoredDailyDays = streak bridges (not puzzle solves)
  * - dailyStartedDay = user participation start (null until first Daily screen open)
- * - activeGame = Campaign unfinished party
- * - activeDailyGame = Daily unfinished party
+ * - activeGame = Campaign unfinished party (+ hintsUsedThisRun)
+ * - activeDailyGame = Daily unfinished party (+ hintsUsedThisRun)
+ * - statistics.hintRequests / hintsApplied / teachMeViews = global help counters
  */
 export interface SaveRoot {
 	readonly schemaVersion: SaveSchemaVersion

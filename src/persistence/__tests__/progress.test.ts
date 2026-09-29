@@ -112,6 +112,7 @@ describe('sanitizeSaveAgainstCatalog', () => {
 				savedAtMs: 0,
 				tool: PaintTool.FILLED,
 				restartCountThisRun: 0,
+				hintsUsedThisRun: 0,
 			}),
 		}
 		const result = sanitizeSaveAgainstCatalog(save)
@@ -143,6 +144,7 @@ describe('sanitizeSaveAgainstCatalog', () => {
 				savedAtMs: 2,
 				tool: PaintTool.FILLED,
 				restartCountThisRun: 0,
+				hintsUsedThisRun: 0,
 			}),
 		}
 		const result = sanitizeSaveAgainstCatalog(save)
@@ -168,6 +170,7 @@ describe('sanitizeSaveAgainstCatalog', () => {
 				savedAtMs: 0,
 				tool: PaintTool.FILLED,
 				restartCountThisRun: 0,
+				hintsUsedThisRun: 0,
 			}),
 		}
 		// parse would reject this; sanitize checks dimensions vs catalog

@@ -44,17 +44,18 @@ const phase5Fixture = {
 	},
 }
 
-describe('schema v2 migration', () => {
-	it('fresh default is v2 with empty Daily', () => {
+describe('schema v2→v3 migration', () => {
+	it('fresh default is v3 with empty Daily', () => {
 		const save = createDefaultSave()
-		expect(save.schemaVersion).toBe(2)
+		expect(save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
 		expect(save.solvedPuzzleIds).toEqual([])
 		expect(save.activeDailyGame).toBeNull()
 		expect(save.dailyCompletionRecords).toEqual([])
 		expect(save.dailyStartedDay).toBeNull()
+		expect(save.statistics.hintsApplied).toBe(0)
 	})
 
-	it('migrates v1 → v2 preserving Phase 4/5 data', () => {
+	it('migrates v1 → v3 preserving Phase 4/5 data', () => {
 		const result = migrateSave(phase5Fixture)
 		expect(result.kind).toBe('ok')
 		expect(result.save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
@@ -68,6 +69,7 @@ describe('schema v2 migration', () => {
 		])
 		expect(result.save.bestTimes).toHaveLength(2)
 		expect(result.save.statistics.totalCompletions).toBe(2)
+		expect(result.save.statistics.hintRequests).toBe(0)
 		expect(result.save.dailyStartedDay).toBeNull()
 		expect(result.save.activeDailyGame).toBeNull()
 		expect(result.save.dailyCompletionRecords).toEqual([])
@@ -90,7 +92,7 @@ describe('schema v2 migration', () => {
 		)
 		const hydrated = await service.hydrate()
 		expect(hydrated.save.dailyStartedDay).toBeNull()
-		expect(hydrated.save.schemaVersion).toBe(2)
+		expect(hydrated.save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
 	})
 
 	it('parse v1 fixture still works as migration source', () => {
@@ -106,7 +108,7 @@ describe('schema v2 migration', () => {
 	it('malformed JSON recovers', () => {
 		const result = migrateSaveJson('{not-json')
 		expect(result.kind).toBe('recovered')
-		expect(result.save.schemaVersion).toBe(2)
+		expect(result.save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
 	})
 })
 

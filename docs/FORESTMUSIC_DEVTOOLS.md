@@ -1,15 +1,15 @@
 # ForestMusic DevTools pin
 
-This project was bootstrapped / Phase 3B-checked against:
+This project was bootstrapped / Phase 7-checked against:
 
 - Repository: https://github.com/alex1c/forestMusicDevTools
-- Version: **1.1.0**
-- `main` SHA: **527d089ac229e4f7af15d8e4ca04efaaa85acd92**
+- Version: **1.1.1**
+- `main` SHA: **ad2ff4469e2aaf301a4b4e93eb633ddf17c8490c**
 
-Unchanged since Phase 1 / Phase 2 / Phase 3 checkpoints (fetched `origin/main`
-again before Phase 3B; still v1.1.0 @ 527d089).
+Fetched `origin/main` again before Phase 7; still v1.1.1 @ ad2ff446
+(unchanged vs Phase 6 pin).
 
-Applied in Phase 0–3B:
+Applied in Phase 0–7:
 
 - README.md
 - VERSION
@@ -18,10 +18,11 @@ Applied in Phase 0–3B:
 - playbooks/FORESTMUSIC_DEV_PLAYBOOK.md
 - playbooks/ADS_AND_BOTTOM_LAYOUT.md
 - playbooks/ANDROID_DEVICE_QA.md
+- playbooks/PERSISTENCE.md (where present)
 - templates/react-native-expo/README.md
 - scripts/android/* (copied into project)
 
-Phase 3 native notes (from DevTools):
+Phase 3+ native notes (from DevTools):
 
 - Skia / gesture-handler / reanimated require a **dev client / native build**,
   not Expo Go.

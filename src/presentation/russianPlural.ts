@@ -6,6 +6,7 @@ const FORMS = {
 	achievement: ['достижение', 'достижения', 'достижений'],
 	picture: ['картинка', 'картинки', 'картинок'],
 	day: ['день', 'дня', 'дней'],
+	cell: ['клетка', 'клетки', 'клеток'],
 } as const
 
 export type PluralKind = keyof typeof FORMS

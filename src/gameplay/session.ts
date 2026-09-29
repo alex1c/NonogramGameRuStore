@@ -45,6 +45,11 @@ export interface GameSession {
 	readonly gestureBaseline: PlayerState | null
 	readonly startedAtMs: number
 	readonly completedAtMs: number | null
+	/**
+	 * Monotonic revision for stale Hint guards.
+	 * Increases after paint/undo/redo/hint/restart — not tool or zoom.
+	 */
+	readonly revision: number
 }
 
 function applyMutationsToPlayer(
@@ -99,6 +104,7 @@ export function createGameSession(
 		gestureBaseline: null,
 		startedAtMs: nowMs,
 		completedAtMs: null,
+		revision: 0,
 	})
 }
 
@@ -127,6 +133,7 @@ export function restoreGameSession(
 		gestureBaseline: null,
 		startedAtMs: nowMs,
 		completedAtMs: null,
+		revision: 0,
 	})
 	return withCompletion(base)
 }
@@ -220,6 +227,8 @@ export function endGesture(session: GameSession): GameSession {
 		history,
 		activeGesture: null,
 		gestureBaseline: null,
+		revision:
+			mutations.length > 0 ? session.revision + 1 : session.revision,
 	})
 	return withCompletion(next)
 }
@@ -247,6 +256,7 @@ export function undo(session: GameSession): GameSession {
 		history: result.history,
 		completed: false,
 		completedAtMs: null,
+		revision: session.revision + 1,
 	})
 }
 
@@ -263,6 +273,7 @@ export function redo(session: GameSession): GameSession {
 			...session,
 			player: result.state,
 			history: result.history,
+			revision: session.revision + 1,
 		}),
 	)
 }
@@ -297,4 +308,30 @@ export function elapsedMs(
 ): number {
 	const end = session.completedAtMs ?? nowMs
 	return Math.max(0, end - session.startedAtMs)
+}
+
+/**
+ * Apply a validated HintStep as one history transaction.
+ * Returns unchanged session on stale/invalid/no-op.
+ */
+export function applyHintToSession(
+	session: GameSession,
+	mutations: readonly CellMutation[],
+	nextPlayer: PlayerState,
+): GameSession {
+	if (
+		session.completed ||
+		session.activeGesture !== null ||
+		mutations.length === 0
+	) {
+		return session
+	}
+	return withCompletion(
+		Object.freeze({
+			...session,
+			player: nextPlayer,
+			history: pushTransaction(session.history, mutations),
+			revision: session.revision + 1,
+		}),
+	)
 }

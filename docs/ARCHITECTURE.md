@@ -13,6 +13,7 @@ Scheme: `nonogram`
 | `src/solver` | Complete solver, logical solver, validator. No UI / Android. |
 | `src/content` | Catalog model, build-from-solution, mini catalog, audit helpers. |
 | `src/gameplay` | UI-independent session, history, paint gestures, clue satisfaction. |
+| `src/hints` | Hint engine / normalize / explain / apply (clue-only, no solution). |
 | `src/board` | Geometry / hit-testing / palettes + Skia `NonogramBoard` renderer. |
 | `src/navigation`, `src/screens`, `src/components` | Minimal UI shell (not Expo Router). |
 | `src/theme`, `src/storage`, `src/services` | Foundations for later phases. |

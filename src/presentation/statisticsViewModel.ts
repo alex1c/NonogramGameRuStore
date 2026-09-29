@@ -28,6 +28,7 @@ export interface StatisticsViewModel {
 	readonly totalRestarts: number
 	readonly totalUndoActions: number
 	readonly totalRedoActions: number
+	readonly hintsApplied: number
 	readonly byDifficulty: readonly DifficultyStatRow[]
 }
 
@@ -102,6 +103,7 @@ export function buildStatisticsViewModel(save: SaveRoot): StatisticsViewModel {
 		totalRestarts: save.statistics.totalRestarts,
 		totalUndoActions: save.statistics.totalUndoActions,
 		totalRedoActions: save.statistics.totalRedoActions,
+		hintsApplied: save.statistics.hintsApplied,
 		byDifficulty,
 	}
 }

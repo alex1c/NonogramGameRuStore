@@ -28,6 +28,7 @@ import {
 } from './geometry'
 import type { BoardPalette } from './palette'
 import type { PaintGestureState } from '../gameplay/paintGesture'
+import type { HintHighlight } from './hintHighlight'
 
 interface NonogramBoardProps {
 	readonly puzzle: Puzzle
@@ -40,6 +41,8 @@ interface NonogramBoardProps {
 	readonly activeGesture: PaintGestureState | null
 	readonly viewportWidth: number
 	readonly viewportHeight: number
+	/** Transient logical-help preview — not player state. */
+	readonly hintHighlight?: HintHighlight | null
 }
 
 function CrossMark({
@@ -110,6 +113,7 @@ export function NonogramBoard({
 	activeGesture,
 	viewportWidth,
 	viewportHeight,
+	hintHighlight = null,
 }: NonogramBoardProps) {
 	const fontSize = clueFontSize(layout.cellSize)
 	const font = useMemo(
@@ -214,6 +218,71 @@ export function NonogramBoard({
 							)}
 							color={palette.highlight}
 						/>
+					) : null}
+
+					{/* Hint / Teach Me preview (outline ≠ applied state) */}
+					{hintHighlight !== null ? (
+						<>
+							{hintHighlight.orientation === 'row' ? (
+								<Rect
+									x={layout.gridOriginX}
+									y={
+										layout.gridOriginY +
+										hintHighlight.lineIndex * layout.cellSize
+									}
+									width={layout.gridWidth}
+									height={layout.cellSize}
+									color={palette.hintLine}
+								/>
+							) : (
+								<Rect
+									x={
+										layout.gridOriginX +
+										hintHighlight.lineIndex * layout.cellSize
+									}
+									y={layout.gridOriginY}
+									width={layout.cellSize}
+									height={layout.gridHeight}
+									color={palette.hintLine}
+								/>
+							)}
+							{hintHighlight.targets.map((target) => {
+								const rect = cellRect(layout, target.row, target.col)
+								const stroke = Math.max(2, layout.cellSize * 0.1)
+								const color =
+									hintHighlight.action === 'FILLED'
+										? palette.hintTargetFill
+										: palette.hintTargetCross
+								return (
+									<Group key={`h-${target.row}-${target.col}`}>
+										<Rect
+											x={rect.x + stroke / 2}
+											y={rect.y + stroke / 2}
+											width={rect.width - stroke}
+											height={rect.height - stroke}
+											color={color}
+											style="stroke"
+											strokeWidth={stroke}
+										/>
+										{hintHighlight.action === 'CROSSED' ? (
+											<Line
+												p1={vec(
+													rect.x + rect.width * 0.28,
+													rect.y + rect.height * 0.28,
+												)}
+												p2={vec(
+													rect.x + rect.width * 0.72,
+													rect.y + rect.height * 0.72,
+												)}
+												color={color}
+												strokeWidth={Math.max(1.5, stroke * 0.7)}
+												opacity={0.55}
+											/>
+										) : null}
+									</Group>
+								)
+							})}
+						</>
 					) : null}
 
 					{/* Grid lines */}

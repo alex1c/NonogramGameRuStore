@@ -203,6 +203,22 @@ export function nextLogicalStep(
 	spec: PuzzleSpec,
 	gridInput: readonly SolverCell[],
 ): LogicalStep | 'INVALID' | null {
+	const enumerated = enumerateLogicalSteps(spec, gridInput)
+	if (enumerated === 'INVALID') {
+		return 'INVALID'
+	}
+	return enumerated[0] ?? null
+}
+
+/**
+ * Enumerate every line that currently yields at least one forced cell.
+ * Deterministic row-then-column order. Does not mutate input.
+ * Returns INVALID if any line is contradictory (zero candidates or conflict).
+ */
+export function enumerateLogicalSteps(
+	spec: PuzzleSpec,
+	gridInput: readonly SolverCell[],
+): readonly LogicalStep[] | 'INVALID' {
 	assertValidSpec(spec)
 	const { width, height, rowClues, columnClues } = spec
 	const grid = gridInput.slice()
@@ -238,6 +254,8 @@ export function nextLogicalStep(
 			clue,
 		})
 	}
+
+	const steps: LogicalStep[] = []
 
 	for (const line of lines) {
 		const known = readLineKnown(
@@ -294,16 +312,55 @@ export function nextLogicalStep(
 			line.length,
 		)
 
-		return {
+		steps.push({
 			orientation: line.orientation,
 			lineIndex: line.index,
 			clue: line.clue,
 			cells: actions.map((action) => ({ ...action, reason })),
 			reason,
 			candidateCountBefore: candidates.length,
-		}
+		})
 	}
 
+	return Object.freeze(steps)
+}
+
+/**
+ * Locate the first contradictory line (zero candidates), if any.
+ * Used for Hint CONTRADICTION UX — clue-only, no authored solution.
+ */
+export function findContradictoryLine(
+	spec: PuzzleSpec,
+	gridInput: readonly SolverCell[],
+): {
+	readonly orientation: LineOrientation
+	readonly lineIndex: number
+	readonly clue: readonly number[]
+} | null {
+	assertValidSpec(spec)
+	const { width, height, rowClues, columnClues } = spec
+	const grid = gridInput.slice()
+
+	for (let row = 0; row < height; row += 1) {
+		const clue = rowClues[row]
+		if (clue === undefined) {
+			continue
+		}
+		const known = readLineKnown(grid, width, height, 'row', row)
+		if (generateLineCandidates(width, clue, known).length === 0) {
+			return { orientation: 'row', lineIndex: row, clue }
+		}
+	}
+	for (let col = 0; col < width; col += 1) {
+		const clue = columnClues[col]
+		if (clue === undefined) {
+			continue
+		}
+		const known = readLineKnown(grid, width, height, 'column', col)
+		if (generateLineCandidates(height, clue, known).length === 0) {
+			return { orientation: 'column', lineIndex: col, clue }
+		}
+	}
 	return null
 }
 

@@ -94,6 +94,10 @@ export function StatisticsScreen({ onBack }: StatisticsScreenProps) {
 					value={String(stats.totalRestarts)}
 				/>
 				<StatRow
+					label="Подсказок применено"
+					value={String(stats.hintsApplied)}
+				/>
+				<StatRow
 					label="Достижения"
 					value={`${unlockedAchievements} / ${achievements.length}`}
 				/>

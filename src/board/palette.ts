@@ -21,6 +21,12 @@ export interface BoardPalette {
 	readonly controlSelected: string
 	readonly controlText: string
 	readonly controlBorder: string
+	/** Transient Hint/Teach Me line wash (not player state). */
+	readonly hintLine: string
+	/** Outline for proposed FILLED targets. */
+	readonly hintTargetFill: string
+	/** Outline for proposed CROSSED targets. */
+	readonly hintTargetCross: string
 }
 
 export const LIGHT_BOARD_PALETTE: BoardPalette = Object.freeze({
@@ -41,6 +47,9 @@ export const LIGHT_BOARD_PALETTE: BoardPalette = Object.freeze({
 	controlSelected: '#2F6B4F',
 	controlText: '#1F2A24',
 	controlBorder: '#C5D2C8',
+	hintLine: 'rgba(30, 110, 190, 0.20)',
+	hintTargetFill: '#1E6EBE',
+	hintTargetCross: '#C45C26',
 })
 
 export const DARK_BOARD_PALETTE: BoardPalette = Object.freeze({
@@ -61,4 +70,7 @@ export const DARK_BOARD_PALETTE: BoardPalette = Object.freeze({
 	controlSelected: '#3D8F6A',
 	controlText: '#E6EEE8',
 	controlBorder: '#3A4840',
+	hintLine: 'rgba(90, 170, 230, 0.28)',
+	hintTargetFill: '#6BB6F0',
+	hintTargetCross: '#E8A070',
 })

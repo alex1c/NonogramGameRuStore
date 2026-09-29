@@ -15,10 +15,13 @@ export function createEmptyStatistics(): ProgressStatistics {
 		totalRestarts: 0,
 		totalUndoActions: 0,
 		totalRedoActions: 0,
+		hintRequests: 0,
+		hintsApplied: 0,
+		teachMeViews: 0,
 	})
 }
 
-/** Pure deterministic default save (schema v2, no wall-clock fields). */
+/** Pure deterministic default save (schema v3, no wall-clock fields). */
 export function createDefaultSave(): SaveRoot {
 	return Object.freeze({
 		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,

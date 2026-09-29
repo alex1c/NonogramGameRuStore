@@ -1,33 +1,42 @@
 /**
- * Persistence contracts (Phase 4–6).
+ * Persistence contracts (Phase 4–7).
  *
  * ## Schema
  * - Key: `nonogram.save.v1` (historical suffix — schemaVersion inside is authoritative)
- * - `CURRENT_SAVE_SCHEMA_VERSION = 2`
+ * - `CURRENT_SAVE_SCHEMA_VERSION = 3`
  * - One versioned root object (atomic write)
  *
- * ## Field semantics (v2)
+ * ## Field semantics
+ * ### v1
+ * Campaign progress baseline (completed / started / best times / activeGame).
+ * ### v2
+ * Daily + `solvedPuzzleIds` + dual active Campaign/Daily.
+ * ### v3
+ * Hint statistics + `hintsUsedThisRun` on active Campaign/Daily.
+ *
  * - `completedPuzzleIds` — Campaign completions only
  * - `solvedPuzzleIds` — unique puzzles solved in any mode (Gallery unlock source)
  * - `startedPuzzleIds` — Campaign starts (Phase 4 semantics preserved)
- * - `activeGame` — unfinished Campaign party
+ * - `activeGame` — unfinished Campaign party (+ `hintsUsedThisRun`)
  * - `activeDailyGame` — unfinished Daily party (may coexist with Campaign)
  * - `dailyCompletionRecords` — `{ dayKey, puzzleId, selectionVersion, activeTimeMs }[]`
  * - `restoredDailyDays` — streak bridges (not puzzle solves)
  * - `dailyStartedDay` — user participation start (`null` until first Daily screen open)
+ * - `statistics.hintRequests` / `hintsApplied` / `teachMeViews` — global help counters
  *
  * ## Migration
  * `migrateSave` / `migrateSaveJson`:
- * - no save → default v2
- * - valid v2 → load
- * - valid v1 → migrate to v2 (`solvedPuzzleIds = completedPuzzleIds`, Daily empty)
+ * - no save → default v3
+ * - valid v3 → load
+ * - valid v2 → migrate to v3 (hint counters = 0, `hintsUsedThisRun` = 0)
+ * - valid v1 → migrate to v2 fields then v3
  * - malformed / invalid → recovered default
  * - future schema → unsupported + recovered default
  *
  * ## Active game
  * Stores puzzleId, contentFingerprint, serialized player cells, tool,
- * accumulatedActiveMs, timestamps. Does **not** store undo/redo history,
- * pinch/pan, overlays, or solution/clues.
+ * accumulatedActiveMs, timestamps, hintsUsedThisRun. Does **not** store
+ * undo/redo history, pinch/pan, Help overlay, hint preview, or solution/clues.
  * Daily active additionally stores `dayKey` + `selectionVersion`.
  *
  * ## Timer

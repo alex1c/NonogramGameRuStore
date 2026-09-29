@@ -60,6 +60,7 @@ export function createActiveGameSave(input: {
 	readonly savedAtMs: number
 	readonly tool: PaintTool
 	readonly restartCountThisRun: number
+	readonly hintsUsedThisRun?: number
 }): ActiveGameSave {
 	return Object.freeze({
 		puzzleId: input.puzzle.id,
@@ -70,6 +71,7 @@ export function createActiveGameSave(input: {
 		savedAtMs: input.savedAtMs,
 		tool: input.tool,
 		restartCountThisRun: Math.max(0, input.restartCountThisRun),
+		hintsUsedThisRun: Math.max(0, input.hintsUsedThisRun ?? 0),
 	})
 }
 
@@ -83,6 +85,7 @@ export function createActiveDailyGameSave(input: {
 	readonly savedAtMs: number
 	readonly tool: PaintTool
 	readonly restartCountThisRun: number
+	readonly hintsUsedThisRun?: number
 }): ActiveDailyGameSave {
 	return Object.freeze({
 		dayKey: input.dayKey,
@@ -95,6 +98,7 @@ export function createActiveDailyGameSave(input: {
 		savedAtMs: input.savedAtMs,
 		tool: input.tool,
 		restartCountThisRun: Math.max(0, input.restartCountThisRun),
+		hintsUsedThisRun: Math.max(0, input.hintsUsedThisRun ?? 0),
 	})
 }
 
@@ -137,6 +141,7 @@ export function persistActivePlayerState(
 		readonly tool: PaintTool
 		readonly savedAtMs: number
 		readonly restartCountThisRun: number
+		readonly hintsUsedThisRun?: number
 	},
 ): SaveRoot {
 	const startedAtMs = save.activeGame?.startedAtMs ?? input.savedAtMs
@@ -148,6 +153,8 @@ export function persistActivePlayerState(
 		savedAtMs: input.savedAtMs,
 		tool: input.tool,
 		restartCountThisRun: input.restartCountThisRun,
+		hintsUsedThisRun:
+			input.hintsUsedThisRun ?? save.activeGame?.hintsUsedThisRun ?? 0,
 	})
 	return freezeSave({
 		...save,
@@ -167,6 +174,7 @@ export function persistActiveDailyPlayerState(
 		readonly tool: PaintTool
 		readonly savedAtMs: number
 		readonly restartCountThisRun: number
+		readonly hintsUsedThisRun?: number
 	},
 ): SaveRoot {
 	const startedAtMs = save.activeDailyGame?.startedAtMs ?? input.savedAtMs
@@ -180,6 +188,10 @@ export function persistActiveDailyPlayerState(
 		savedAtMs: input.savedAtMs,
 		tool: input.tool,
 		restartCountThisRun: input.restartCountThisRun,
+		hintsUsedThisRun:
+			input.hintsUsedThisRun ??
+			save.activeDailyGame?.hintsUsedThisRun ??
+			0,
 	})
 	return freezeSave({
 		...save,
@@ -372,6 +384,96 @@ export function clearActiveDailyGame(save: SaveRoot): SaveRoot {
 		...save,
 		activeDailyGame: null,
 	})
+}
+
+/** +1 global hintRequests (STEP / CONTRADICTION / STALLED response). */
+export function recordHintRequest(save: SaveRoot): SaveRoot {
+	return freezeSave({
+		...save,
+		statistics: Object.freeze({
+			...save.statistics,
+			hintRequests: save.statistics.hintRequests + 1,
+		}),
+	})
+}
+
+/** +1 teachMeViews when a STEP explanation was shown. */
+export function recordTeachMeView(save: SaveRoot): SaveRoot {
+	return freezeSave({
+		...save,
+		statistics: Object.freeze({
+			...save.statistics,
+			teachMeViews: save.statistics.teachMeViews + 1,
+		}),
+	})
+}
+
+/**
+ * Atomic Apply: bump global hintsApplied + hintsUsedThisRun on Campaign or Daily.
+ * Player cells are persisted separately via persistActive* after session apply.
+ */
+export function recordHintApplied(
+	save: SaveRoot,
+	branch: 'campaign' | 'daily' | 'none',
+): SaveRoot {
+	const nextStats = Object.freeze({
+		...save.statistics,
+		hintsApplied: save.statistics.hintsApplied + 1,
+	})
+	if (branch === 'campaign' && save.activeGame !== null) {
+		return freezeSave({
+			...save,
+			statistics: nextStats,
+			activeGame: Object.freeze({
+				...save.activeGame,
+				hintsUsedThisRun: save.activeGame.hintsUsedThisRun + 1,
+			}),
+		})
+	}
+	if (branch === 'daily' && save.activeDailyGame !== null) {
+		return freezeSave({
+			...save,
+			statistics: nextStats,
+			activeDailyGame: Object.freeze({
+				...save.activeDailyGame,
+				hintsUsedThisRun: save.activeDailyGame.hintsUsedThisRun + 1,
+			}),
+		})
+	}
+	// Replay / none — global applied only
+	return freezeSave({
+		...save,
+		statistics: nextStats,
+	})
+}
+
+/**
+ * Contradiction/STALLED still counts as help for this run (hintsUsedThisRun),
+ * but does not increase hintsApplied.
+ */
+export function recordHintAssistanceUsed(
+	save: SaveRoot,
+	branch: 'campaign' | 'daily' | 'none',
+): SaveRoot {
+	if (branch === 'campaign' && save.activeGame !== null) {
+		return freezeSave({
+			...save,
+			activeGame: Object.freeze({
+				...save.activeGame,
+				hintsUsedThisRun: save.activeGame.hintsUsedThisRun + 1,
+			}),
+		})
+	}
+	if (branch === 'daily' && save.activeDailyGame !== null) {
+		return freezeSave({
+			...save,
+			activeDailyGame: Object.freeze({
+				...save.activeDailyGame,
+				hintsUsedThisRun: save.activeDailyGame.hintsUsedThisRun + 1,
+			}),
+		})
+	}
+	return save
 }
 
 export function resetProgress(): SaveRoot {

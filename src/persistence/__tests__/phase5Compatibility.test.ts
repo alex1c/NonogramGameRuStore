@@ -115,7 +115,7 @@ describe('Phase 4/5 save compatibility', () => {
 
 		const migrated = migrateSave(phase4Save)
 		expect(migrated.kind).toBe('ok')
-		expect(migrated.save.schemaVersion).toBe(2)
+		expect(migrated.save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
 		expect(migrated.save.activeGame?.puzzleId).toBe(puzzle.id)
 		expect(migrated.save.activeGame?.accumulatedActiveMs).toBe(12345)
 		expect(migrated.save.completedPuzzleIds).toEqual([
@@ -177,9 +177,9 @@ describe('fingerprint metadata invariance', () => {
 	})
 })
 
-describe('default save schema v2', () => {
-	it('createDefaultSave schema is 2', () => {
-		expect(createDefaultSave().schemaVersion).toBe(2)
-		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(2)
+describe('default save schema v3', () => {
+	it('createDefaultSave schema is 3', () => {
+		expect(createDefaultSave().schemaVersion).toBe(3)
+		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(3)
 	})
 })

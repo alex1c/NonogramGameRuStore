@@ -48,8 +48,13 @@ import {
 } from '../board/palette'
 import { CompletionOverlay } from '../components/CompletionOverlay'
 import { GameControls } from '../components/GameControls'
+import {
+	HelpOverlay,
+	type HelpPanelPhase,
+} from '../components/HelpOverlay'
 import { getProductionPuzzleById } from '../content/playable'
 import {
+	applyHintToSession,
 	continueGesture,
 	createGameSession,
 	endGesture,
@@ -64,6 +69,15 @@ import {
 	undo,
 	type GameSession,
 } from '../gameplay/session'
+import {
+	applyHintStep,
+	explainHintResult,
+	getHint,
+	type HintResult,
+	type HintStep,
+} from '../hints'
+import type { HintHighlight } from '../board/hintHighlight'
+import { puzzleToSpec } from '../solver/completeSolver'
 import { analyzeDifficulty } from '../domain/difficulty/analyzer'
 import { difficultyLabelRu } from '../presentation/difficultyLabels'
 import { formatGameElapsed } from '../presentation/timeFormat'
@@ -112,6 +126,8 @@ const liveGame = {
 	timer: createPausedTimer(0) as ActiveTimerState,
 	restartCount: 0,
 	completionPersisted: false,
+	helpOpen: false,
+	replayHintsUsedThisRun: 0,
 }
 
 export function GameScreen({
@@ -152,6 +168,15 @@ export function GameScreen({
 		CompletionEventResult | DailyCompletionEventResult | null
 	>(null)
 	const [dailySelectionVersion, setDailySelectionVersion] = useState('daily-v1')
+	const [helpOpen, setHelpOpen] = useState(false)
+	const [helpPhase, setHelpPhase] = useState<HelpPanelPhase>({ kind: 'menu' })
+	const [hintStep, setHintStep] = useState<HintStep | null>(null)
+	const [hintHighlight, setHintHighlight] = useState<HintHighlight | null>(
+		null,
+	)
+	const [applyingHint, setApplyingHint] = useState(false)
+	/** Replay-only in-memory run counter (Campaign/Daily use save). */
+	const [replayHintsUsedThisRun, setReplayHintsUsed] = useState(0)
 
 	const bindKey = `${routeSession.mode}:${puzzleId}:${dailyDayKey ?? ''}:${routeSession.launch}`
 
@@ -160,7 +185,16 @@ export function GameScreen({
 		liveGame.timer = timer
 		liveGame.restartCount = restartCountThisRun
 		liveGame.completionPersisted = completionPersisted
-	}, [session, timer, restartCountThisRun, completionPersisted])
+		liveGame.helpOpen = helpOpen
+		liveGame.replayHintsUsedThisRun = replayHintsUsedThisRun
+	}, [
+		session,
+		timer,
+		restartCountThisRun,
+		completionPersisted,
+		helpOpen,
+		replayHintsUsedThisRun,
+	])
 
 	// Bootstrap / restore session when route identity changes.
 	if (puzzle !== null && boundKey !== bindKey) {
@@ -210,6 +244,12 @@ export function GameScreen({
 		}
 		setCompletionPersisted(false)
 		setCompletionEvent(null)
+		setHelpOpen(false)
+		setHelpPhase({ kind: 'menu' })
+		setHintStep(null)
+		setHintHighlight(null)
+		setApplyingHint(false)
+		setReplayHintsUsed(0)
 		setBoundKey(bindKey)
 	} else if (puzzle === null && boundKey !== null) {
 		setSession(null)
@@ -431,6 +471,13 @@ export function GameScreen({
 
 	useEffect(() => {
 		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+			if (liveGame.helpOpen) {
+				setHelpOpen(false)
+				setHelpPhase({ kind: 'menu' })
+				setHintStep(null)
+				setHintHighlight(null)
+				return true
+			}
 			if (liveGame.session?.completed) {
 				refresh()
 				onExit()
@@ -456,7 +503,12 @@ export function GameScreen({
 
 	const onPaintStart = useCallback(
 		(x: number, y: number) => {
-			if (session === null || layout === null || session.completed) {
+			if (
+				session === null ||
+				layout === null ||
+				session.completed ||
+				liveGame.helpOpen
+			) {
 				return
 			}
 			const cell = pointerToCell(x, y, layout, transform)
@@ -570,6 +622,12 @@ export function GameScreen({
 						setRestartCountThisRun((value) => value + 1)
 						setCompletionPersisted(false)
 						setCompletionEvent(null)
+						setReplayHintsUsed(0)
+						setHelpOpen(false)
+						setHelpPhase({ kind: 'menu' })
+						setHintStep(null)
+						setHintHighlight(null)
+						setApplyingHint(false)
 						refresh()
 					}
 					void run()
@@ -644,6 +702,145 @@ export function GameScreen({
 			onPaintStart,
 		],
 	)
+
+	const closeHelp = useCallback(() => {
+		setHelpOpen(false)
+		setHelpPhase({ kind: 'menu' })
+		setHintStep(null)
+		setHintHighlight(null)
+		setApplyingHint(false)
+	}, [])
+
+	const presentHintResult = useCallback(
+		(result: HintResult, mode: 'HINT' | 'TEACH') => {
+			const explained = explainHintResult(result)
+			const branch: 'campaign' | 'daily' | 'none' = isDaily
+				? 'daily'
+				: isReplay
+					? 'none'
+					: 'campaign'
+			if (result.kind === 'STEP') {
+				setHintStep(result.step)
+				setHintHighlight({
+					orientation: result.step.orientation,
+					lineIndex: result.step.lineIndex,
+					action: result.step.action,
+					targets: result.step.targets,
+				})
+				fitBoard()
+				if (mode === 'TEACH') {
+					void service.recordTeachMeView().then(() => refresh())
+				}
+			} else {
+				setHintStep(null)
+				if (
+					result.kind === 'CONTRADICTION' &&
+					result.orientation !== null &&
+					result.lineIndex !== null
+				) {
+					setHintHighlight({
+						orientation: result.orientation,
+						lineIndex: result.lineIndex,
+						action: 'FILLED',
+						targets: [],
+					})
+				} else {
+					setHintHighlight(null)
+				}
+				if (result.kind === 'CONTRADICTION' || result.kind === 'STALLED') {
+					void service
+						.recordHintAssistanceUsed(branch)
+						.then(() => refresh())
+					if (isReplay) {
+						setReplayHintsUsed((n) => n + 1)
+					}
+				}
+			}
+			setHelpPhase({
+				kind: 'result',
+				mode,
+				title: explained.title,
+				body: explained.body,
+				canApply: explained.canApply,
+				explanation: explained.explanation,
+			})
+		},
+		[fitBoard, isDaily, isReplay, refresh, service],
+	)
+
+	const runHintRequest = useCallback(
+		(mode: 'HINT' | 'TEACH') => {
+			if (session === null || session.completed || puzzle === null) {
+				return
+			}
+			if (session.activeGesture !== null) {
+				return
+			}
+			setHelpPhase({ kind: 'loading', mode })
+			// Yield so loading text can paint before sync solver work.
+			setTimeout(() => {
+				const current = liveGame.session
+				if (current === null || current.completed) {
+					closeHelp()
+					return
+				}
+				const result = getHint({
+					spec: puzzleToSpec(puzzle),
+					player: current.player,
+					revision: current.revision,
+					mode,
+				})
+				if (result.kind !== 'COMPLETE') {
+					void service.recordHintRequest().then(() => refresh())
+				}
+				presentHintResult(result, mode)
+			}, 0)
+		},
+		[closeHelp, presentHintResult, puzzle, refresh, service, session],
+	)
+
+	const handleApplyHint = useCallback(() => {
+		if (applyingHint || hintStep === null || session === null) {
+			return
+		}
+		const branch: 'campaign' | 'daily' | 'none' = isDaily
+			? 'daily'
+			: isReplay
+				? 'none'
+				: 'campaign'
+		setApplyingHint(true)
+		const outcome = applyHintStep(
+			session.player,
+			hintStep,
+			session.revision,
+		)
+		if (!outcome.ok) {
+			setApplyingHint(false)
+			if (outcome.reason === 'STALE') {
+				Alert.alert('Подсказка устарела', 'Запросите подсказку снова.')
+			}
+			closeHelp()
+			return
+		}
+		applySessionUpdate((current) =>
+			applyHintToSession(current, outcome.mutations, outcome.player),
+		)
+		void service.recordHintApplied(branch).then(() => refresh())
+		if (isReplay) {
+			setReplayHintsUsed((n) => n + 1)
+		}
+		closeHelp()
+	}, [
+		applyingHint,
+		applySessionUpdate,
+		closeHelp,
+		hintStep,
+		isDaily,
+		isReplay,
+		refresh,
+		service,
+		session,
+	])
 
 	if (loadError !== null) {
 		return (
@@ -724,23 +921,59 @@ export function GameScreen({
 						· {elapsed}
 					</Text>
 				</View>
-				{!session.completed ? (
-					<Pressable
-						accessibilityRole="button"
-						accessibilityLabel="Начать заново"
-						onPress={handleRestart}
-						hitSlop={8}
-						style={styles.restartButton}
-					>
-						<Text
-							style={[styles.restartText, { color: palette.clueTextDimmed }]}
+				<View style={styles.headerRight}>
+					{!session.completed ? (
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel="Подсказки"
+							onPress={() => {
+								setHelpPhase({ kind: 'menu' })
+								setHintStep(null)
+								setHintHighlight(null)
+								setHelpOpen(true)
+							}}
+							hitSlop={8}
+							style={styles.helpButton}
 						>
-							Заново
-						</Text>
-					</Pressable>
-				) : (
-					<View style={styles.restartButton} />
-				)}
+							<View
+								style={[
+									styles.helpIcon,
+									{
+										borderColor: palette.controlSelected,
+									},
+								]}
+							>
+								<Text
+									style={[
+										styles.helpIconText,
+										{ color: palette.controlSelected },
+									]}
+								>
+									?
+								</Text>
+							</View>
+						</Pressable>
+					) : (
+						<View style={styles.helpButton} />
+					)}
+					{!session.completed ? (
+						<Pressable
+							accessibilityRole="button"
+							accessibilityLabel="Начать заново"
+							onPress={handleRestart}
+							hitSlop={8}
+							style={styles.restartButton}
+						>
+							<Text
+								style={[styles.restartText, { color: palette.clueTextDimmed }]}
+							>
+								Заново
+							</Text>
+						</Pressable>
+					) : (
+						<View style={styles.restartButton} />
+					)}
+				</View>
 			</View>
 
 			<GestureDetector gesture={composed}>
@@ -757,6 +990,7 @@ export function GameScreen({
 							activeGesture={session.activeGesture}
 							viewportWidth={viewport.width}
 							viewportHeight={viewport.height}
+							hintHighlight={hintHighlight}
 						/>
 					) : null}
 				</View>
@@ -768,7 +1002,7 @@ export function GameScreen({
 					canUndo={sessionCanUndo(session)}
 					canRedo={sessionCanRedo(session)}
 					palette={palette}
-					disabled={session.completed}
+					disabled={session.completed || helpOpen}
 					onTool={(tool) =>
 						applySessionUpdate((current) => setTool(current, tool))
 					}
@@ -786,6 +1020,20 @@ export function GameScreen({
 				/>
 			</View>
 
+			{helpOpen ? (
+				<HelpOverlay
+					palette={palette}
+					phase={helpPhase}
+					applying={applyingHint}
+					onClose={closeHelp}
+					onRequestHint={() => runHintRequest('HINT')}
+					onRequestTeach={() => runHintRequest('TEACH')}
+					onApply={handleApplyHint}
+					onUnderstood={closeHelp}
+				/>
+			) : null}
+
+			{session.completed && completionEvent !== null ? (
 			<CompletionOverlay
 				visible={session.completed}
 				headline={
@@ -844,6 +1092,7 @@ export function GameScreen({
 						: null
 				}
 			/>
+			) : null}
 		</View>
 	)
 }
@@ -871,6 +1120,30 @@ const styles = StyleSheet.create({
 	headerCenter: {
 		flex: 1,
 	},
+	headerRight: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 4,
+	},
+	helpButton: {
+		minWidth: 40,
+		minHeight: 44,
+		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	helpIcon: {
+		width: 28,
+		height: 28,
+		borderRadius: 14,
+		borderWidth: 2,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	helpIconText: {
+		fontSize: 16,
+		fontWeight: '800',
+		lineHeight: 18,
+	},
 	title: {
 		fontSize: 18,
 		fontWeight: '700',
@@ -880,7 +1153,7 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 	},
 	restartButton: {
-		minWidth: 64,
+		minWidth: 56,
 		minHeight: 44,
 		justifyContent: 'center',
 		alignItems: 'flex-end',

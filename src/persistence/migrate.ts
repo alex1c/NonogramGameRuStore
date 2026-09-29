@@ -1,14 +1,16 @@
 /**
  * Save migration entry point.
- * Phase 6: schema v1 → v2 (Daily fields + solvedPuzzleIds).
+ * Phase 6: v1 → v2 (Daily). Phase 7: v2 → v3 (Hints). Chain v1 → v3 supported.
  */
 
 import { createDefaultSave } from './createDefaultSave'
 import { CURRENT_SAVE_SCHEMA_VERSION, type SaveRoot } from './schema'
 import {
 	migrateV1DocumentToV2,
+	migrateV2DocumentToV3,
 	parseAndValidateSave,
 	parseAndValidateSaveV1,
+	parseAndValidateSaveV2,
 	type SaveParseOutcome,
 } from './validate'
 
@@ -23,12 +25,7 @@ export type MigrateSaveResult =
 	  }
 
 /**
- * Migrate raw storage payload into a validated SaveRoot (always schema v2).
- * - null / missing → default
- * - valid v2 → load
- * - valid v1 → migrate to v2 (solvedPuzzleIds = completedPuzzleIds)
- * - malformed → recovered default
- * - unknown future schema → fail safely with recovered default
+ * Migrate raw storage payload into a validated SaveRoot (always schema v3).
  */
 export function migrateSave(raw: unknown): MigrateSaveResult {
 	if (raw === null || raw === undefined) {
@@ -55,7 +52,6 @@ export function migrateSave(raw: unknown): MigrateSaveResult {
 			}
 		}
 
-		// Phase 5 → Phase 6: migrate v1 document.
 		if (record.schemaVersion === 1) {
 			const v1 = parseAndValidateSaveV1(raw)
 			if (!v1.ok) {
@@ -66,6 +62,18 @@ export function migrateSave(raw: unknown): MigrateSaveResult {
 				}
 			}
 			return { kind: 'ok', save: migrateV1DocumentToV2(v1.save) }
+		}
+
+		if (record.schemaVersion === 2) {
+			const v2 = parseAndValidateSaveV2(raw)
+			if (!v2.ok) {
+				return {
+					kind: 'recovered',
+					save: createDefaultSave(),
+					reason: v2.reason,
+				}
+			}
+			return { kind: 'ok', save: migrateV2DocumentToV3(v2.save) }
 		}
 	}
 
@@ -80,10 +88,6 @@ export function migrateSave(raw: unknown): MigrateSaveResult {
 	}
 }
 
-/**
- * Parse a JSON string from storage.
- * Malformed JSON recovers to default without throwing.
- */
 export function migrateSaveJson(rawJson: string | null): MigrateSaveResult {
 	if (rawJson === null || rawJson.trim() === '') {
 		return { kind: 'empty', save: createDefaultSave() }
