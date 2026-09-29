@@ -1,9 +1,9 @@
 /**
- * Persistence contracts (Phase 4–7).
+ * Persistence contracts (Phase 4–8B).
  *
  * ## Schema
  * - Key: `nonogram.save.v1` (historical suffix — schemaVersion inside is authoritative)
- * - `CURRENT_SAVE_SCHEMA_VERSION = 3`
+ * - `CURRENT_SAVE_SCHEMA_VERSION = 4`
  * - One versioned root object (atomic write)
  *
  * ## Field semantics
@@ -13,6 +13,11 @@
  * Daily + `solvedPuzzleIds` + dual active Campaign/Daily.
  * ### v3
  * Hint statistics + `hintsUsedThisRun` on active Campaign/Daily.
+ * ### v4
+ * Sticky `unlockedAchievementIds` — authoritative unlock history that never
+ * shrinks when Gallery taxonomy / targets change. Display state =
+ * sticky ∪ currently derived. Migration v3→v4 seeds sticky IDs from a
+ * **frozen legacy Phase 7/8A 21-puzzle gallery evaluator**, not future catalogs.
  *
  * - `completedPuzzleIds` — Campaign completions only
  * - `solvedPuzzleIds` — unique puzzles solved in any mode (Gallery unlock source)
@@ -23,15 +28,19 @@
  * - `restoredDailyDays` — streak bridges (not puzzle solves)
  * - `dailyStartedDay` — user participation start (`null` until first Daily screen open)
  * - `statistics.hintRequests` / `hintsApplied` / `teachMeViews` — global help counters
+ * - `unlockedAchievementIds` — sticky achievement history (v4+)
  *
  * ## Migration
  * `migrateSave` / `migrateSaveJson`:
- * - no save → default v3
- * - valid v3 → load
- * - valid v2 → migrate to v3 (hint counters = 0, `hintsUsedThisRun` = 0)
- * - valid v1 → migrate to v2 fields then v3
+ * - no save → default v4
+ * - valid v4 → load (normalize/dedupe sticky IDs)
+ * - valid v3 → migrate to v4 (seed sticky from legacy v3 achievement snapshot)
+ * - valid v2 → migrate to v3 then v4
+ * - valid v1 → migrate v2 → v3 → v4
  * - malformed / invalid → recovered default
  * - future schema → unsupported + recovered default
+ *
+ * Migration does **not** celebrate unlocks and does **not** alter counters.
  *
  * ## Active game
  * Stores puzzleId, contentFingerprint, serialized player cells, tool,
@@ -50,7 +59,8 @@
  * Deterministic from id + dimensions + clues. Mismatch → clear that branch’s active game.
  *
  * ## Completion
- * Campaign: atomic completed + solved + stats + best time + activeGame=null.
+ * Campaign: atomic completed + solved + stats + best time + activeGame=null
+ *   + newly unlocked sticky achievement IDs.
  * Daily: atomic Daily record + solved + stats + activeDailyGame=null
  *   (does NOT touch campaign completed / best times / activeGame).
  * Persisted at solve time, not when the overlay is dismissed.

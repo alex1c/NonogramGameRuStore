@@ -47,7 +47,8 @@ function c(
  * Prefer solid bars / letters that force quickly without being noise.
  */
 export const R2_BEGINNER_EXPANSION: readonly ExpansionTemplate[] = Object.freeze([
-	c('beg-bar', 'Полоска', 'symbols', 'bar', 'horizontal', [
+	/* Human-review R2 primitive — tutorial/dev only, not production reward. */
+	c('beg-bar', 'Планка', 'symbols', 'bar', 'horizontal', [
 		'.....',
 		'#####',
 		'.....',

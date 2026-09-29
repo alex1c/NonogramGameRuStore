@@ -1,9 +1,8 @@
 /**
  * Pure achievement evaluator — no AsyncStorage, no React.
  *
- * Phase 6: unique / difficulty / collection / large_grid use solvedPuzzleIds.
- * Campaign-only metrics are not used for Gallery-facing achievements.
- * Daily achievements use dailyCompletionRecords + streak.
+ * Phase 8B: unlock = sticky IDs ∪ currently derived conditions.
+ * Celebration uses getNewlyUnlockedAchievements on before/after snapshots.
  */
 
 import { analyzeDifficulty } from '../domain/difficulty/analyzer'
@@ -21,6 +20,7 @@ import {
 	type AchievementDefinition,
 	type AchievementIconKey,
 } from './definitions'
+import { mergeStickyAchievementIds, normalizeStickyAchievementIds } from './sticky'
 
 export type AchievementAccess = 'LOCKED' | 'UNLOCKED'
 
@@ -34,6 +34,10 @@ export interface AchievementState {
 	readonly current: number
 	readonly target: number
 	readonly progressLabel: string
+	/** True when unlock comes from sticky history while derived progress is incomplete. */
+	readonly stickyOnly: boolean
+	/** True when current progress alone satisfies the definition. */
+	readonly derivedUnlocked: boolean
 }
 
 export interface AchievementEvalContext {
@@ -42,6 +46,7 @@ export interface AchievementEvalContext {
 	readonly dailyCompletionCount: number
 	readonly currentStreak: number
 	readonly longestStreak: number
+	readonly stickyAchievementIds: readonly string[]
 }
 
 /** Build eval context from a save snapshot (before or after mutation). */
@@ -61,6 +66,9 @@ export function contextFromSave(
 		dailyCompletionCount: save.dailyCompletionRecords.length,
 		currentStreak: computeCurrentStreak(streakInput),
 		longestStreak: computeLongestStreak(streakInput),
+		stickyAchievementIds: normalizeStickyAchievementIds(
+			save.unlockedAchievementIds,
+		),
 	}
 }
 
@@ -94,6 +102,30 @@ function countCompletedCollections(solvedIds: readonly string[]): number {
 	const set = new Set(solvedIds)
 	const byCollection = new Map<string, string[]>()
 	for (const item of GALLERY_ITEMS) {
+		const list = byCollection.get(item.collectionId) ?? []
+		list.push(item.puzzleId)
+		byCollection.set(item.collectionId, list)
+	}
+	let done = 0
+	for (const members of byCollection.values()) {
+		if (members.length > 0 && members.every((id) => set.has(id))) {
+			done += 1
+		}
+	}
+	return done
+}
+
+/**
+ * Test helper: evaluate collections against an alternate gallery membership
+ * without mutating live definitions (taxonomy-change regression).
+ */
+export function countCompletedCollectionsFromItems(
+	solvedIds: readonly string[],
+	items: readonly { readonly puzzleId: string; readonly collectionId: string }[],
+): number {
+	const set = new Set(solvedIds)
+	const byCollection = new Map<string, string[]>()
+	for (const item of items) {
 		const list = byCollection.get(item.collectionId) ?? []
 		list.push(item.puzzleId)
 		byCollection.set(item.collectionId, list)
@@ -156,14 +188,22 @@ function progressFor(
 	}
 }
 
+/**
+ * Evaluate achievements with sticky ∪ derived unlock semantics.
+ * Unknown sticky IDs (removed definitions) are ignored in the UI list.
+ */
 export function evaluateAchievements(
 	ctx: AchievementEvalContext,
 ): readonly AchievementState[] {
+	const sticky = new Set(ctx.stickyAchievementIds)
 	const states: AchievementState[] = []
 	for (const def of ACHIEVEMENT_DEFINITIONS) {
 		const current = progressFor(def, ctx)
 		const target = def.condition.target
-		const unlocked = current >= target
+		const derivedUnlocked = current >= target
+		const stickyHit = sticky.has(def.id)
+		const unlocked = derivedUnlocked || stickyHit
+		const stickyOnly = stickyHit && !derivedUnlocked
 		states.push({
 			id: def.id,
 			titleRu: def.titleRu,
@@ -173,7 +213,11 @@ export function evaluateAchievements(
 			access: unlocked ? 'UNLOCKED' : 'LOCKED',
 			current: Math.min(current, target),
 			target,
-			progressLabel: `${Math.min(current, target)} / ${target}`,
+			progressLabel: stickyOnly
+				? 'Получено'
+				: `${Math.min(current, target)} / ${target}`,
+			stickyOnly,
+			derivedUnlocked,
 		})
 	}
 	return Object.freeze(
@@ -181,9 +225,35 @@ export function evaluateAchievements(
 	)
 }
 
+/** IDs currently unlocked by derived progress alone (ignore sticky). */
+export function listDerivedUnlockedIds(
+	ctx: AchievementEvalContext,
+): readonly string[] {
+	const out: string[] = []
+	for (const def of ACHIEVEMENT_DEFINITIONS) {
+		if (progressFor(def, ctx) >= def.condition.target) {
+			out.push(def.id)
+		}
+	}
+	return Object.freeze(out)
+}
+
+/**
+ * Merge sticky history with all currently derived unlocks.
+ * Used on progress transitions to materialize hydration unlocks without celebration.
+ */
+export function materializeStickyAchievementIds(
+	ctx: AchievementEvalContext,
+): readonly string[] {
+	return mergeStickyAchievementIds(
+		ctx.stickyAchievementIds,
+		listDerivedUnlockedIds(ctx),
+	)
+}
+
 /**
  * Achievements that transitioned LOCKED → UNLOCKED between two snapshots.
- * Sorted by displayOrder.
+ * Sorted by displayOrder. Sticky-only history does not re-celebrate.
  */
 export function getNewlyUnlockedAchievements(
 	before: readonly AchievementState[],

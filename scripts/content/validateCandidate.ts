@@ -17,6 +17,7 @@ import { toAscii, type Bitmap } from './bitmap'
 import { normalizeConceptId } from './constants'
 import { canonicalTransformationHash, solutionHash } from './hash'
 import { computeVisualMetrics, structuralRejectReason } from './metrics'
+import { analyzeRewardQuality } from './rewardQuality'
 import type {
 	CandidateAuditRecord,
 	RawCandidate,
@@ -285,6 +286,7 @@ export function validateRawCandidate(
 		variant: raw.variant,
 		kind: raw.kind,
 		sourceKind: raw.sourceKind,
+		contentRole: raw.contentRole ?? 'production',
 		width,
 		height,
 		sizeKey,
@@ -306,6 +308,8 @@ export function validateRawCandidate(
 		logicalReasons: emptyReasonBag(),
 		warnings: [] as StructuralWarning[],
 		needsHumanRecognizabilityReview: true,
+		rewardQualityStructuralPass: true,
+		rewardQualityFlags: [] as string[],
 		notSelectedReason: null as string | null,
 	}
 
@@ -329,6 +333,7 @@ export function validateRawCandidate(
 		hintCells: 0,
 		dailyEligible: false,
 		rejectReason: reason,
+		rewardQualityStructuralPass: false,
 		...extra,
 	})
 
@@ -356,6 +361,16 @@ export function validateRawCandidate(
 		return fail(structural)
 	}
 
+	const reward = analyzeRewardQuality(raw.bitmap, raw.kind)
+	const role = raw.contentRole ?? 'production'
+	if (role === 'production' && reward.hardReject) {
+		return fail('reward_quality', {
+			rewardQualityStructuralPass: false,
+			rewardQualityFlags: [...reward.flags],
+			warnings: reward.flags as StructuralWarning[],
+		})
+	}
+
 	const puzzle = buildCatalogPuzzle({
 		schemaVersion: CONTENT_SCHEMA_VERSION,
 		id: raw.id,
@@ -376,12 +391,10 @@ export function validateRawCandidate(
 	const logicalStarted = performance.now()
 	const difficulty = analyzeDifficulty(puzzle)
 	const logicalMs = performance.now() - logicalStarted
-	const warnings = collectWarnings(
-		visual,
-		width,
-		height,
-		difficulty.tier,
-	)
+	const warnings = [
+		...collectWarnings(visual, width, height, difficulty.tier),
+		...(reward.flags as StructuralWarning[]),
+	]
 
 	if (completeMs > COMPLETE_MS_BUDGET || logicalMs > LOGICAL_MS_BUDGET) {
 		return fail('performance', {
@@ -516,6 +529,8 @@ export function validateRawCandidate(
 		rejectReason: null,
 		warnings,
 		needsHumanRecognizabilityReview: true,
+		rewardQualityStructuralPass: reward.structuralPass,
+		rewardQualityFlags: [...reward.flags],
 		notSelectedReason: null,
 	}
 }

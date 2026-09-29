@@ -26,4 +26,5 @@ Help entry: bottom controls lightbulb **Подсказка** (not header `?`).
 
 ## Statistics / schema
 
-Unchanged from Phase 7 (schema v3). See previous docs.
+Unchanged counters from Phase 7. Schema is now **v4** (sticky achievements);
+hint fields themselves are unchanged. See PERSISTENCE.md.

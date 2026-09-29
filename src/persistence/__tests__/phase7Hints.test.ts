@@ -93,16 +93,17 @@ const phase5V1Fixture = {
 	},
 }
 
-describe('schema v3 migration', () => {
-	it('fresh default is v3 with zero hint counters', () => {
+describe('schema v4 migration (via v3 hints)', () => {
+	it('fresh default is v4 with zero hint counters and empty sticky', () => {
 		const save = createDefaultSave()
-		expect(save.schemaVersion).toBe(3)
+		expect(save.schemaVersion).toBe(4)
 		expect(save.statistics.hintRequests).toBe(0)
 		expect(save.statistics.hintsApplied).toBe(0)
 		expect(save.statistics.teachMeViews).toBe(0)
+		expect(save.unlockedAchievementIds).toEqual([])
 	})
 
-	it('migrates v2 → v3 preserving Daily + Campaign + streak', () => {
+	it('migrates v2 → v4 preserving Daily + Campaign + streak', () => {
 		const result = migrateSave(phase6V2Fixture)
 		expect(result.kind).toBe('ok')
 		expect(result.save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
@@ -121,12 +122,13 @@ describe('schema v3 migration', () => {
 		expect(result.save.statistics.hintRequests).toBe(0)
 		expect(result.save.statistics.hintsApplied).toBe(0)
 		expect(result.save.statistics.teachMeViews).toBe(0)
+		expect(result.save.unlockedAchievementIds.length).toBeGreaterThan(0)
 	})
 
-	it('migrates v1 → v3 chain', () => {
+	it('migrates v1 → v4 chain', () => {
 		const result = migrateSave(phase5V1Fixture)
 		expect(result.kind).toBe('ok')
-		expect(result.save.schemaVersion).toBe(3)
+		expect(result.save.schemaVersion).toBe(4)
 		expect(result.save.solvedPuzzleIds).toEqual([
 			'mini-beginner-bar',
 			'mini-beginner-full',
@@ -135,7 +137,7 @@ describe('schema v3 migration', () => {
 		expect(result.save.activeDailyGame).toBeNull()
 	})
 
-	it('restores valid v3 hint counters', () => {
+	it('restores valid v4 hint counters', () => {
 		const puzzle = getProductionPuzzleById('mini-beginner-bar')!
 		const player = serializePlayerState(
 			createEmptyPlayerState(puzzle.width, puzzle.height),

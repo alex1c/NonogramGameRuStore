@@ -1,5 +1,5 @@
 /**
- * Production content audit — Pilot R2 (Phase 8A.1).
+ * Production content audit — Phase 8B Batch 250.
  * npm run audit:production-content
  */
 
@@ -10,6 +10,7 @@ import {
 	MAX_EXPERT_PATTERN_COUNT,
 	MAX_PATTERN_COUNT,
 	MIN_DISTINCT_CONCEPTS,
+	NEAR_DUPLICATE_PAIR_TARGET,
 	PILOT_R1_REJECTED_CHECKSUM,
 	PILOT_TARGET,
 } from './content/constants'
@@ -20,13 +21,13 @@ import { checksumManifest } from './content/hash'
 function main(): void {
 	const paths = contentPaths()
 	if (!fs.existsSync(paths.manifestPath)) {
-		console.error(`Missing pilot R2 manifest: ${paths.manifestPath}`)
-		console.error('Run: npm run content:generate-pilot')
+		console.error(`Missing B250 manifest: ${paths.manifestPath}`)
+		console.error('Run: npm run content:generate-b250')
 		process.exitCode = 1
 		return
 	}
 	if (!fs.existsSync(paths.reportJsonPath)) {
-		console.error(`Missing pilot R2 report: ${paths.reportJsonPath}`)
+		console.error(`Missing B250 report: ${paths.reportJsonPath}`)
 		process.exitCode = 1
 		return
 	}
@@ -64,10 +65,24 @@ function main(): void {
 			readonly maxCollectionShare: number
 			readonly gateFailures: readonly string[]
 		}
+		readonly roles?: {
+			readonly production: number
+			readonly tutorial: number
+			readonly dev: number
+		}
+		readonly rewardQuality?: {
+			readonly hardRejectSelected: number
+			readonly line_like: { readonly selected: number }
+			readonly tiny_trivial: { readonly selected: number }
+			readonly noise_like: { readonly selected: number }
+			readonly primitiveRegression?: readonly {
+				readonly productionSelected: boolean
+			}[]
+		}
 		readonly checksum: string
 	}
 
-	console.log('Production content audit (Phase 8A.1 Pilot R2)')
+	console.log('Production content audit (Phase 8B Batch 250)')
 	console.log(`generator=${CONTENT_GENERATOR_VERSION}`)
 	console.log(`catalogVersion=${manifest.catalogVersion}`)
 	console.log(`puzzleCount=${manifest.puzzleCount}`)
@@ -82,6 +97,7 @@ function main(): void {
 	console.log(
 		`duplicates exact=${report.quality.exactDuplicates.length} transform=${report.quality.transformDuplicates.length} near=${report.quality.nearDuplicates.length} titles=${Object.keys(report.quality.duplicateTitles).length}`,
 	)
+	console.log(`roles=${JSON.stringify(report.roles ?? null)}`)
 	console.log(`tierActual=${JSON.stringify(report.quota.actual)}`)
 	console.log(`contactSheetExists=${fs.existsSync(paths.contactSheetPath)}`)
 
@@ -140,6 +156,33 @@ function main(): void {
 	if (!fs.existsSync(paths.contactSheetPath)) {
 		issues.push('contact sheet missing')
 	}
+	if (report.roles && report.roles.production !== PILOT_TARGET) {
+		issues.push('selected must be PRODUCTION only')
+	}
+	if (report.roles && (report.roles.tutorial > 0 || report.roles.dev > 0)) {
+		issues.push('tutorial/dev leaked into B250 selection')
+	}
+	if (report.rewardQuality && report.rewardQuality.hardRejectSelected > 0) {
+		issues.push('selected contains reward-quality hard rejects')
+	}
+	if (report.rewardQuality) {
+		for (const flag of ['line_like', 'tiny_trivial', 'noise_like'] as const) {
+			const selected = report.rewardQuality[flag]?.selected ?? 0
+			if (selected > 0) {
+				issues.push(`selected has ${flag}=${selected} (hard zero required)`)
+			}
+		}
+		for (const row of report.rewardQuality.primitiveRegression ?? []) {
+			if (row.productionSelected) {
+				issues.push('primitive regression entered production selection')
+			}
+		}
+	}
+	for (const puzzle of manifest.puzzles) {
+		if (puzzle.contentRole && puzzle.contentRole !== 'production') {
+			issues.push(`non-production role in manifest: ${puzzle.id}`)
+		}
+	}
 
 	const normalized = [...manifest.puzzles]
 		.map((p) => ({
@@ -176,13 +219,11 @@ function main(): void {
 	}
 
 	const ids = new Set<string>()
-	const concepts = new Map<string, number>()
 	for (const puzzle of manifest.puzzles) {
 		if (ids.has(puzzle.id)) {
 			issues.push(`duplicate id ${puzzle.id}`)
 		}
 		ids.add(puzzle.id)
-		concepts.set(puzzle.conceptId, (concepts.get(puzzle.conceptId) ?? 0) + 1)
 	}
 
 	if (issues.length > 0) {
@@ -196,9 +237,9 @@ function main(): void {
 	}
 
 	console.log('PASS')
-	if (report.quality.nearDuplicates.length > 5) {
+	if (report.quality.nearDuplicates.length > NEAR_DUPLICATE_PAIR_TARGET) {
 		console.log(
-			`WARNING nearDuplicates=${report.quality.nearDuplicates.length} (target ≤5)`,
+			`WARNING nearDuplicates=${report.quality.nearDuplicates.length} (target ≤${NEAR_DUPLICATE_PAIR_TARGET})`,
 		)
 	}
 }

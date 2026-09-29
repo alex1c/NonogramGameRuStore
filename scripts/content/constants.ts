@@ -1,42 +1,52 @@
 /**
- * Phase 8A.1 Pilot R2 content pipeline constants.
+ * Phase 8B production content pipeline constants (Batch 250).
  */
 
-export const CONTENT_GENERATOR_VERSION = 'prod-v1.1' as const
-export const CONTENT_CATALOG_VERSION = '2026.1-pilot-r2' as const
+export const CONTENT_GENERATOR_VERSION = 'prod-v2' as const
+export const CONTENT_CATALOG_VERSION = '2026.1-b250-r1' as const
 
 /** Rejected human-review baseline (Phase 8A Pilot R1). */
 export const PILOT_R1_REJECTED_CHECKSUM =
 	'456c3b87cf32c3a617f37d8cd1f5ccf518c51df85095ec026ed001971b072bc9' as const
 export const PILOT_R1_HUMAN_STATUS = 'HUMAN REVIEW: NOT APPROVED' as const
 
-export const PILOT_TARGET = 100 as const
+/** R2 candidate baseline checksum for comparison reports. */
+export const PILOT_R2_CHECKSUM =
+	'd7c7c6fbe5838dec67ae8343d1169c814a9c302fc4954677e2f2f478f659f19c' as const
 
-export const PILOT_TIER_QUOTA = Object.freeze({
-	BEGINNER: 10,
-	EASY: 25,
-	MEDIUM: 30,
-	HARD: 25,
-	EXPERT: 10,
+export const B250_TARGET = 250 as const
+/** Alias kept for older selection helpers / tests. */
+export const PILOT_TARGET = B250_TARGET
+
+export const B250_TIER_QUOTA = Object.freeze({
+	BEGINNER: 25,
+	EASY: 63,
+	MEDIUM: 74,
+	HARD: 63,
+	EXPERT: 25,
 })
+/** Alias kept for older selection helpers / tests. */
+export const PILOT_TIER_QUOTA = B250_TIER_QUOTA
 
 /** Soft near-duplicate report threshold (not auto-reject). */
 export const NEAR_SIMILARITY_REPORT = 0.92
-/** Soft review target for near-duplicate pairs. */
-export const NEAR_DUPLICATE_PAIR_TARGET = 5
+/** Soft review target for near-duplicate pairs (B250). */
+export const NEAR_DUPLICATE_PAIR_TARGET = 12
 
-export const MAX_CANDIDATE_ATTEMPTS = 2000
+export const MAX_CANDIDATE_ATTEMPTS = 4000
 
-/** Diversity hard gates (Pilot R2). */
-export const MIN_DISTINCT_CONCEPTS = 80
+/** Diversity hard gates (Batch 250). */
+export const MIN_DISTINCT_CONCEPTS = 220
 export const MAX_CONCEPT_FREQUENCY = 2
-export const MAX_PATTERN_COUNT = 10
+export const MAX_PATTERN_COUNT = 25
 export const MAX_PATTERN_SHARE = 0.1
-export const MAX_EXPERT_PATTERN_COUNT = 3
+export const MAX_EXPERT_PATTERN_COUNT = 8
 export const MAX_FAMILY_SHARE = 0.05
-export const MAX_COLLECTION_SHARE_WARN = 0.18
+export const MAX_COLLECTION_SHARE_WARN = 0.15
 export const MIN_ACTIVE_COLLECTION_SIZE = 3
-export const MAX_COLLECTION_COUNT_SOFT = 15
+export const MAX_COLLECTION_COUNT_SOFT = 20
+
+export type ContentRole = 'production' | 'tutorial' | 'dev'
 
 export const COLLECTIONS = Object.freeze([
 	{ id: 'animals', titleRu: 'Животные', displayOrder: 1 },
@@ -56,6 +66,9 @@ export const COLLECTIONS = Object.freeze([
 	{ id: 'clothing', titleRu: 'Одежда', displayOrder: 15 },
 	{ id: 'symbols', titleRu: 'Символы', displayOrder: 16 },
 	{ id: 'patterns', titleRu: 'Узоры', displayOrder: 17 },
+	{ id: 'tools', titleRu: 'Инструменты', displayOrder: 18 },
+	{ id: 'weather', titleRu: 'Погода', displayOrder: 19 },
+	{ id: 'travel', titleRu: 'Путешествия', displayOrder: 20 },
 ] as const)
 
 export type CollectionId = (typeof COLLECTIONS)[number]['id']

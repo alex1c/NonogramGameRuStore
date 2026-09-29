@@ -1,4 +1,4 @@
-# Content pipeline (Phase 8A / 8A.1)
+# Content pipeline (Phase 8A / 8A.1 / 8B)
 
 Offline deterministic tooling to produce **production candidate** nonogram packs.
 Does **not** replace the runtime mini catalog (21 puzzles) until a later approved
@@ -6,122 +6,103 @@ integration phase.
 
 ## Versions
 
-- `CONTENT_GENERATOR_VERSION` = `prod-v1.1`
-- `CONTENT_CATALOG_VERSION` = `2026.1-pilot-r2` (active Pilot R2)
-- Pilot status label: **candidate** (not production-approved / not human-approved)
+- `CONTENT_GENERATOR_VERSION` = `prod-v2`
+- `CONTENT_CATALOG_VERSION` = `2026.1-b250-r1` (active Batch 250)
+- Status label: **candidate** (not production-approved / not human-approved)
 
-## Pilot history
+## Content roles
+
+| Role | Use |
+| --- | --- |
+| `PRODUCTION` | Campaign / Gallery collection rewards |
+| `TUTORIAL` | May be primitive (line, corner, dash) |
+| `DEV` | Fixtures / tests |
+
+Batch 250 selects **PRODUCTION only**. R2 primitives (Планка, Угол, Тире, Уступ, Линия, Столбик) are retained as `tutorial` and excluded from the production pool.
+
+## Reward-quality structural gate
+
+`analyzeRewardQuality` → `rewardQualityStructuralPass`.
+
+Hard reject (non-symbol / trivial symbol bars):
+
+- `line_like`
+- `tiny_trivial`
+- `noise_like`
+
+Warnings may remain for density / components / simple-high-tier.
+Human recognizability is **separate** and still required via contact-sheet review.
+
+## Pilot / batch history
 
 ### Pilot R1 — HUMAN REVIEW: NOT APPROVED
 
 - Catalog: `2026.1-pilot`
-- Checksum:
-  `456c3b87cf32c3a617f37d8cd1f5ccf518c51df85095ec026ed001971b072bc9`
+- Checksum: `456c3b87cf32c3a617f37d8cd1f5ccf518c51df85095ec026ed001971b072bc9`
 - Path: `generated/content-pilot/`
-- Human rejection reasons (baseline for R2 comparison):
-  - excessive semantic duplicates
-  - repeated procedural variants
-  - Patterns share 22%
-  - Expert over-reliance on mosaics/lattices
-  - weak recognizability of some 5×5
-  - repeated generic titles
-  - insufficient concept diversity
-- R1 remains a **technical pipeline proof** and comparison baseline — not approved content.
 
-### Pilot R2 — READY FOR HUMAN REVIEW
+### Pilot R2 — human review improved, still not final
 
 - Catalog: `2026.1-pilot-r2`
+- Checksum: `d7c7c6fbe5838dec67ae8343d1169c814a9c302fc4954677e2f2f478f659f19c`
 - Path: `generated/content-pilot-r2/`
+- Distinct concepts 100, patterns 6%, titles 0 — but primitives still appeared in human review.
+
+### Batch 250 — READY FOR HUMAN REVIEW (candidate)
+
+- Catalog: `2026.1-b250-r1`
+- Generator: `prod-v2`
+- Path: `generated/content-b250/`
 - Contact sheet:
-  `review-artifacts/production-content/pilot-r2/contact-sheet.html`
-- Semantic gates: `conceptId` / `compositionId`, distinct concepts ≥80,
-  max concept frequency ≤2, patterns ≤10, expert patterns ≤3,
-  max family share ≤5%
-- Near-duplicate pairs ≥0.92: **review warning** target ≤5 (not hard fail)
+  `review-artifacts/production-content/b250-r1/contact-sheet.html`
+- Hard gates: selected 250, distinctConcepts ≥220, maxConceptFrequency ≤2,
+  patterns ≤25, expert patterns ≤8, exact/transform dup 0, titles 0,
+  reward-quality hard rejects 0, PRODUCTION role only
+- Near-duplicate pairs ≥0.92: soft warning target ≤12
 
 ## Layout
 
 | Path | Role |
 | --- | --- |
 | `content-src/` | Human rejection list + content README |
-| `scripts/content/` | Generator, validation, diversity selection, contact sheets |
-| `scripts/content/families/r2ConceptLibrary.ts` | Authored R2 concept library |
-| `scripts/content/families/r2QuotaExpansion.ts` | Beginner + Hard/Expert expansions |
-| `generated/content-pilot/` | R1 rejected baseline (kept for comparison) |
-| `generated/content-pilot-r2/` | Deterministic R2 pilot artifact |
-| `review-artifacts/production-content/pilot-r2/` | Gitignored HTML contact sheet |
+| `scripts/content/` | Generator, validation, diversity, reward quality, contact sheets |
+| `scripts/content/rewardQuality.ts` | Structural reward-quality gate |
+| `scripts/content/families/r2ConceptLibrary.ts` | Authored concept library + expansions |
+| `generated/content-pilot/` | R1 rejected baseline |
+| `generated/content-pilot-r2/` | R2 baseline (kept for comparison) |
+| `generated/content-b250/` | Deterministic B250 candidate artifact |
+| `review-artifacts/production-content/b250-r1/` | Gitignored HTML contact sheet |
 
 ## Commands
 
 ```bash
-npm run content:generate-pilot   # build R2 100 candidates + reports + contact sheet
+npm run content:generate-b250    # build B250 candidates + reports + contact sheet
+npm run content:generate-pilot   # alias of generate-b250 (same entrypoint)
 npm run content:contact-sheets   # regenerate HTML from existing report
-npm run content:build            # fail-closed audit of generated R2 pilot
+npm run content:build            # fail-closed audit of generated batch
 npm run audit:production-content # same gates as content:build
 ```
 
-Canonical review sequence:
+## Human review workflow (B250)
 
-1. `npm run content:generate-pilot`
-2. `npm run audit:production-content`
-3. Open `review-artifacts/production-content/pilot-r2/contact-sheet.html`
-4. Use **Проверка без названий** for blind recognizability review
-5. Human approve / reject (optional Export review JSON)
-6. **STOP** — do not scale to 1000 without explicit approval
+1. Open contact sheet offline (`file:///.../contact-sheet.html`)
+2. Views: Blind shortlist (~40) → Random 30 → Worst-case 20 → Expert → Small → All
+3. Approve / Reject / Fix + controlled reason; Export review JSON (includes checksum)
+4. Review JSON is a human artifact — Cursor applies it only in a later phase after confirmation
+5. **STOP** — do not generate 251–1000; do not integrate into runtime
 
 ## Selection order (deterministic)
 
-1. Generate authored candidate pool
-2. Individual mathematical / structural validation
+1. Build PRODUCTION authored pool (tutorial/dev excluded)
+2. Individual mathematical / structural / reward-quality validation
 3. Exact / transform dedup
-4. Semantic metadata validation (`conceptId`, `compositionId`)
-5. Tier from `analyzeDifficulty` only
-6. Structural quality warnings
-7. Diversity-aware selection (tier quota → concept → family → collection → quality)
-8. Global near-duplicate report
-9. Contact sheet
-
-Within a concept, prefer fewer warnings, authored source, preferred size, then stable id.
-Prefer a new concept over a second composition of an existing concept.
-Prefer underrepresented collection / family when tier ties.
-
-## Quality gates (automatic)
-
-Each accepted candidate must be:
-
-- unique solution
-- logically solvable (no guessing)
-- sequential Hint-chain solvable
-- non-empty / non-full / non-extreme fill
-- unique id + unique solution hash
-- no mirror/180 transformation duplicate of another accepted candidate
-- `conceptId` present (normalized slug)
-- selected pack: distinct concepts ≥80, max concept frequency ≤2
-- patterns ≤10; expert pure patterns ≤3
-- max family share ≤5%
-
-Difficulty tier comes **only** from `analyzeDifficulty` (Phase 2 model).
-Do not recalibrate thresholds in R2 from a few anomalies — report them.
-
-## Source format
-
-Authored templates: ASCII `#` / `.` rows with `conceptId` + `compositionId`.
-R2 pool is authored-library only (no procedural size/mutation families).
-Clues are always regenerated from the solution bitmap.
+4. Tier from `analyzeDifficulty` only
+5. Diversity-aware selection (tier quota → concept → family → collection → quality)
+6. Hard gates; shortage → `BLOCKED_CONTENT_QUOTA_SHORTAGE` (non-zero exit)
 
 ## Runtime isolation
 
-Phase 8A.1 artifacts are **not** imported by Campaign / Gallery / Daily.
-Save schema remains **v3**. Campaign = 21, Gallery = 21.
-
-## Achievement risk (integration later)
-
-`first_collection` is derived from current `GALLERY_ITEMS`. Replacing gallery
-taxonomy can drop a previously unlocked derived achievement.
-**REQUIRES DESIGN FIX BEFORE RUNTIME INTEGRATION** (sticky unlock IDs).
-
-## Scale-up
-
-After human approval of **R2** checksum, later phases may generate batches
-101–250, 251–500, … comparing against the global approved duplicate index.
-Do not start 1000 until human R2 contact-sheet review passes.
+- Campaign / Gallery remain 21 development puzzles
+- Daily version unchanged
+- Schema v4 sticky achievements are a separate runtime baseline (see PERSISTENCE.md)
+- Candidate B250 is not imported by the app bundle

@@ -177,9 +177,10 @@ describe('fingerprint metadata invariance', () => {
 	})
 })
 
-describe('default save schema v3', () => {
-	it('createDefaultSave schema is 3', () => {
-		expect(createDefaultSave().schemaVersion).toBe(3)
-		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(3)
+describe('default save schema v4', () => {
+	it('createDefaultSave schema is 4', () => {
+		expect(createDefaultSave().schemaVersion).toBe(4)
+		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(4)
+		expect(createDefaultSave().unlockedAchievementIds).toEqual([])
 	})
 })

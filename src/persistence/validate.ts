@@ -16,6 +16,8 @@ import {
 	type SaveRoot,
 } from './schema'
 import { createDefaultSave } from './createDefaultSave'
+import { seedStickyAchievementIdsFromLegacyV3 } from '../achievements/legacyV3Seed'
+import { normalizeStickyAchievementIds } from '../achievements/sticky'
 
 const PAINT_TOOLS: ReadonlySet<string> = new Set(Object.values(PaintTool))
 const PLAYER_CELLS: ReadonlySet<string> = new Set(Object.values(PlayerCell))
@@ -463,29 +465,32 @@ function withHintDefaultsOnDaily(
 }
 
 /**
- * Migrate a validated v1 document to v3 (via Phase 6 Daily defaults + hint counters).
+ * Migrate a validated v1 document to v4 (via v2 Daily defaults + v3 hints + v4 sticky).
  * solvedPuzzleIds = completedPuzzleIds; dailyStartedDay = null; hint counters = 0.
  */
 export function migrateV1DocumentToV2(v1: SaveRootV1): SaveRoot {
-	// Named migrateV1DocumentToV2 historically; now produces current schema (v3).
-	return migrateV2DocumentToV3({
-		schemaVersion: 2,
-		activeGame: withHintDefaultsOnActive(v1.activeGame),
-		activeDailyGame: null,
-		completedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
-		solvedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
-		startedPuzzleIds: Object.freeze([...v1.startedPuzzleIds]),
-		bestTimes: v1.bestTimes,
-		statistics: Object.freeze({
-			...v1.statistics,
-			hintRequests: 0,
-			hintsApplied: 0,
-			teachMeViews: 0,
+	return migrateV3DocumentToV4(
+		migrateV2DocumentToV3({
+			schemaVersion: 2,
+			activeGame: withHintDefaultsOnActive(v1.activeGame),
+			activeDailyGame: null,
+			completedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
+			solvedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
+			startedPuzzleIds: Object.freeze([...v1.startedPuzzleIds]),
+			bestTimes: v1.bestTimes,
+			statistics: Object.freeze({
+				...v1.statistics,
+				hintRequests: 0,
+				hintsApplied: 0,
+				teachMeViews: 0,
+			}),
+			dailyCompletionRecords: Object.freeze(
+				[] as DailyCompletionRecordSave[],
+			),
+			restoredDailyDays: Object.freeze([] as DayKey[]),
+			dailyStartedDay: null,
 		}),
-		dailyCompletionRecords: Object.freeze([] as DailyCompletionRecordSave[]),
-		restoredDailyDays: Object.freeze([] as DayKey[]),
-		dailyStartedDay: null,
-	})
+	)
 }
 
 /** Intermediate v2 shape used only during migration. */
@@ -595,10 +600,29 @@ export function parseAndValidateSaveV2(raw: unknown): SaveParseOutcomeV2 {
 	}
 }
 
+/** Intermediate v3 shape used only during migration (pre-sticky). */
+export interface SaveRootV3 {
+	readonly schemaVersion: 3
+	readonly activeGame: ActiveGameSave | null
+	readonly activeDailyGame: ActiveDailyGameSave | null
+	readonly completedPuzzleIds: readonly string[]
+	readonly solvedPuzzleIds: readonly string[]
+	readonly startedPuzzleIds: readonly string[]
+	readonly bestTimes: SaveRoot['bestTimes']
+	readonly statistics: SaveRoot['statistics']
+	readonly dailyCompletionRecords: readonly DailyCompletionRecordSave[]
+	readonly restoredDailyDays: readonly DayKey[]
+	readonly dailyStartedDay: DayKey | null
+}
+
+export type SaveParseOutcomeV3 =
+	| { readonly ok: true; readonly save: SaveRootV3 }
+	| { readonly ok: false; readonly reason: string }
+
 /** Migrate validated v2 → v3: hint counters default 0; hintsUsedThisRun on actives. */
-export function migrateV2DocumentToV3(v2: SaveRootV2): SaveRoot {
+export function migrateV2DocumentToV3(v2: SaveRootV2): SaveRootV3 {
 	return Object.freeze({
-		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+		schemaVersion: 3,
 		activeGame: withHintDefaultsOnActive(v2.activeGame),
 		activeDailyGame: withHintDefaultsOnDaily(v2.activeDailyGame),
 		completedPuzzleIds: Object.freeze([...v2.completedPuzzleIds]),
@@ -621,6 +645,62 @@ export function migrateV2DocumentToV3(v2: SaveRootV2): SaveRoot {
 		restoredDailyDays: Object.freeze([...v2.restoredDailyDays]),
 		dailyStartedDay: v2.dailyStartedDay,
 	})
+}
+
+/**
+ * Migrate validated v3 → v4: seed sticky unlockedAchievementIds from legacy
+ * Gallery membership. Does not celebrate; does not alter counters.
+ */
+export function migrateV3DocumentToV4(
+	v3: SaveRootV3,
+	today: DayKey | null = null,
+): SaveRoot {
+	const sticky = seedStickyAchievementIdsFromLegacyV3(
+		v3,
+		today ?? '2026-09-28',
+	)
+	return Object.freeze({
+		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+		activeGame: v3.activeGame,
+		activeDailyGame: v3.activeDailyGame,
+		completedPuzzleIds: Object.freeze([...v3.completedPuzzleIds]),
+		solvedPuzzleIds: Object.freeze([...v3.solvedPuzzleIds]),
+		startedPuzzleIds: Object.freeze([...v3.startedPuzzleIds]),
+		bestTimes: v3.bestTimes,
+		statistics: v3.statistics,
+		dailyCompletionRecords: v3.dailyCompletionRecords,
+		restoredDailyDays: Object.freeze([...v3.restoredDailyDays]),
+		dailyStartedDay: v3.dailyStartedDay,
+		unlockedAchievementIds: sticky,
+	})
+}
+
+/** Validate Phase 7 / schema v3 document (migration source). */
+export function parseAndValidateSaveV3(raw: unknown): SaveParseOutcomeV3 {
+	if (raw === null || typeof raw !== 'object') {
+		return { ok: false, reason: 'Save root must be an object' }
+	}
+	const record = raw as Record<string, unknown>
+	if (record.schemaVersion !== 3) {
+		return {
+			ok: false,
+			reason: `Expected schemaVersion 3, got ${String(record.schemaVersion)}`,
+		}
+	}
+	// Reuse v2 field validators by temporarily treating as v2-shaped.
+	const asV2 = parseAndValidateSaveV2({ ...record, schemaVersion: 2 })
+	if (!asV2.ok) {
+		return asV2
+	}
+	return {
+		ok: true,
+		save: Object.freeze({
+			...asV2.save,
+			schemaVersion: 3 as const,
+			activeGame: withHintDefaultsOnActive(asV2.save.activeGame),
+			activeDailyGame: withHintDefaultsOnDaily(asV2.save.activeDailyGame),
+		}),
+	}
 }
 
 /**
@@ -703,6 +783,10 @@ export function parseAndValidateSave(
 		return { ok: false, reason: 'Invalid dailyStartedDay' }
 	}
 
+	const unlockedAchievementIds = normalizeStickyAchievementIds(
+		record.unlockedAchievementIds,
+	)
+
 	// Stale activeDaily that matches a completed day → clear
 	let normalizedDaily = activeDailyGame
 	if (
@@ -734,6 +818,7 @@ export function parseAndValidateSave(
 			dailyCompletionRecords,
 			restoredDailyDays,
 			dailyStartedDay,
+			unlockedAchievementIds,
 		}),
 	}
 }

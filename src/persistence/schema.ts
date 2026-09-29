@@ -1,6 +1,7 @@
 /**
  * Versioned save schema.
  * Phase 4–5: v1. Phase 6: v2 (Daily). Phase 7: v3 (Hints).
+ * Phase 8B: v4 (sticky unlockedAchievementIds).
  * Persist IDs + player progress — never solution/clues/catalog blobs.
  *
  * Storage key remains `nonogram.save.v1` (historical suffix); schemaVersion
@@ -12,7 +13,7 @@ import type { PaintTool } from '../gameplay/tools'
 import type { DayKey } from '../daily/dateUtils'
 
 /** Single source of truth for the current save schema version. */
-export const CURRENT_SAVE_SCHEMA_VERSION = 3 as const
+export const CURRENT_SAVE_SCHEMA_VERSION = 4 as const
 
 export type SaveSchemaVersion = typeof CURRENT_SAVE_SCHEMA_VERSION
 
@@ -79,7 +80,7 @@ export interface DailyCompletionRecordSave {
 }
 
 /**
- * Root persisted document (schema v3).
+ * Root persisted document (schema v4).
  *
  * Semantics:
  * - completedPuzzleIds = Campaign completions only
@@ -90,6 +91,7 @@ export interface DailyCompletionRecordSave {
  * - activeGame = Campaign unfinished party (+ hintsUsedThisRun)
  * - activeDailyGame = Daily unfinished party (+ hintsUsedThisRun)
  * - statistics.hintRequests / hintsApplied / teachMeViews = global help counters
+ * - unlockedAchievementIds = sticky unlocked achievement history (never shrinks)
  */
 export interface SaveRoot {
 	readonly schemaVersion: SaveSchemaVersion
@@ -103,6 +105,8 @@ export interface SaveRoot {
 	readonly dailyCompletionRecords: readonly DailyCompletionRecordSave[]
 	readonly restoredDailyDays: readonly DayKey[]
 	readonly dailyStartedDay: DayKey | null
+	/** Authoritative sticky achievement unlock history. */
+	readonly unlockedAchievementIds: readonly string[]
 }
 
 export type HydrationStatus =

@@ -21,7 +21,7 @@ export function createEmptyStatistics(): ProgressStatistics {
 	})
 }
 
-/** Pure deterministic default save (schema v3, no wall-clock fields). */
+/** Pure deterministic default save (schema v4, no wall-clock fields). */
 export function createDefaultSave(): SaveRoot {
 	return Object.freeze({
 		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
@@ -37,5 +37,6 @@ export function createDefaultSave(): SaveRoot {
 		),
 		restoredDailyDays: Object.freeze([] as string[]),
 		dailyStartedDay: null,
+		unlockedAchievementIds: Object.freeze([] as string[]),
 	})
 }

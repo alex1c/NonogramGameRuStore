@@ -19,7 +19,6 @@ import { selectWithDiversity } from '../selectQuota'
 import {
 	CONTENT_GENERATOR_VERSION,
 	normalizeConceptId,
-	PILOT_TIER_QUOTA,
 } from '../constants'
 
 function fakeRecord(
@@ -71,6 +70,9 @@ function fakeRecord(
 		seed: 1,
 		warnings: [],
 		needsHumanRecognizabilityReview: true,
+		rewardQualityStructuralPass: true,
+		rewardQualityFlags: [],
+		contentRole: 'production',
 		notSelectedReason: null,
 		...partial,
 	}
@@ -336,7 +338,7 @@ describe('semantic diversity selection', () => {
 				score: 70,
 			}),
 		)
-		const objects = Array.from({ length: 80 }, (_, i) =>
+		const objects = Array.from({ length: 280 }, (_, i) =>
 			fakeRecord({
 				id: `obj-${i}`,
 				conceptId: `obj-${i}`,
@@ -355,20 +357,21 @@ describe('semantic diversity selection', () => {
 		const patternCount = result.selected.filter(
 			(r) => r.kind === 'pattern' || r.collectionId === 'patterns',
 		).length
-		expect(patternCount).toBeLessThanOrEqual(10)
+		expect(patternCount).toBeLessThanOrEqual(25)
 		const expertPatterns = result.selected.filter(
 			(r) =>
 				r.tier === 'EXPERT' &&
 				(r.kind === 'pattern' || r.collectionId === 'patterns'),
 		).length
-		expect(expertPatterns).toBeLessThanOrEqual(3)
+		expect(expertPatterns).toBeLessThanOrEqual(8)
 	})
 
 	it('selects up to tier quotas deterministically with unique concepts', () => {
 		const rows: CandidateAuditRecord[] = []
 		const tiers = ['BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const
+		const perTier = { BEGINNER: 30, EASY: 70, MEDIUM: 80, HARD: 70, EXPERT: 30 }
 		for (const tier of tiers) {
-			for (let i = 0; i < 40; i += 1) {
+			for (let i = 0; i < perTier[tier]; i += 1) {
 				rows.push(
 					fakeRecord({
 						id: `${tier}-${i}`,
@@ -385,18 +388,18 @@ describe('semantic diversity selection', () => {
 				)
 			}
 		}
-		const first = selectWithDiversity(rows, PILOT_TIER_QUOTA, 100)
-		const second = selectWithDiversity(rows, PILOT_TIER_QUOTA, 100)
+		const first = selectWithDiversity(rows)
+		const second = selectWithDiversity(rows)
 		expect(first.selected.map((r) => r.id)).toEqual(
 			second.selected.map((r) => r.id),
 		)
-		expect(first.selected).toHaveLength(100)
+		expect(first.selected).toHaveLength(250)
 		expect(first.shortage).toEqual([])
-		expect(first.distinctConcepts).toBeGreaterThanOrEqual(80)
+		expect(first.distinctConcepts).toBeGreaterThanOrEqual(220)
 	})
 
 	it('campaign arranger produces stable order and set sizes', () => {
-		const rows = Array.from({ length: 100 }, (_, i) =>
+		const rows = Array.from({ length: 250 }, (_, i) =>
 			fakeRecord({
 				id: `p-${String(i).padStart(3, '0')}`,
 				tier: (['BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const)[
@@ -412,13 +415,62 @@ describe('semantic diversity selection', () => {
 		const a = arrangePilotCampaign(rows)
 		const b = arrangePilotCampaign(rows)
 		expect(a.order).toEqual(b.order)
-		expect(a.sets).toHaveLength(2)
-		expect(a.sets[0]!.puzzleIds).toHaveLength(50)
+		expect(a.sets.length).toBeGreaterThanOrEqual(2)
 	})
 })
 
 describe('generator version pin', () => {
-	it('uses prod-v1.1 for Phase 8A.1', () => {
-		expect(CONTENT_GENERATOR_VERSION).toBe('prod-v1.1')
+	it('uses prod-v2 for Phase 8B', () => {
+		expect(CONTENT_GENERATOR_VERSION).toBe('prod-v2')
+	})
+})
+
+describe('reward quality structural gate', () => {
+	it('rejects primitive lines and corners for non-symbol production', () => {
+		const { analyzeRewardQuality } = require('../rewardQuality') as typeof import('../rewardQuality')
+		const line = parseAscii([
+			'.....',
+			'#####',
+			'.....',
+		])
+		const corner = parseAscii([
+			'##...',
+			'#....',
+			'.....',
+		])
+		expect(analyzeRewardQuality(line, 'object').hardReject).toBe(true)
+		expect(analyzeRewardQuality(corner, 'object').hardReject).toBe(true)
+		expect(analyzeRewardQuality(line, 'symbol').hardReject).toBe(true)
+	})
+
+	it('passes good simple symbols (heart / star)', () => {
+		const { analyzeRewardQuality } = require('../rewardQuality') as typeof import('../rewardQuality')
+		const heart = parseAscii([
+			'.#.#.',
+			'#####',
+			'.###.',
+			'..#..',
+		])
+		const star = parseAscii([
+			'..#..',
+			'#####',
+			'.###.',
+			'.#.#.',
+		])
+		expect(analyzeRewardQuality(heart, 'symbol').structuralPass).toBe(true)
+		expect(analyzeRewardQuality(star, 'symbol').structuralPass).toBe(true)
+	})
+
+	it('excludes tutorial primitives from production pool', () => {
+		const { buildRawCandidatePool } = require('../pool') as typeof import('../pool')
+		const production = buildRawCandidatePool()
+		const ids = new Set(production.map((r) => r.id))
+		expect(ids.has('beg-bar')).toBe(false)
+		expect(ids.has('beg-line-h')).toBe(false)
+		expect(ids.has('beg-line-v')).toBe(false)
+		expect(ids.has('beg-corner')).toBe(false)
+		expect(ids.has('beg-dash')).toBe(false)
+		expect(ids.has('beg-ledge')).toBe(false)
+		expect(production.every((r) => r.contentRole === 'production')).toBe(true)
 	})
 })

@@ -5,8 +5,22 @@
  */
 
 import { parseAscii, type Bitmap } from '../bitmap'
-import { normalizeConceptId, type CollectionId } from '../constants'
+import { normalizeConceptId, type CollectionId, type ContentRole } from '../constants'
 import type { ContentKind, SourceKind } from '../types'
+import {
+	B250_CONCEPT_EXPANSION,
+	B250_SCENE_EXPANSION,
+} from './b250ConceptExpansion'
+import {
+	B250_BEGINNER_FILL,
+	B250_HARD_EXPERT_FILL,
+} from './b250QuotaFill'
+import { B250_TRUE_BEGINNER_FILL } from './b250TrueBeginner'
+import { B250_BEGINNER_DENSE } from './b250BeginnerDense'
+import {
+	B250_HARD_ONLY_FILL,
+	B250_MORE_BEGINNER,
+} from './b250HardOnly'
 import {
 	R2_BEGINNER_EXPANSION,
 	R2_HARD_EXPERT_EXPANSION,
@@ -24,6 +38,7 @@ export interface ConceptTemplate {
 	readonly family: string
 	readonly kind: ContentKind
 	readonly sourceKind: SourceKind
+	readonly contentRole?: ContentRole
 	readonly ascii: readonly string[]
 }
 
@@ -36,6 +51,7 @@ function c(
 	ascii: readonly string[],
 	kind: ContentKind = 'object',
 	family?: string,
+	contentRole: ContentRole = 'production',
 ): ConceptTemplate {
 	return {
 		id,
@@ -46,6 +62,7 @@ function c(
 		family: family ?? `authored-${normalizeConceptId(conceptId)}`,
 		kind,
 		sourceKind: 'authored',
+		contentRole,
 		ascii,
 	}
 }
@@ -1972,4 +1989,12 @@ export const R2_CONCEPT_LIBRARY: readonly ConceptTemplate[] = Object.freeze([
 	...R2_WAVE2_EXPANSION,
 	...R2_WAVE3_HARD_EXPANSION,
 	...R2_WAVE4_HARD_EXPANSION,
+	...B250_CONCEPT_EXPANSION,
+	...B250_SCENE_EXPANSION,
+	...B250_BEGINNER_FILL,
+	...B250_HARD_EXPERT_FILL,
+	...B250_TRUE_BEGINNER_FILL,
+	...B250_BEGINNER_DENSE,
+	...B250_HARD_ONLY_FILL,
+	...B250_MORE_BEGINNER,
 ])

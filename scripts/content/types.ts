@@ -10,6 +10,7 @@ import type { CollectionId } from './constants'
 export type ReviewStatus = 'candidate' | 'approved' | 'rejected'
 export type ContentKind = 'object' | 'pattern' | 'scene' | 'symbol'
 export type SourceKind = 'authored' | 'procedural'
+export type ContentRole = 'production' | 'tutorial' | 'dev'
 
 export type RejectReason =
 	| 'invalid'
@@ -29,6 +30,8 @@ export type RejectReason =
 	| 'human_rejected'
 	| 'missing_concept'
 	| 'invalid_composition'
+	| 'reward_quality'
+	| 'wrong_role'
 
 export type StructuralWarning =
 	| 'tiny_bbox'
@@ -38,6 +41,9 @@ export type StructuralWarning =
 	| 'simple_high_tier'
 	| 'large_easy_tier'
 	| 'needs_human_recognizability_review'
+	| 'line_like'
+	| 'tiny_trivial'
+	| 'noise_like'
 
 export interface RawCandidate {
 	readonly id: string
@@ -49,6 +55,7 @@ export interface RawCandidate {
 	readonly variant: string
 	readonly kind: ContentKind
 	readonly sourceKind: SourceKind
+	readonly contentRole: ContentRole
 	readonly bitmap: Bitmap
 	readonly seed: number
 	readonly intendedTierHint?: DifficultyTier
@@ -76,6 +83,7 @@ export interface CandidateAuditRecord {
 	readonly variant: string
 	readonly kind: ContentKind
 	readonly sourceKind: SourceKind
+	readonly contentRole: ContentRole
 	readonly width: number
 	readonly height: number
 	readonly sizeKey: string
@@ -112,6 +120,8 @@ export interface CandidateAuditRecord {
 	readonly seed: number
 	readonly warnings: readonly StructuralWarning[]
 	readonly needsHumanRecognizabilityReview: boolean
+	readonly rewardQualityStructuralPass: boolean
+	readonly rewardQualityFlags: readonly string[]
 	/** Selection skip reason when valid but not chosen. */
 	readonly notSelectedReason: string | null
 }
@@ -137,6 +147,7 @@ export interface PilotManifestPuzzle {
 	readonly variant: string
 	readonly kind: ContentKind
 	readonly sourceKind: SourceKind
+	readonly contentRole: ContentRole
 	readonly width: number
 	readonly height: number
 	readonly ascii: string

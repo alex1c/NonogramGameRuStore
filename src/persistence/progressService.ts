@@ -62,9 +62,45 @@ import {
 	contextFromSave,
 	evaluateAchievements,
 	getNewlyUnlockedAchievements,
+	materializeStickyAchievementIds,
 } from '../achievements/evaluate'
+import { mergeStickyAchievementIds } from '../achievements/sticky'
+import { freezeSave } from './validate'
 import { collectionJustCompleted } from '../gallery/viewModel'
 import { getGalleryItemDef } from '../gallery/definitions'
+
+/**
+ * After a progress mutation: celebrate newly unlocked, then persist sticky ∪ derived.
+ * Celebration uses before/after snapshots; sticky write is atomic with the same commit.
+ */
+function withStickyAchievementTransition(
+	beforeSave: SaveRoot,
+	afterProgress: SaveRoot,
+	day: DayKey,
+): {
+	readonly save: SaveRoot
+	readonly newlyUnlocked: ReturnType<typeof getNewlyUnlockedAchievements>
+} {
+	const beforeAchievements = evaluateAchievements(
+		contextFromSave(beforeSave, day),
+	)
+	const afterDerived = evaluateAchievements(
+		contextFromSave(afterProgress, day),
+	)
+	const newlyUnlocked = getNewlyUnlockedAchievements(
+		beforeAchievements,
+		afterDerived,
+	)
+	const sticky = mergeStickyAchievementIds(
+		materializeStickyAchievementIds(contextFromSave(afterProgress, day)),
+		newlyUnlocked.map((item) => item.id),
+	)
+	const save = freezeSave({
+		...afterProgress,
+		unlockedAchievementIds: sticky,
+	})
+	return { save, newlyUnlocked }
+}
 
 export interface PersistGameSnapshotInput {
 	readonly puzzle: Puzzle
@@ -303,9 +339,6 @@ export function createGameProgressService(
 			ensureHydrated(hydrated)
 			const beforeSave = current
 			const day = today()
-			const beforeAchievements = evaluateAchievements(
-				contextFromSave(beforeSave, day),
-			)
 			const firstCompletion = !beforeSave.completedPuzzleIds.includes(
 				input.puzzleId,
 			)
@@ -317,16 +350,14 @@ export function createGameProgressService(
 					(item) => item.puzzleId === input.puzzleId,
 				)?.bestActiveTimeMs ?? null
 
-			const next = completePuzzle(beforeSave, input)
+			const progressed = completePuzzle(beforeSave, input)
+			const { save: next, newlyUnlocked } = withStickyAchievementTransition(
+				beforeSave,
+				progressed,
+				day,
+			)
 			await commit(next)
 
-			const afterAchievements = evaluateAchievements(
-				contextFromSave(next, day),
-			)
-			const newlyUnlocked = getNewlyUnlockedAchievements(
-				beforeAchievements,
-				afterAchievements,
-			)
 			const newBest =
 				next.bestTimes.find((item) => item.puzzleId === input.puzzleId)
 					?.bestActiveTimeMs ?? input.activeTimeMs
@@ -563,9 +594,6 @@ export function createGameProgressService(
 			ensureHydrated(hydrated)
 			const beforeSave = current
 			const day = today()
-			const beforeAchievements = evaluateAchievements(
-				contextFromSave(beforeSave, day),
-			)
 			const streakBefore = computeCurrentStreak({
 				today: day,
 				completions: beforeSave.dailyCompletionRecords,
@@ -580,16 +608,14 @@ export function createGameProgressService(
 			)
 			const galleryIncluded = getGalleryItemDef(input.puzzleId) !== null
 
-			const next = completeDaily(beforeSave, input)
+			const progressed = completeDaily(beforeSave, input)
+			const { save: next, newlyUnlocked } = withStickyAchievementTransition(
+				beforeSave,
+				progressed,
+				day,
+			)
 			await commit(next)
 
-			const afterAchievements = evaluateAchievements(
-				contextFromSave(next, day),
-			)
-			const newlyUnlocked = getNewlyUnlockedAchievements(
-				beforeAchievements,
-				afterAchievements,
-			)
 			const streakAfter = computeCurrentStreak({
 				today: day,
 				completions: next.dailyCompletionRecords,
