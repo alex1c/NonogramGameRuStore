@@ -46,8 +46,10 @@ export function findTransformDuplicatePairs(
 				pairs.push({
 					idA: a.id,
 					titleA: a.titleRu,
+					conceptA: a.conceptId,
 					idB: b.id,
 					titleB: b.titleRu,
+					conceptB: b.conceptId,
 					sizeKey: a.sizeKey,
 					similarity: 1,
 				})
@@ -95,8 +97,10 @@ export function topNearDuplicatePairs(
 					pairs.push({
 						idA: a.id,
 						titleA: a.titleRu,
+						conceptA: a.conceptId,
 						idB: b.id,
 						titleB: b.titleRu,
+						conceptB: b.conceptId,
 						sizeKey: a.sizeKey,
 						similarity,
 					})

@@ -81,6 +81,10 @@ export function structuralRejectReason(
 	if (cells === 0) {
 		return 'empty_or_full'
 	}
+	// Reject degenerate canvases (e.g. 1×N) — not usable for gallery review.
+	if (width < 3 || height < 3) {
+		return 'structural'
+	}
 	const filled = countFilled(bitmap)
 	if (filled === 0 || filled === cells) {
 		return 'empty_or_full'

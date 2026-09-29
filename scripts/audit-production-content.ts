@@ -1,10 +1,18 @@
 /**
- * Production content audit — npm run audit:production-content
- * Audits the Phase 8A pilot candidate manifest (not runtime 21).
+ * Production content audit — Pilot R2 (Phase 8A.1).
+ * npm run audit:production-content
  */
 
 import fs from 'node:fs'
-import { CONTENT_GENERATOR_VERSION, PILOT_TARGET } from './content/constants'
+import {
+	CONTENT_GENERATOR_VERSION,
+	MAX_CONCEPT_FREQUENCY,
+	MAX_EXPERT_PATTERN_COUNT,
+	MAX_PATTERN_COUNT,
+	MIN_DISTINCT_CONCEPTS,
+	PILOT_R1_REJECTED_CHECKSUM,
+	PILOT_TARGET,
+} from './content/constants'
 import { contentPaths } from './content/paths'
 import type { PilotManifest } from './content/types'
 import { checksumManifest } from './content/hash'
@@ -12,13 +20,13 @@ import { checksumManifest } from './content/hash'
 function main(): void {
 	const paths = contentPaths()
 	if (!fs.existsSync(paths.manifestPath)) {
-		console.error(`Missing pilot manifest: ${paths.manifestPath}`)
+		console.error(`Missing pilot R2 manifest: ${paths.manifestPath}`)
 		console.error('Run: npm run content:generate-pilot')
 		process.exitCode = 1
 		return
 	}
 	if (!fs.existsSync(paths.reportJsonPath)) {
-		console.error(`Missing pilot report: ${paths.reportJsonPath}`)
+		console.error(`Missing pilot R2 report: ${paths.reportJsonPath}`)
 		process.exitCode = 1
 		return
 	}
@@ -39,15 +47,27 @@ function main(): void {
 		readonly quality: {
 			readonly exactDuplicates: readonly string[]
 			readonly transformDuplicates: readonly unknown[]
+			readonly nearDuplicates: readonly unknown[]
+			readonly duplicateTitles: Record<string, unknown>
 		}
 		readonly quota: {
 			readonly shortage: readonly string[]
 			readonly actual: Record<string, number>
 		}
+		readonly diversity: {
+			readonly distinctConcepts: number
+			readonly maxConceptFrequency: number
+			readonly patternCount: number
+			readonly patternShare: number
+			readonly expertPatternCount: number
+			readonly maxFamilyShare: number
+			readonly maxCollectionShare: number
+			readonly gateFailures: readonly string[]
+		}
 		readonly checksum: string
 	}
 
-	console.log('Production content audit (Phase 8A pilot candidates)')
+	console.log('Production content audit (Phase 8A.1 Pilot R2)')
 	console.log(`generator=${CONTENT_GENERATOR_VERSION}`)
 	console.log(`catalogVersion=${manifest.catalogVersion}`)
 	console.log(`puzzleCount=${manifest.puzzleCount}`)
@@ -57,12 +77,13 @@ function main(): void {
 		`logic productionReady=${report.logic.productionReady} unique=${report.logic.unique} logical=${report.logic.logical} hintChain=${report.logic.hintChain}`,
 	)
 	console.log(
-		`duplicates exact=${report.quality.exactDuplicates.length} transform=${report.quality.transformDuplicates.length}`,
+		`diversity concepts=${report.diversity.distinctConcepts} maxConceptFreq=${report.diversity.maxConceptFrequency} patterns=${report.diversity.patternCount}/${(report.diversity.patternShare * 100).toFixed(1)}% expertPatterns=${report.diversity.expertPatternCount} maxFamilyShare=${(report.diversity.maxFamilyShare * 100).toFixed(1)}%`,
+	)
+	console.log(
+		`duplicates exact=${report.quality.exactDuplicates.length} transform=${report.quality.transformDuplicates.length} near=${report.quality.nearDuplicates.length} titles=${Object.keys(report.quality.duplicateTitles).length}`,
 	)
 	console.log(`tierActual=${JSON.stringify(report.quota.actual)}`)
-	console.log(
-		`contactSheetExists=${fs.existsSync(paths.contactSheetPath)}`,
-	)
+	console.log(`contactSheetExists=${fs.existsSync(paths.contactSheetPath)}`)
 
 	const issues: string[] = []
 	if (manifest.puzzleCount !== PILOT_TARGET) {
@@ -89,6 +110,30 @@ function main(): void {
 	if (report.quota.shortage.length > 0) {
 		issues.push(`tier shortage: ${report.quota.shortage.join(',')}`)
 	}
+	if (report.diversity.distinctConcepts < MIN_DISTINCT_CONCEPTS) {
+		issues.push(
+			`distinctConcepts ${report.diversity.distinctConcepts} < ${MIN_DISTINCT_CONCEPTS}`,
+		)
+	}
+	if (report.diversity.maxConceptFrequency > MAX_CONCEPT_FREQUENCY) {
+		issues.push(
+			`maxConceptFrequency ${report.diversity.maxConceptFrequency} > ${MAX_CONCEPT_FREQUENCY}`,
+		)
+	}
+	if (report.diversity.patternCount > MAX_PATTERN_COUNT) {
+		issues.push(`patterns ${report.diversity.patternCount} > ${MAX_PATTERN_COUNT}`)
+	}
+	if (report.diversity.expertPatternCount > MAX_EXPERT_PATTERN_COUNT) {
+		issues.push(
+			`expertPatterns ${report.diversity.expertPatternCount} > ${MAX_EXPERT_PATTERN_COUNT}`,
+		)
+	}
+	if (Object.keys(report.quality.duplicateTitles).length > 0) {
+		issues.push('duplicate titles present')
+	}
+	if (manifest.checksum === PILOT_R1_REJECTED_CHECKSUM) {
+		issues.push('checksum matches rejected R1 baseline')
+	}
 	if (manifest.checksum !== report.checksum) {
 		issues.push('manifest/report checksum mismatch')
 	}
@@ -96,10 +141,11 @@ function main(): void {
 		issues.push('contact sheet missing')
 	}
 
-	// Recompute checksum from committed puzzle fields.
 	const normalized = [...manifest.puzzles]
 		.map((p) => ({
 			id: p.id,
+			conceptId: p.conceptId,
+			compositionId: p.compositionId,
 			solutionHash: p.solutionHash,
 			canonicalHash: p.canonicalHash,
 			titleRu: p.titleRu,
@@ -112,8 +158,8 @@ function main(): void {
 			rowClues: p.rowClues,
 			columnClues: p.columnClues,
 			family: p.family,
-			variant: p.variant,
 			kind: p.kind,
+			sourceKind: p.sourceKind,
 			seed: p.seed,
 			dailyEligible: p.dailyEligible,
 		}))
@@ -130,11 +176,13 @@ function main(): void {
 	}
 
 	const ids = new Set<string>()
+	const concepts = new Map<string, number>()
 	for (const puzzle of manifest.puzzles) {
 		if (ids.has(puzzle.id)) {
 			issues.push(`duplicate id ${puzzle.id}`)
 		}
 		ids.add(puzzle.id)
+		concepts.set(puzzle.conceptId, (concepts.get(puzzle.conceptId) ?? 0) + 1)
 	}
 
 	if (issues.length > 0) {
@@ -148,6 +196,11 @@ function main(): void {
 	}
 
 	console.log('PASS')
+	if (report.quality.nearDuplicates.length > 5) {
+		console.log(
+			`WARNING nearDuplicates=${report.quality.nearDuplicates.length} (target ≤5)`,
+		)
+	}
 }
 
 main()

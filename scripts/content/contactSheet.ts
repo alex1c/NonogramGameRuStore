@@ -1,8 +1,9 @@
 /**
- * Offline HTML contact sheet for human pilot review (no CDN, no framework).
+ * Offline HTML contact sheet for Pilot R2 human review.
+ * Features: blind titles, technical details, concept filter, localStorage review export.
  */
 
-import type { CandidateAuditRecord } from './types'
+import type { CandidateAuditRecord, SimilarityPair } from './types'
 
 function escapeHtml(value: string): string {
 	return value
@@ -43,12 +44,21 @@ export function buildContactSheetHtml(
 		readonly catalogVersion: string
 		readonly generatorVersion: string
 		readonly checksum: string
+		readonly nearDuplicates?: readonly SimilarityPair[]
+		readonly repeatedConcepts?: readonly {
+			readonly conceptId: string
+			readonly ids: readonly string[]
+			readonly compositions: readonly string[]
+			readonly titles: readonly string[]
+		}[]
 	},
 ): string {
 	const payload = records.map((row) => ({
 		id: row.id,
 		titleRu: row.titleRu,
 		collectionId: row.collectionId,
+		conceptId: row.conceptId,
+		compositionId: row.compositionId,
 		family: row.family,
 		tier: row.tier,
 		sizeKey: row.sizeKey,
@@ -57,64 +67,127 @@ export function buildContactSheetHtml(
 		score: row.score,
 		kind: row.kind,
 		ascii: row.ascii,
+		warnings: row.warnings,
+		hintSteps: row.hintSteps,
 	}))
 
 	const cards = payload
 		.map((row) => {
 			const svg = bitmapToSvg(row.ascii, row.width, row.height)
-			return `<article class="card" data-collection="${escapeHtml(row.collectionId)}" data-tier="${escapeHtml(String(row.tier))}" data-size="${escapeHtml(row.sizeKey)}" data-family="${escapeHtml(row.family)}" data-kind="${escapeHtml(row.kind)}">
+			const warn = row.warnings
+				.filter((w) => w !== 'needs_human_recognizability_review')
+				.map((w) => `<span class="badge">${escapeHtml(w)}</span>`)
+				.join('')
+			return `<article class="card" data-collection="${escapeHtml(row.collectionId)}" data-tier="${escapeHtml(String(row.tier))}" data-size="${escapeHtml(row.sizeKey)}" data-family="${escapeHtml(row.family)}" data-kind="${escapeHtml(row.kind)}" data-concept="${escapeHtml(row.conceptId)}" data-id="${escapeHtml(row.id)}">
   <div class="thumb">${svg}</div>
-  <h3>${escapeHtml(row.titleRu)}</h3>
-  <div class="meta">${escapeHtml(row.id)}</div>
-  <div class="meta">${escapeHtml(row.sizeKey)} · ${escapeHtml(String(row.tier))}</div>
-  <div class="meta">${escapeHtml(row.collectionId)} · ${escapeHtml(row.family)}</div>
+  <h3 class="title">${escapeHtml(row.titleRu)}</h3>
+  <div class="meta default-meta">${escapeHtml(row.collectionId)} · ${escapeHtml(row.sizeKey)} · ${escapeHtml(String(row.tier))}</div>
+  <div class="meta tech hidden">ID: ${escapeHtml(row.id)}<br/>concept: ${escapeHtml(row.conceptId)} / ${escapeHtml(row.compositionId)}<br/>family: ${escapeHtml(row.family)} · score: ${row.score ?? 'n/a'} · hints: ${row.hintSteps}<br/>${warn}</div>
+  <div class="review">
+    <button type="button" data-dec="approve">Approve</button>
+    <button type="button" data-dec="reject">Reject</button>
+    <button type="button" data-dec="fix">Fix</button>
+    <select class="reason">
+      <option value="">Причина</option>
+      <option value="unrecognizable">Не узнаётся</option>
+      <option value="duplicate">Дубль</option>
+      <option value="too_similar">Слишком похоже</option>
+      <option value="too_simple">Слишком просто</option>
+      <option value="bad_title">Плохое название</option>
+      <option value="wrong_collection">Не та коллекция</option>
+      <option value="ugly">Некрасиво</option>
+      <option value="other">Другое</option>
+    </select>
+  </div>
 </article>`
 		})
+		.join('\n')
+
+	const nearSection = (meta.nearDuplicates ?? [])
+		.map(
+			(p) =>
+				`<li>${escapeHtml(p.idA)} (${escapeHtml(p.titleA)} / ${escapeHtml(p.conceptA)}) ↔ ${escapeHtml(p.idB)} (${escapeHtml(p.titleB)} / ${escapeHtml(p.conceptB)}) · ${escapeHtml(p.sizeKey)} · ${p.similarity.toFixed(4)}</li>`,
+		)
+		.join('\n')
+
+	const repeatedSection = (meta.repeatedConcepts ?? [])
+		.map(
+			(r) =>
+				`<li><strong>${escapeHtml(r.conceptId)}</strong>: ${escapeHtml(r.compositions.join(' + '))} — ${escapeHtml(r.titles.join(' / '))} — ${escapeHtml(r.ids.join(', '))}</li>`,
+		)
 		.join('\n')
 
 	return `<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="utf-8"/>
-<title>Phase 8A Pilot Contact Sheet</title>
+<title>Phase 8A.1 Pilot R2 Contact Sheet</title>
 <style>
   :root { color-scheme: light; }
   body { font-family: Segoe UI, Tahoma, sans-serif; margin: 16px; background: #e8e6e1; color: #222; }
   h1 { font-size: 20px; margin: 0 0 8px; }
-  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; align-items: end; }
+  .toolbar, .modes { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; align-items: end; }
   label { font-size: 12px; display: flex; flex-direction: column; gap: 4px; }
-  select, input { min-width: 140px; padding: 4px 6px; }
+  select, input, button { padding: 4px 8px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  body.blind .grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
   .card { background: #fff; border: 1px solid #cfcbc3; padding: 10px; }
   .card.hidden { display: none; }
   .thumb { display: flex; justify-content: center; align-items: center; min-height: 160px; background: #f4f4f0; border: 1px solid #ddd; margin-bottom: 8px; overflow: auto; }
+  body.blind .thumb { min-height: 200px; }
   .thumb svg { image-rendering: pixelated; max-width: 100%; height: auto; }
   h3 { font-size: 15px; margin: 0 0 4px; }
+  body.blind .title, body.blind-collection .default-meta { visibility: hidden; }
+  body.blind .title::after { content: '(скрыто)'; visibility: visible; color: #888; font-weight: normal; font-size: 12px; }
   .meta { font-size: 11px; color: #555; word-break: break-all; }
+  .tech.hidden { display: none; }
+  body.tech .tech.hidden { display: block; }
+  .badge { display: inline-block; background: #fff3cd; border: 1px solid #e0c36a; padding: 1px 4px; margin: 2px 2px 0 0; font-size: 10px; }
   .stats { font-size: 12px; color: #444; margin-bottom: 8px; }
+  .review button { margin-right: 4px; }
+  .card[data-decision="approve"] { outline: 2px solid #2e7d32; }
+  .card[data-decision="reject"] { outline: 2px solid #c62828; }
+  .card[data-decision="fix"] { outline: 2px solid #ef6c00; }
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .panel { background: #fff; border: 1px solid #cfcbc3; padding: 10px; font-size: 12px; }
+  @media (max-width: 900px) { .panels { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
-<h1>Phase 8A Pilot Contact Sheet (CANDIDATE)</h1>
+<h1>Phase 8A.1 Pilot R2 Contact Sheet (CANDIDATE)</h1>
 <p class="stats">catalog=${escapeHtml(meta.catalogVersion)} · generator=${escapeHtml(meta.generatorVersion)} · items=<span id="visibleCount">${records.length}</span>/${records.length}<br/>checksum=${escapeHtml(meta.checksum)}</p>
+<div class="modes">
+  <button type="button" id="toggleBlind">Проверка без названий</button>
+  <button type="button" id="toggleTech">Технические данные</button>
+  <button type="button" id="toggleShuffle">Deterministic shuffle order</button>
+  <button type="button" id="exportReview">Export review JSON</button>
+</div>
 <div class="toolbar">
   <label>Collection<select id="fCollection"><option value="">All</option></select></label>
   <label>Tier<select id="fTier"><option value="">All</option></select></label>
   <label>Size<select id="fSize"><option value="">All</option></select></label>
   <label>Family<select id="fFamily"><option value="">All</option></select></label>
+  <label>Concept<select id="fConcept"><option value="">All</option></select></label>
   <label>Kind<select id="fKind"><option value="">All</option>
     <option value="object">object</option>
     <option value="scene">scene</option>
+    <option value="symbol">symbol</option>
     <option value="pattern">pattern</option>
   </select></label>
-  <label>Search<input id="fSearch" type="search" placeholder="title / id"/></label>
+  <label>Search<input id="fSearch" type="search" placeholder="title / id / concept"/></label>
+</div>
+<div class="panels">
+  <div class="panel"><strong>Repeated concepts</strong><ul>${repeatedSection || '<li>none</li>'}</ul></div>
+  <div class="panel"><strong>Near duplicates ≥0.92</strong><ul>${nearSection || '<li>none</li>'}</ul></div>
 </div>
 <div class="grid" id="grid">
 ${cards}
 </div>
 <script>
 (function () {
+  var STORAGE_KEY = 'pilot-r2-review-' + ${JSON.stringify(meta.checksum)};
   var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+  var originalOrder = cards.slice();
   function unique(attr) {
     var set = {};
     cards.forEach(function (c) { set[c.getAttribute(attr)] = true; });
@@ -131,11 +204,51 @@ ${cards}
   fill('fTier', unique('data-tier'));
   fill('fSize', unique('data-size'));
   fill('fFamily', unique('data-family'));
+  fill('fConcept', unique('data-concept'));
+
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (e) { return {}; }
+  }
+  function saveState(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+  var state = loadState();
+  cards.forEach(function (card) {
+    var id = card.getAttribute('data-id');
+    var entry = state[id];
+    if (entry) {
+      card.setAttribute('data-decision', entry.decision || '');
+      if (entry.reason) card.querySelector('.reason').value = entry.reason;
+    }
+    card.querySelectorAll('button[data-dec]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var dec = btn.getAttribute('data-dec');
+        card.setAttribute('data-decision', dec);
+        state[id] = {
+          puzzleId: id,
+          decision: dec,
+          reason: card.querySelector('.reason').value || null
+        };
+        saveState(state);
+      });
+    });
+    card.querySelector('.reason').addEventListener('change', function () {
+      var dec = card.getAttribute('data-decision') || 'reject';
+      state[id] = {
+        puzzleId: id,
+        decision: dec,
+        reason: card.querySelector('.reason').value || null
+      };
+      saveState(state);
+    });
+  });
+
   function apply() {
     var col = document.getElementById('fCollection').value;
     var tier = document.getElementById('fTier').value;
     var size = document.getElementById('fSize').value;
     var family = document.getElementById('fFamily').value;
+    var concept = document.getElementById('fConcept').value;
     var kind = document.getElementById('fKind').value;
     var q = document.getElementById('fSearch').value.trim().toLowerCase();
     var visible = 0;
@@ -145,6 +258,7 @@ ${cards}
       if (tier && c.getAttribute('data-tier') !== tier) ok = false;
       if (size && c.getAttribute('data-size') !== size) ok = false;
       if (family && c.getAttribute('data-family') !== family) ok = false;
+      if (concept && c.getAttribute('data-concept') !== concept) ok = false;
       if (kind && c.getAttribute('data-kind') !== kind) ok = false;
       if (q) {
         var text = (c.textContent || '').toLowerCase();
@@ -155,9 +269,43 @@ ${cards}
     });
     document.getElementById('visibleCount').textContent = String(visible);
   }
-  ['fCollection','fTier','fSize','fFamily','fKind','fSearch'].forEach(function (id) {
+  ['fCollection','fTier','fSize','fFamily','fConcept','fKind','fSearch'].forEach(function (id) {
     document.getElementById(id).addEventListener('input', apply);
     document.getElementById(id).addEventListener('change', apply);
+  });
+
+  document.getElementById('toggleBlind').addEventListener('click', function () {
+    document.body.classList.toggle('blind');
+    document.body.classList.toggle('blind-collection');
+  });
+  document.getElementById('toggleTech').addEventListener('click', function () {
+    document.body.classList.toggle('tech');
+  });
+  document.getElementById('toggleShuffle').addEventListener('click', function () {
+    var grid = document.getElementById('grid');
+    var shuffled = cards.slice().sort(function (a, b) {
+      return a.getAttribute('data-id').localeCompare(b.getAttribute('data-id')) ^ 0x5f;
+    });
+    // Deterministic reordering by hash-ish of id (stable).
+    shuffled.sort(function (a, b) {
+      function h(s){ var x=0; for (var i=0;i<s.length;i++) x=((x<<5)-x)+s.charCodeAt(i)|0; return x; }
+      return h(a.getAttribute('data-id')) - h(b.getAttribute('data-id'));
+    });
+    if (grid.dataset.shuffled === '1') {
+      originalOrder.forEach(function (c) { grid.appendChild(c); });
+      grid.dataset.shuffled = '0';
+    } else {
+      shuffled.forEach(function (c) { grid.appendChild(c); });
+      grid.dataset.shuffled = '1';
+    }
+  });
+  document.getElementById('exportReview').addEventListener('click', function () {
+    var rows = Object.keys(state).sort().map(function (k) { return state[k]; });
+    var blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'pilot-r2-review.json';
+    a.click();
   });
 })();
 </script>

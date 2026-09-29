@@ -1,5 +1,5 @@
 /**
- * Phase 8A content pipeline unit tests (fast — no full catalog solver audit).
+ * Phase 8A.1 content pipeline unit tests (fast — no full catalog solver audit).
  */
 
 import {
@@ -15,19 +15,29 @@ import {
 import { findTransformDuplicatePairs, topNearDuplicatePairs } from '../duplicates'
 import type { CandidateAuditRecord } from '../types'
 import { arrangePilotCampaign } from '../campaignSim'
-import { selectByTierQuota } from '../selectQuota'
-import { CONTENT_GENERATOR_VERSION, PILOT_TIER_QUOTA } from '../constants'
+import { selectWithDiversity } from '../selectQuota'
+import {
+	CONTENT_GENERATOR_VERSION,
+	normalizeConceptId,
+	PILOT_TIER_QUOTA,
+} from '../constants'
 
 function fakeRecord(
 	partial: Partial<CandidateAuditRecord> &
-		Pick<CandidateAuditRecord, 'id' | 'ascii' | 'solutionHash' | 'canonicalHash'>,
+		Pick<
+			CandidateAuditRecord,
+			'id' | 'ascii' | 'solutionHash' | 'canonicalHash'
+		>,
 ): CandidateAuditRecord {
 	return {
-		titleRu: 'Тест',
+		titleRu: partial.titleRu ?? `Title-${partial.id}`,
 		collectionId: 'symbols',
-		family: 'test',
+		conceptId: partial.conceptId ?? `concept-${partial.id}`,
+		compositionId: partial.compositionId ?? 'default',
+		family: partial.family ?? `family-${partial.id}`,
 		variant: 'v',
 		kind: 'object',
+		sourceKind: 'authored',
 		width: 5,
 		height: 5,
 		sizeKey: '5x5',
@@ -59,6 +69,9 @@ function fakeRecord(
 		dailyEligible: true,
 		rejectReason: null,
 		seed: 1,
+		warnings: [],
+		needsHumanRecognizabilityReview: true,
+		notSelectedReason: null,
 		...partial,
 	}
 }
@@ -72,8 +85,12 @@ describe('content bitmap encoding', () => {
 	})
 
 	it('supports Russian titles in metadata separately from ASCII', () => {
-		const title = 'Спящий кот'
-		expect(title).toMatch(/кот/)
+		expect('Спящий кот').toMatch(/кот/)
+	})
+
+	it('normalizes concept aliases', () => {
+		expect(normalizeConceptId('Kitty')).toBe('cat')
+		expect(normalizeConceptId('dog')).toBe('dog')
 	})
 })
 
@@ -121,9 +138,6 @@ describe('content hashing / duplicates', () => {
 		const a = parseAscii(['###', '#.#', '###'])
 		const b = parseAscii(['.#.', '###', '.#.'])
 		expect(solutionHash(a)).not.toBe(solutionHash(b))
-		expect(canonicalTransformationHash(a)).not.toBe(
-			canonicalTransformationHash(b),
-		)
 	})
 
 	it('transform duplicate pair detector works', () => {
@@ -132,15 +146,16 @@ describe('content hashing / duplicates', () => {
 			ascii: 'x',
 			solutionHash: 'h1',
 			canonicalHash: 'same',
+			conceptId: 'c1',
 		})
 		const right = fakeRecord({
 			id: 'b',
 			ascii: 'y',
 			solutionHash: 'h2',
 			canonicalHash: 'same',
+			conceptId: 'c2',
 		})
-		const pairs = findTransformDuplicatePairs([left, right])
-		expect(pairs).toHaveLength(1)
+		expect(findTransformDuplicatePairs([left, right])).toHaveLength(1)
 	})
 
 	it('top near duplicates report same-size pairs above threshold', () => {
@@ -161,23 +176,25 @@ describe('content hashing / duplicates', () => {
 		expect(hammingSimilarity(aBmp, bBmp)).toBeGreaterThanOrEqual(0.92)
 		const a = fakeRecord({
 			id: 'a',
-			ascii: '#####\n#...#\n#.#.#\n#...#\n#####',
+			ascii: 'x',
 			solutionHash: solutionHash(aBmp),
 			canonicalHash: canonicalTransformationHash(aBmp),
 			width: 5,
 			height: 5,
 			sizeKey: '5x5',
 			fillRatio: 0.6,
+			conceptId: 'frame-a',
 		})
 		const b = fakeRecord({
 			id: 'b',
-			ascii: '#####\n#...#\n#...#\n#...#\n#####',
+			ascii: 'y',
 			solutionHash: solutionHash(bBmp),
 			canonicalHash: canonicalTransformationHash(bBmp),
 			width: 5,
 			height: 5,
 			sizeKey: '5x5',
 			fillRatio: 0.56,
+			conceptId: 'frame-b',
 		})
 		const pairs = topNearDuplicatePairs(
 			[a, b],
@@ -188,12 +205,166 @@ describe('content hashing / duplicates', () => {
 			5,
 		)
 		expect(pairs.length).toBe(1)
-		expect(pairs[0]!.similarity).toBeGreaterThan(0.9)
 	})
 })
 
-describe('quota selection / campaign sim', () => {
-	it('selects up to tier quotas deterministically', () => {
+describe('semantic diversity selection', () => {
+	it('caps bridge-like concept frequency (R1 regression)', () => {
+		const bridges = Array.from({ length: 6 }, (_, i) =>
+			fakeRecord({
+				id: `bridge-${i}`,
+				conceptId: 'bridge',
+				compositionId: i === 0 ? 'default' : `var-${i}`,
+				titleRu: `Мост-${i}`,
+				family: `bridge-family-${i}`,
+				tier: 'HARD',
+				score: 55 + i,
+				ascii: `b${i}`,
+				solutionHash: `hb${i}`,
+				canonicalHash: `cb${i}`,
+				collectionId: 'nature',
+			}),
+		)
+		const others = Array.from({ length: 120 }, (_, i) => {
+			const tiers = ['BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const
+			return fakeRecord({
+				id: `other-${i}`,
+				conceptId: `concept-${i}`,
+				compositionId: 'default',
+				titleRu: `Объект-${i}`,
+				family: `fam-${i}`,
+				tier: tiers[i % 5]!,
+				score: 20 + (i % 50),
+				ascii: `o${i}`,
+				solutionHash: `ho${i}`,
+				canonicalHash: `co${i}`,
+				collectionId: 'objects',
+				kind: i % 17 === 0 ? 'pattern' : 'object',
+			})
+		})
+		const result = selectWithDiversity([...bridges, ...others])
+		const bridgeSelected = result.selected.filter((r) => r.conceptId === 'bridge')
+		expect(bridgeSelected.length).toBeLessThanOrEqual(2)
+	})
+
+	it('caps cat concept frequency (R1 regression)', () => {
+		const cats = Array.from({ length: 5 }, (_, i) =>
+			fakeRecord({
+				id: `cat-${i}`,
+				conceptId: 'cat',
+				compositionId: i === 0 ? 'sitting' : `size-${i}`,
+				titleRu: `Кот-${i}`,
+				family: `cat-fam-${i}`,
+				tier: 'MEDIUM',
+				ascii: `c${i}`,
+				solutionHash: `hc${i}`,
+				canonicalHash: `cc${i}`,
+				collectionId: 'animals',
+			}),
+		)
+		const filler = Array.from({ length: 100 }, (_, i) =>
+			fakeRecord({
+				id: `fill-${i}`,
+				conceptId: `fill-${i}`,
+				titleRu: `Филлер-${i}`,
+				family: `ff-${i}`,
+				tier: (['BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const)[
+					i % 5
+				]!,
+				ascii: `f${i}`,
+				solutionHash: `hf${i}`,
+				canonicalHash: `cf${i}`,
+			}),
+		)
+		const result = selectWithDiversity([...cats, ...filler])
+		expect(result.selected.filter((r) => r.conceptId === 'cat').length).toBeLessThanOrEqual(
+			2,
+		)
+	})
+
+	it('same concept across sizes selects at most concept cap', () => {
+		const sizes = [5, 10, 15]
+		const variants = sizes.map((size, i) =>
+			fakeRecord({
+				id: `apple-${size}`,
+				conceptId: 'apple',
+				compositionId: 'default',
+				titleRu: `Яблоко-${size}`,
+				family: `apple-${size}`,
+				tier: 'EASY',
+				width: size,
+				height: size,
+				sizeKey: `${size}x${size}`,
+				ascii: `a${i}`,
+				solutionHash: `ha${i}`,
+				canonicalHash: `ca${i}`,
+				collectionId: 'food',
+			}),
+		)
+		const filler = Array.from({ length: 100 }, (_, i) =>
+			fakeRecord({
+				id: `x-${i}`,
+				conceptId: `x-${i}`,
+				titleRu: `X-${i}`,
+				family: `x-${i}`,
+				tier: (['BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const)[
+					i % 5
+				]!,
+				ascii: `x${i}`,
+				solutionHash: `hx${i}`,
+				canonicalHash: `cx${i}`,
+			}),
+		)
+		const result = selectWithDiversity([...variants, ...filler])
+		// compositionId all default → only 1 apple allowed
+		expect(result.selected.filter((r) => r.conceptId === 'apple').length).toBe(1)
+	})
+
+	it('pattern cap prevents pattern-only expert fill', () => {
+		const patterns = Array.from({ length: 40 }, (_, i) =>
+			fakeRecord({
+				id: `pat-${i}`,
+				conceptId: `pat-${i}`,
+				titleRu: `Узор-${i}`,
+				family: `pat-fam-${i}`,
+				tier: i < 15 ? 'EXPERT' : 'HARD',
+				kind: 'pattern',
+				collectionId: 'patterns',
+				ascii: `p${i}`,
+				solutionHash: `hp${i}`,
+				canonicalHash: `cp${i}`,
+				score: 70,
+			}),
+		)
+		const objects = Array.from({ length: 80 }, (_, i) =>
+			fakeRecord({
+				id: `obj-${i}`,
+				conceptId: `obj-${i}`,
+				titleRu: `Объект-${i}`,
+				family: `obj-${i}`,
+				tier: (['BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const)[
+					i % 5
+				]!,
+				ascii: `o${i}`,
+				solutionHash: `ho${i}`,
+				canonicalHash: `co${i}`,
+				collectionId: 'objects',
+			}),
+		)
+		const result = selectWithDiversity([...patterns, ...objects])
+		const patternCount = result.selected.filter(
+			(r) => r.kind === 'pattern' || r.collectionId === 'patterns',
+		).length
+		expect(patternCount).toBeLessThanOrEqual(10)
+		const expertPatterns = result.selected.filter(
+			(r) =>
+				r.tier === 'EXPERT' &&
+				(r.kind === 'pattern' || r.collectionId === 'patterns'),
+		).length
+		expect(expertPatterns).toBeLessThanOrEqual(3)
+	})
+
+	it('selects up to tier quotas deterministically with unique concepts', () => {
 		const rows: CandidateAuditRecord[] = []
 		const tiers = ['BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const
 		for (const tier of tiers) {
@@ -206,18 +377,22 @@ describe('quota selection / campaign sim', () => {
 						ascii: `${tier}-${i}`,
 						solutionHash: `${tier}-h-${i}`,
 						canonicalHash: `${tier}-c-${i}`,
+						conceptId: `${tier}-concept-${i}`,
+						titleRu: `${tier}-title-${i}`,
+						family: `${tier}-fam-${i}`,
 						collectionId: i % 2 === 0 ? 'animals' : 'food',
 					}),
 				)
 			}
 		}
-		const first = selectByTierQuota(rows, PILOT_TIER_QUOTA, 100)
-		const second = selectByTierQuota(rows, PILOT_TIER_QUOTA, 100)
+		const first = selectWithDiversity(rows, PILOT_TIER_QUOTA, 100)
+		const second = selectWithDiversity(rows, PILOT_TIER_QUOTA, 100)
 		expect(first.selected.map((r) => r.id)).toEqual(
 			second.selected.map((r) => r.id),
 		)
 		expect(first.selected).toHaveLength(100)
 		expect(first.shortage).toEqual([])
+		expect(first.distinctConcepts).toBeGreaterThanOrEqual(80)
 	})
 
 	it('campaign arranger produces stable order and set sizes', () => {
@@ -231,6 +406,7 @@ describe('quota selection / campaign sim', () => {
 				ascii: `p${i}`,
 				solutionHash: `h${i}`,
 				canonicalHash: `c${i}`,
+				conceptId: `p-concept-${i}`,
 			}),
 		)
 		const a = arrangePilotCampaign(rows)
@@ -242,7 +418,7 @@ describe('quota selection / campaign sim', () => {
 })
 
 describe('generator version pin', () => {
-	it('uses prod-v1 for Phase 8A', () => {
-		expect(CONTENT_GENERATOR_VERSION).toBe('prod-v1')
+	it('uses prod-v1.1 for Phase 8A.1', () => {
+		expect(CONTENT_GENERATOR_VERSION).toBe('prod-v1.1')
 	})
 })

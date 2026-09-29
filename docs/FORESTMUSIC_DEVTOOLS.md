@@ -6,10 +6,10 @@ This project was bootstrapped / Phase 7-checked against:
 - Version: **1.1.1**
 - `main` SHA: **ad2ff4469e2aaf301a4b4e93eb633ddf17c8490c**
 
-Fetched `origin/main` again before Phase 8A; still v1.1.1 @ ad2ff446
-(unchanged vs Phase 7B pin).
+Fetched `origin/main` again before Phase 8A.1; still v1.1.1 @ ad2ff446
+(unchanged vs Phase 7B / 8A pin). DevTools was not modified.
 
-Applied in Phase 0–8A:
+Applied in Phase 0–8A.1:
 
 - README.md
 - VERSION

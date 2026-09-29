@@ -1,5 +1,5 @@
 /**
- * Phase 8A candidate / report shared types.
+ * Phase 8A / 8A.1 candidate / report shared types.
  */
 
 import type { DifficultyTier } from '../../src/domain/difficulty/tiers'
@@ -8,7 +8,8 @@ import type { Bitmap } from './bitmap'
 import type { CollectionId } from './constants'
 
 export type ReviewStatus = 'candidate' | 'approved' | 'rejected'
-export type ContentKind = 'object' | 'pattern' | 'scene'
+export type ContentKind = 'object' | 'pattern' | 'scene' | 'symbol'
+export type SourceKind = 'authored' | 'procedural'
 
 export type RejectReason =
 	| 'invalid'
@@ -26,14 +27,28 @@ export type RejectReason =
 	| 'structural'
 	| 'quota_overflow'
 	| 'human_rejected'
+	| 'missing_concept'
+	| 'invalid_composition'
+
+export type StructuralWarning =
+	| 'tiny_bbox'
+	| 'extreme_fill'
+	| 'singleton_heavy'
+	| 'many_components'
+	| 'simple_high_tier'
+	| 'large_easy_tier'
+	| 'needs_human_recognizability_review'
 
 export interface RawCandidate {
 	readonly id: string
 	readonly titleRu: string
 	readonly collectionId: CollectionId
+	readonly conceptId: string
+	readonly compositionId: string
 	readonly family: string
 	readonly variant: string
 	readonly kind: ContentKind
+	readonly sourceKind: SourceKind
 	readonly bitmap: Bitmap
 	readonly seed: number
 	readonly intendedTierHint?: DifficultyTier
@@ -55,9 +70,12 @@ export interface CandidateAuditRecord {
 	readonly id: string
 	readonly titleRu: string
 	readonly collectionId: CollectionId
+	readonly conceptId: string
+	readonly compositionId: string
 	readonly family: string
 	readonly variant: string
 	readonly kind: ContentKind
+	readonly sourceKind: SourceKind
 	readonly width: number
 	readonly height: number
 	readonly sizeKey: string
@@ -92,13 +110,19 @@ export interface CandidateAuditRecord {
 	readonly dailyEligible: boolean
 	readonly rejectReason: RejectReason | null
 	readonly seed: number
+	readonly warnings: readonly StructuralWarning[]
+	readonly needsHumanRecognizabilityReview: boolean
+	/** Selection skip reason when valid but not chosen. */
+	readonly notSelectedReason: string | null
 }
 
 export interface SimilarityPair {
 	readonly idA: string
 	readonly titleA: string
+	readonly conceptA: string
 	readonly idB: string
 	readonly titleB: string
+	readonly conceptB: string
 	readonly sizeKey: string
 	readonly similarity: number
 }
@@ -107,9 +131,12 @@ export interface PilotManifestPuzzle {
 	readonly id: string
 	readonly titleRu: string
 	readonly collectionId: CollectionId
+	readonly conceptId: string
+	readonly compositionId: string
 	readonly family: string
 	readonly variant: string
 	readonly kind: ContentKind
+	readonly sourceKind: SourceKind
 	readonly width: number
 	readonly height: number
 	readonly ascii: string
@@ -121,6 +148,7 @@ export interface PilotManifestPuzzle {
 	readonly dailyEligible: boolean
 	readonly reviewStatus: ReviewStatus
 	readonly seed: number
+	readonly warnings: readonly StructuralWarning[]
 	readonly rowClues: readonly (readonly number[])[]
 	readonly columnClues: readonly (readonly number[])[]
 }
@@ -128,7 +156,7 @@ export interface PilotManifestPuzzle {
 export interface PilotManifest {
 	readonly catalogVersion: string
 	readonly generatorVersion: string
-	readonly reportVersion: 1
+	readonly reportVersion: 2
 	readonly reviewStatus: 'candidate'
 	readonly puzzleCount: number
 	readonly checksum: string

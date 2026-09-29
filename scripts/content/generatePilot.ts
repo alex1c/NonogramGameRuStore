@@ -1,20 +1,28 @@
 /**
- * Deterministic pilot generation entrypoint.
+ * Deterministic Pilot R2 generation (Phase 8A.1).
  * npm run content:generate-pilot
  *
- * Produces candidate artifact under generated/content-pilot/
- * and review HTML under review-artifacts/ (gitignored).
+ * Writes generated/content-pilot-r2/ + review-artifacts/.../pilot-r2/
  * Does NOT modify runtime Campaign / Gallery / Daily.
+ * Does NOT overwrite rejected R1 baseline under generated/content-pilot/.
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { generateRowClues, generateColumnClues } from '../../src/domain/nonogram/clues'
-import { gridFromMatrix } from '../../src/domain/nonogram/clues'
+import {
+	generateColumnClues,
+	generateRowClues,
+	gridFromMatrix,
+} from '../../src/domain/nonogram/clues'
 import {
 	CONTENT_CATALOG_VERSION,
 	CONTENT_GENERATOR_VERSION,
 	MAX_CANDIDATE_ATTEMPTS,
+	MAX_PATTERN_COUNT,
+	MIN_DISTINCT_CONCEPTS,
+	NEAR_DUPLICATE_PAIR_TARGET,
+	PILOT_R1_HUMAN_STATUS,
+	PILOT_R1_REJECTED_CHECKSUM,
 	PILOT_TARGET,
 	PILOT_TIER_QUOTA,
 } from './constants'
@@ -29,12 +37,11 @@ import {
 import { checksumManifest } from './hash'
 import { contentPaths } from './paths'
 import { buildRawCandidatePool } from './pool'
-import { selectByTierQuota } from './selectQuota'
+import { selectWithDiversity } from './selectQuota'
 import type {
 	CandidateAuditRecord,
 	PilotManifest,
 	PilotManifestPuzzle,
-	RawCandidate,
 	RejectReason,
 } from './types'
 import {
@@ -46,8 +53,6 @@ import { parseAscii } from './bitmap'
 interface RejectionEntry {
 	readonly solutionHash?: string | null
 	readonly id?: string | null
-	readonly reason?: string
-	readonly note?: string
 }
 
 function loadRejections(filePath: string): {
@@ -88,18 +93,19 @@ function countRejects(
 	return bag
 }
 
-function buildManifestPuzzle(
-	row: CandidateAuditRecord,
-): PilotManifestPuzzle {
+function buildManifestPuzzle(row: CandidateAuditRecord): PilotManifestPuzzle {
 	const matrix = parseAscii(row.ascii.split('\n'))
 	const grid = gridFromMatrix(matrix as readonly (readonly number[])[])
 	return {
 		id: row.id,
 		titleRu: row.titleRu,
 		collectionId: row.collectionId,
+		conceptId: row.conceptId,
+		compositionId: row.compositionId,
 		family: row.family,
 		variant: row.variant,
 		kind: row.kind,
+		sourceKind: row.sourceKind,
 		width: row.width,
 		height: row.height,
 		ascii: row.ascii,
@@ -111,6 +117,7 @@ function buildManifestPuzzle(
 		dailyEligible: row.dailyEligible,
 		reviewStatus: 'candidate',
 		seed: row.seed,
+		warnings: row.warnings,
 		rowClues: generateRowClues(grid),
 		columnClues: generateColumnClues(grid),
 	}
@@ -119,6 +126,8 @@ function buildManifestPuzzle(
 function stableManifestChecksum(puzzles: readonly PilotManifestPuzzle[]): string {
 	const normalized = puzzles.map((p) => ({
 		id: p.id,
+		conceptId: p.conceptId,
+		compositionId: p.compositionId,
 		solutionHash: p.solutionHash,
 		canonicalHash: p.canonicalHash,
 		titleRu: p.titleRu,
@@ -131,8 +140,8 @@ function stableManifestChecksum(puzzles: readonly PilotManifestPuzzle[]): string
 		rowClues: p.rowClues,
 		columnClues: p.columnClues,
 		family: p.family,
-		variant: p.variant,
 		kind: p.kind,
+		sourceKind: p.sourceKind,
 		seed: p.seed,
 		dailyEligible: p.dailyEligible,
 	}))
@@ -146,100 +155,25 @@ function stableManifestChecksum(puzzles: readonly PilotManifestPuzzle[]): string
 	)
 }
 
-function pickRepresentatives(selected: readonly CandidateAuditRecord[]) {
-	const byTier = new Map<string, CandidateAuditRecord[]>()
+function conceptStats(selected: readonly CandidateAuditRecord[]) {
+	const map = new Map<
+		string,
+		{ count: number; compositions: string[]; titles: string[]; ids: string[] }
+	>()
 	for (const row of selected) {
-		const list = byTier.get(String(row.tier)) ?? []
-		list.push(row)
-		byTier.set(String(row.tier), list)
-	}
-	for (const list of byTier.values()) {
-		list.sort((a, b) => (a.score ?? 0) - (b.score ?? 0) || a.id.localeCompare(b.id))
-	}
-	const playlist: string[] = []
-	for (const tier of ['BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT']) {
-		const list = byTier.get(tier) ?? []
-		if (list.length === 0) {
-			continue
+		const cur = map.get(row.conceptId) ?? {
+			count: 0,
+			compositions: [],
+			titles: [],
+			ids: [],
 		}
-		const mid = Math.floor(list.length / 2)
-		const picks = [list[0], list[mid], list[list.length - 1]].filter(
-			Boolean,
-		) as CandidateAuditRecord[]
-		const uniq = new Map<string, CandidateAuditRecord>()
-		for (const p of picks) {
-			uniq.set(p.id, p)
-		}
-		// Prefer diverse collections / sizes for the 3 slots.
-		const chosen: CandidateAuditRecord[] = []
-		for (const p of [...uniq.values()].sort((a, b) =>
-			a.id.localeCompare(b.id),
-		)) {
-			if (chosen.length >= 3) {
-				break
-			}
-			chosen.push(p)
-		}
-		while (chosen.length < 3 && list.length > chosen.length) {
-			const next = list.find((r) => !chosen.some((c) => c.id === r.id))
-			if (!next) {
-				break
-			}
-			chosen.push(next)
-		}
-		playlist.push(...chosen.slice(0, 3).map((r) => r.id))
+		cur.count += 1
+		cur.compositions.push(row.compositionId)
+		cur.titles.push(row.titleRu)
+		cur.ids.push(row.id)
+		map.set(row.conceptId, cur)
 	}
-
-	const largest = [...selected].sort(
-		(a, b) => b.width * b.height - a.width * a.height || a.id.localeCompare(b.id),
-	)[0]
-	const hardest = [...selected].sort(
-		(a, b) => (b.score ?? 0) - (a.score ?? 0) || a.id.localeCompare(b.id),
-	)[0]
-	const easiest = [...selected].sort(
-		(a, b) => (a.score ?? 0) - (b.score ?? 0) || a.id.localeCompare(b.id),
-	)[0]
-	const slowestSolver = [...selected].sort(
-		(a, b) => b.completeMs - a.completeMs || a.id.localeCompare(b.id),
-	)[0]
-	const slowestHint = [...selected].sort(
-		(a, b) => b.hintMs - a.hintMs || a.id.localeCompare(b.id),
-	)[0]
-	const mostComponents = [...selected].sort(
-		(a, b) =>
-			b.componentCount - a.componentCount || a.id.localeCompare(b.id),
-	)[0]
-	const sample20 = selected.filter((r) => r.width === 20 && r.height === 20)
-	const sample25 = selected.filter((r) => r.width === 25 && r.height === 25)
-
-	return {
-		playlist,
-		edge: {
-			hardest: hardest?.id ?? null,
-			easiest: easiest?.id ?? null,
-			largest: largest?.id ?? null,
-			slowestSolver: slowestSolver?.id ?? null,
-			slowestHint: slowestHint?.id ?? null,
-			mostComponents: mostComponents?.id ?? null,
-			rep20: sample20[0]?.id ?? null,
-			rep25: sample25[0]?.id ?? null,
-		},
-	}
-}
-
-function aggregateHintReasons(selected: readonly CandidateAuditRecord[]) {
-	const total: Record<string, number> = {}
-	const byTier: Record<string, Record<string, number>> = {}
-	for (const row of selected) {
-		const tierKey = String(row.tier)
-		byTier[tierKey] = byTier[tierKey] ?? {}
-		for (const [reason, count] of Object.entries(row.hintReasons)) {
-			total[reason] = (total[reason] ?? 0) + count
-			byTier[tierKey]![reason] =
-				(byTier[tierKey]![reason] ?? 0) + count
-		}
-	}
-	return { total, byTier }
+	return map
 }
 
 export interface GeneratePilotResult {
@@ -248,11 +182,10 @@ export interface GeneratePilotResult {
 	readonly selectedCount: number
 	readonly attempts: number
 	readonly shortage: readonly string[]
+	readonly gateFailures: readonly string[]
 	readonly rejectCounts: Record<string, number>
 	readonly manifestPath: string
 	readonly contactSheetPath: string
-	readonly reportJsonPath: string
-	readonly reportMdPath: string
 }
 
 export function generatePilot(): GeneratePilotResult {
@@ -273,7 +206,7 @@ export function generatePilot(): GeneratePilotResult {
 	const knownCanon = new Set<string>()
 	const knownIds = new Set<string>([...rejections.ids])
 	const validated: CandidateAuditRecord[] = []
-	const bitmaps = new Map<string, RawCandidate['bitmap']>()
+	const bitmaps = new Map<string, (typeof pool)[number]['bitmap']>()
 	const rejectRows: CandidateAuditRecord[] = []
 
 	const validationStarted = performance.now()
@@ -305,7 +238,6 @@ export function generatePilot(): GeneratePilotResult {
 			validated.push(row)
 		} else {
 			rejectRows.push(row)
-			// Still reserve exact hash if computed to avoid later exact dups in pool
 			if (row.solutionHash) {
 				knownExact.add(row.solutionHash)
 			}
@@ -317,36 +249,82 @@ export function generatePilot(): GeneratePilotResult {
 	}
 	const validationMs = performance.now() - validationStarted
 
-	const selection = selectByTierQuota(validated)
+	const selection = selectWithDiversity(validated)
 	const selected = selection.selected
-	const okCount =
-		selected.length === PILOT_TARGET && selection.shortage.length === 0
+	const concepts = conceptStats(selected)
+	const near = topNearDuplicatePairs(selected, bitmaps, 50)
+	const exactDupes = findExactDuplicateIds(selected)
+	const transformDupes = findTransformDuplicatePairs(selected)
+	const titleDupes = findDuplicateTitles(selected)
+	const rejectCounts = countRejects(rejectRows)
+
+	const repeatedConcepts = [...concepts.entries()]
+		.filter(([, v]) => v.count > 1)
+		.map(([conceptId, v]) => ({
+			conceptId,
+			ids: v.ids,
+			compositions: v.compositions,
+			titles: v.titles,
+		}))
+		.sort((a, b) => a.conceptId.localeCompare(b.conceptId))
+
+	const gateFailures = [...selection.gateFailures]
+	if (exactDupes.length > 0) {
+		gateFailures.push('exact_duplicates')
+	}
+	if (transformDupes.length > 0) {
+		gateFailures.push('transform_duplicates')
+	}
+	if (Object.keys(titleDupes).length > 0) {
+		gateFailures.push(`duplicate_titles=${Object.keys(titleDupes).length}`)
+	}
+	const nearDuplicateWarning =
+		near.length > NEAR_DUPLICATE_PAIR_TARGET
+			? `near_duplicate_pairs=${near.length}>target_${NEAR_DUPLICATE_PAIR_TARGET}`
+			: null
+	if (nearDuplicateWarning) {
+		gateFailures.push(`WARNING:${nearDuplicateWarning}`)
+	}
+
+	const hardGateFailures = gateFailures.filter((g) => !g.startsWith('WARNING:'))
+	const ok =
+		selected.length === PILOT_TARGET &&
+		selection.shortage.length === 0 &&
+		selection.distinctConcepts >= MIN_DISTINCT_CONCEPTS &&
+		selection.maxConceptFrequency <= 2 &&
+		selection.patternCount <= MAX_PATTERN_COUNT &&
+		selection.expertPatternCount <= 3 &&
+		exactDupes.length === 0 &&
+		transformDupes.length === 0 &&
+		Object.keys(titleDupes).length === 0 &&
+		hardGateFailures.length === 0 &&
+		selected.every(
+			(r) =>
+				r.productionReady &&
+				r.unique &&
+				r.logicallySolvable &&
+				r.hintChainSolved,
+		)
 
 	const manifestPuzzles = selected.map(buildManifestPuzzle)
 	const checksum = stableManifestChecksum(manifestPuzzles)
+	if (checksum === PILOT_R1_REJECTED_CHECKSUM) {
+		gateFailures.push('checksum_equals_rejected_r1')
+	}
+
 	const manifest: PilotManifest = {
 		catalogVersion: CONTENT_CATALOG_VERSION,
 		generatorVersion: CONTENT_GENERATOR_VERSION,
-		reportVersion: 1,
+		reportVersion: 2,
 		reviewStatus: 'candidate',
 		puzzleCount: manifestPuzzles.length,
 		checksum,
 		puzzles: manifestPuzzles,
 	}
 
-	const campaign = arrangePilotCampaign(selected)
-	const exactDupes = findExactDuplicateIds(selected)
-	const transformDupes = findTransformDuplicatePairs(selected)
-	const near = topNearDuplicatePairs(selected, bitmaps, 20)
-	const titleDupes = findDuplicateTitles(selected)
-	const reps = pickRepresentatives(selected)
-	const hintReasons = aggregateHintReasons(selected)
-	const rejectCounts = countRejects(rejectRows)
-
 	const bySize: Record<string, number> = {}
 	const byCollection: Record<string, number> = {}
-	const byFamily: Record<string, { pass: number; tiers: Record<string, number> }> =
-		{}
+	const byFamily: Record<string, number> = {}
 	const byTier: Record<string, number> = {
 		BEGINNER: 0,
 		EASY: 0,
@@ -358,41 +336,68 @@ export function generatePilot(): GeneratePilotResult {
 		bySize[row.sizeKey] = (bySize[row.sizeKey] ?? 0) + 1
 		byCollection[row.collectionId] =
 			(byCollection[row.collectionId] ?? 0) + 1
+		byFamily[row.family] = (byFamily[row.family] ?? 0) + 1
 		byTier[String(row.tier)] = (byTier[String(row.tier)] ?? 0) + 1
-		const fam = byFamily[row.family] ?? { pass: 0, tiers: {} }
-		fam.pass += 1
-		fam.tiers[String(row.tier)] = (fam.tiers[String(row.tier)] ?? 0) + 1
-		byFamily[row.family] = fam
 	}
 
-	const suspiciousFill = selected.filter(
-		(r) => r.fillRatio < 0.05 || r.fillRatio > 0.9,
+	const patterns = selected.filter(
+		(r) => r.kind === 'pattern' || r.collectionId === 'patterns',
 	)
-	const componentOutliers = selected.filter(
-		(r) => r.singletons >= 5 || r.componentCount >= 8,
+	const experts = selected.filter((r) => r.tier === 'EXPERT')
+	const size5 = selected.filter((r) => r.width === 5 && r.height === 5)
+	const simpleHigh = selected.filter((r) =>
+		r.warnings.includes('simple_high_tier'),
 	)
-	const bboxOutliers = selected.filter((r) => r.bboxCoverage < 0.15)
+	const largeEasy = selected.filter((r) =>
+		r.warnings.includes('large_easy_tier'),
+	)
 
-	const artifactBytes = Buffer.byteLength(JSON.stringify(manifest), 'utf8')
-	const contactHtml = buildContactSheetHtml(selected, {
-		catalogVersion: CONTENT_CATALOG_VERSION,
-		generatorVersion: CONTENT_GENERATOR_VERSION,
-		checksum,
-	})
-	const contactStarted = performance.now()
-	fs.writeFileSync(paths.contactSheetPath, contactHtml, 'utf8')
-	const contactMs = performance.now() - contactStarted
-
+	const campaign = arrangePilotCampaign(selected)
 	const generationMs = performance.now() - started
+
+	const r1 = fs.existsSync(paths.r1BaselineReport)
+		? (JSON.parse(fs.readFileSync(paths.r1BaselineReport, 'utf8')) as {
+				readonly counts?: { readonly poolSize?: number }
+				readonly distributions?: {
+					readonly patternShare?: number
+					readonly byCollection?: Record<string, number>
+				}
+				readonly quality?: {
+					readonly nearDuplicates?: unknown[]
+					readonly duplicateTitles?: Record<string, unknown>
+				}
+				readonly performance?: {
+					readonly generationMs?: number
+					readonly validationMs?: number
+				}
+				readonly hintReasons?: { readonly total?: Record<string, number> }
+			})
+		: null
+
 	const report = {
-		reportVersion: 1 as const,
-		status: okCount
-			? 'PHASE_8A_PILOT_100_READY_FOR_REVIEW'
-			: 'BLOCKED',
+		reportVersion: 2 as const,
+		status: ok
+			? 'PHASE_8A_1_PILOT_R2_100_READY_FOR_HUMAN_REVIEW'
+			: selection.shortage.length > 0 ||
+				  selection.distinctConcepts < MIN_DISTINCT_CONCEPTS
+				? 'BLOCKED_CONTENT_QUOTA_SHORTAGE'
+				: 'FAIL',
 		reviewStatus: 'candidate',
 		catalogVersion: CONTENT_CATALOG_VERSION,
 		generatorVersion: CONTENT_GENERATOR_VERSION,
 		checksum,
+		r1Baseline: {
+			checksum: PILOT_R1_REJECTED_CHECKSUM,
+			humanStatus: PILOT_R1_HUMAN_STATUS,
+			patternShare: r1?.distributions?.patternShare ?? 0.22,
+			collections: Object.keys(r1?.distributions?.byCollection ?? {}).length || 13,
+			nearDuplicates: r1?.quality?.nearDuplicates?.length ?? 20,
+			duplicateTitleGroups: Object.keys(r1?.quality?.duplicateTitles ?? {}).length || 19,
+			poolSize: r1?.counts?.poolSize ?? 351,
+			generationMs: r1?.performance?.generationMs ?? null,
+			validationMs: r1?.performance?.validationMs ?? null,
+			hintReasons: r1?.hintReasons?.total ?? null,
+		},
 		counts: {
 			poolSize: pool.length,
 			attempts: pool.length,
@@ -401,11 +406,25 @@ export function generatePilot(): GeneratePilotResult {
 			target: PILOT_TARGET,
 			rejected: rejectRows.length,
 			rejectCounts,
+			notSelected: selection.notSelected.length,
 		},
 		quota: {
 			target: PILOT_TIER_QUOTA,
 			actual: selection.quotaActual,
 			shortage: selection.shortage,
+		},
+		diversity: {
+			distinctConcepts: selection.distinctConcepts,
+			conceptsOnce: [...concepts.values()].filter((v) => v.count === 1).length,
+			conceptsTwice: [...concepts.values()].filter((v) => v.count === 2).length,
+			maxConceptFrequency: selection.maxConceptFrequency,
+			patternCount: selection.patternCount,
+			patternShare: selection.patternShare,
+			expertPatternCount: selection.expertPatternCount,
+			maxFamilyShare: selection.maxFamilyShare,
+			maxCollectionShare: selection.maxCollectionShare,
+			repeatedConcepts,
+			gateFailures,
 		},
 		distributions: {
 			byTier,
@@ -419,19 +438,15 @@ export function generatePilot(): GeneratePilotResult {
 			transformDuplicates: transformDupes,
 			nearDuplicates: near,
 			duplicateTitles: titleDupes,
-			suspiciousFillRatios: suspiciousFill.map((r) => ({
-				id: r.id,
-				fillRatio: r.fillRatio,
-			})),
-			componentOutliers: componentOutliers.map((r) => ({
-				id: r.id,
-				components: r.componentCount,
-				singletons: r.singletons,
-			})),
-			bboxOutliers: bboxOutliers.map((r) => ({
-				id: r.id,
-				bboxCoverage: r.bboxCoverage,
-			})),
+			suspiciousFillRatios: selected.filter(
+				(r) => r.fillRatio < 0.05 || r.fillRatio > 0.9,
+			),
+			componentOutliers: selected.filter(
+				(r) => r.singletons >= 5 || r.componentCount >= 8,
+			),
+			bboxOutliers: selected.filter((r) => r.bboxCoverage < 0.15),
+			simpleHighTier: simpleHigh.map((r) => r.id),
+			largeEasyTier: largeEasy.map((r) => r.id),
 		},
 		logic: {
 			productionReady: selected.filter((r) => r.productionReady).length,
@@ -439,34 +454,113 @@ export function generatePilot(): GeneratePilotResult {
 			logical: selected.filter((r) => r.logicallySolvable).length,
 			hintChain: selected.filter((r) => r.hintChainSolved).length,
 		},
+		lists: {
+			patterns: patterns.map((r) => ({
+				id: r.id,
+				titleRu: r.titleRu,
+				sizeKey: r.sizeKey,
+				tier: r.tier,
+				conceptId: r.conceptId,
+			})),
+			size5x5: size5.map((r) => ({
+				id: r.id,
+				titleRu: r.titleRu,
+				collectionId: r.collectionId,
+				tier: r.tier,
+				conceptId: r.conceptId,
+			})),
+			experts: experts.map((r) => ({
+				id: r.id,
+				titleRu: r.titleRu,
+				sizeKey: r.sizeKey,
+				collectionId: r.collectionId,
+				conceptId: r.conceptId,
+				family: r.family,
+				score: r.score,
+				pattern: r.kind === 'pattern' || r.collectionId === 'patterns',
+				warnings: r.warnings,
+			})),
+		},
 		performance: {
 			generationMs,
 			validationMs,
-			contactMs,
 			slowestComplete: [...selected].sort(
 				(a, b) => b.completeMs - a.completeMs,
 			)[0] ?? null,
 			slowestLogical: [...selected].sort(
 				(a, b) => b.logicalMs - a.logicalMs,
 			)[0] ?? null,
-			slowestHint: [...selected].sort((a, b) => b.hintMs - a.hintMs)[0] ??
-				null,
+			slowestHint: [...selected].sort((a, b) => b.hintMs - a.hintMs)[0] ?? null,
 			size20: selected.filter((r) => r.width === 20 || r.height === 20),
 			size25: selected.filter((r) => r.width === 25 || r.height === 25),
 		},
-		hintReasons,
+		hintReasons: (() => {
+			const total: Record<string, number> = {}
+			const byTierHints: Record<string, Record<string, number>> = {}
+			for (const row of selected) {
+				const tierKey = String(row.tier)
+				byTierHints[tierKey] = byTierHints[tierKey] ?? {}
+				for (const [reason, count] of Object.entries(row.hintReasons)) {
+					total[reason] = (total[reason] ?? 0) + count
+					byTierHints[tierKey]![reason] =
+						(byTierHints[tierKey]![reason] ?? 0) + count
+				}
+			}
+			return { total, byTier: byTierHints }
+		})(),
 		campaignSimulation: campaign,
-		representatives: reps,
-		artifactSize: {
-			manifestBytes: artifactBytes,
-			estimated1000Bytes: artifactBytes * 10,
-			contactSheetBytes: Buffer.byteLength(contactHtml, 'utf8'),
+		comparison: {
+			selected: { r1: 100, r2: selected.length, target: 100 },
+			distinctConcepts: {
+				r1: null,
+				r2: selection.distinctConcepts,
+				target: '>=80',
+			},
+			maxConceptFrequency: {
+				r1: null,
+				r2: selection.maxConceptFrequency,
+				target: '<=2',
+			},
+			collections: {
+				r1: 13,
+				r2: Object.keys(byCollection).length,
+				target: '>=12',
+			},
+			patterns: {
+				r1: 22,
+				r2: selection.patternCount,
+				target: '<=10',
+			},
+			patternShare: {
+				r1: 0.22,
+				r2: selection.patternShare,
+				target: '<=0.10',
+			},
+			expertPatterns: {
+				r1: null,
+				r2: selection.expertPatternCount,
+				target: '<=3',
+			},
+			nearDuplicates: {
+				r1: 20,
+				r2: near.length,
+				target: '<=5',
+			},
+			duplicateTitleGroups: {
+				r1: 19,
+				r2: Object.keys(titleDupes).length,
+				target: 0,
+			},
+			maxFamilyShare: {
+				r1: null,
+				r2: selection.maxFamilyShare,
+				target: '<=0.05',
+			},
 		},
-		puzzles: selected,
 		achievementRisk: {
 			firstCollectionSticky: false,
 			note:
-				'Achievements are derived from GALLERY_ITEMS. Replacing gallery taxonomy can remove first_collection if previously completed small collections disappear. REQUIRES DESIGN FIX BEFORE RUNTIME INTEGRATION.',
+				'REQUIRES DESIGN FIX BEFORE RUNTIME INTEGRATION — first_collection is derived from GALLERY_ITEMS.',
 		},
 		runtimeIsolation: {
 			campaignUntouched: true,
@@ -474,165 +568,102 @@ export function generatePilot(): GeneratePilotResult {
 			dailyUntouched: true,
 			schemaVersion: 3,
 		},
+		puzzles: selected,
+		notSelectedSample: selection.notSelected.slice(0, 50),
+		artifactSize: {
+			manifestBytes: 0,
+			estimated1000Bytes: 0,
+			contactSheetBytes: 0,
+		},
 	}
 
-	fs.writeFileSync(paths.manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8')
-	fs.writeFileSync(paths.checksumPath, `${checksum}\n`, 'utf8')
-	fs.writeFileSync(paths.reportJsonPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8')
+	const contactHtml = buildContactSheetHtml(selected, {
+		catalogVersion: CONTENT_CATALOG_VERSION,
+		generatorVersion: CONTENT_GENERATOR_VERSION,
+		checksum,
+		nearDuplicates: near,
+		repeatedConcepts,
+	})
+	report.artifactSize = {
+		manifestBytes: Buffer.byteLength(JSON.stringify(manifest), 'utf8'),
+		estimated1000Bytes:
+			Buffer.byteLength(JSON.stringify(manifest), 'utf8') * 10,
+		contactSheetBytes: Buffer.byteLength(contactHtml, 'utf8'),
+	}
 
-	const md = renderPilotMarkdown(report as Record<string, unknown>, paths)
-	fs.writeFileSync(paths.reportMdPath, md, 'utf8')
-	// Also copy compact report next to manifest for committed summary.
+	fs.writeFileSync(paths.manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
+	fs.writeFileSync(paths.checksumPath, `${checksum}\n`)
+	fs.writeFileSync(paths.reportJsonPath, `${JSON.stringify(report, null, 2)}\n`)
+	fs.writeFileSync(paths.contactSheetPath, contactHtml)
+
+	const md = [
+		'# Phase 8A.1 Pilot R2 Report',
+		'',
+		`STATUS: **${report.status}**`,
+		'',
+		`- catalog: ${CONTENT_CATALOG_VERSION}`,
+		`- generator: ${CONTENT_GENERATOR_VERSION}`,
+		`- checksum: \`${checksum}\``,
+		`- R1 rejected baseline: \`${PILOT_R1_REJECTED_CHECKSUM}\``,
+		`- R1 human: ${PILOT_R1_HUMAN_STATUS}`,
+		`- selected: ${selected.length}`,
+		`- distinctConcepts: ${selection.distinctConcepts}`,
+		`- maxConceptFrequency: ${selection.maxConceptFrequency}`,
+		`- patterns: ${selection.patternCount} (${(selection.patternShare * 100).toFixed(1)}%)`,
+		`- expertPatterns: ${selection.expertPatternCount}`,
+		`- nearDuplicates: ${near.length}`,
+		`- duplicateTitles: ${Object.keys(titleDupes).length}`,
+		`- gateFailures: ${gateFailures.join('; ') || 'none'}`,
+		'',
+		'## R1 vs R2',
+		'',
+		'| Metric | R1 | R2 | Target |',
+		'| --- | ---: | ---: | --- |',
+		`| Selected | 100 | ${selected.length} | 100 |`,
+		`| Distinct concepts | n/a (no conceptId) | ${selection.distinctConcepts} | ≥80 |`,
+		`| Max concept frequency | high (semantic) | ${selection.maxConceptFrequency} | ≤2 |`,
+		`| Collections | 13 | ${Object.keys(byCollection).length} | ≥12 |`,
+		`| Patterns | 22 | ${selection.patternCount} | ≤10 |`,
+		`| Pattern share | 22% | ${(selection.patternShare * 100).toFixed(1)}% | ≤10% |`,
+		`| Expert patterns | ~8+ mosaics | ${selection.expertPatternCount} | ≤3 |`,
+		`| Near dup ≥0.92 | 20 | ${near.length} | ≤5 |`,
+		`| Duplicate title groups | 19 | ${Object.keys(titleDupes).length} | 0 |`,
+		`| Max family share | n/a | ${(selection.maxFamilyShare * 100).toFixed(1)}% | ≤5% |`,
+		'',
+		'## STOP',
+		'',
+		'READY FOR HUMAN R2 CONTACT-SHEET REVIEW',
+		'',
+		`Contact: \`${paths.contactSheetPath}\``,
+		'',
+	].join('\n')
+	fs.writeFileSync(paths.reportMdPath, md)
 	fs.writeFileSync(
 		path.join(paths.generatedPilotDir, 'pilot-report.md'),
 		md,
-		'utf8',
 	)
 
-	if (!okCount) {
+	if (!ok) {
 		console.error(
-			`PILOT BLOCKED: selected=${selected.length} shortage=${selection.shortage.join(',') || 'none'} validated=${validated.length}`,
+			`PILOT R2 BLOCKED/FAIL selected=${selected.length} shortage=${selection.shortage.join(',') || 'none'} concepts=${selection.distinctConcepts} gates=${gateFailures.join('|')}`,
 		)
 	} else {
-		console.log(
-			`PILOT OK: 100 candidates checksum=${checksum}`,
-		)
+		console.log(`PILOT R2 OK: 100 candidates checksum=${checksum}`)
 	}
 	console.log(`manifest: ${paths.manifestPath}`)
 	console.log(`contact:  ${paths.contactSheetPath}`)
 
 	return {
-		ok: okCount,
+		ok,
 		checksum,
 		selectedCount: selected.length,
 		attempts: pool.length,
 		shortage: selection.shortage,
+		gateFailures,
 		rejectCounts,
 		manifestPath: paths.manifestPath,
 		contactSheetPath: paths.contactSheetPath,
-		reportJsonPath: paths.reportJsonPath,
-		reportMdPath: paths.reportMdPath,
 	}
-}
-
-function renderPilotMarkdown(
-	report: Record<string, unknown>,
-	paths: ReturnType<typeof contentPaths>,
-): string {
-	const counts = report.counts as {
-		poolSize: number
-		selected: number
-		rejected: number
-		rejectCounts: Record<string, number>
-	}
-	const quota = report.quota as {
-		target: Record<string, number>
-		actual: Record<string, number>
-		shortage: string[]
-	}
-	const distributions = report.distributions as {
-		byCollection: Record<string, number>
-		patternShare: number
-	}
-	const quality = report.quality as {
-		nearDuplicates: Array<{
-			idA: string
-			titleA: string
-			idB: string
-			titleB: string
-			sizeKey: string
-			similarity: number
-		}>
-	}
-	const representatives = report.representatives as {
-		playlist: string[]
-		edge: Record<string, string | null>
-	}
-	const artifactSize = report.artifactSize as {
-		manifestBytes: number
-		estimated1000Bytes: number
-	}
-	const achievementRisk = report.achievementRisk as { note: string }
-	const logic = report.logic as Record<string, number>
-
-	const lines: string[] = []
-	lines.push('# Phase 8A Pilot Report')
-	lines.push('')
-	lines.push(`STATUS: **${String(report.status)}**`)
-	lines.push('')
-	lines.push(`- catalog: ${String(report.catalogVersion)}`)
-	lines.push(`- generator: ${String(report.generatorVersion)}`)
-	lines.push(`- checksum: \`${String(report.checksum)}\``)
-	lines.push(`- pool: ${counts.poolSize}`)
-	lines.push(`- selected: ${counts.selected}`)
-	lines.push(`- rejected: ${counts.rejected}`)
-	lines.push('')
-	lines.push('## Tier quota')
-	lines.push('')
-	lines.push('| Tier | Target | Actual |')
-	lines.push('| --- | ---: | ---: |')
-	for (const tier of ['BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT']) {
-		lines.push(
-			`| ${tier} | ${quota.target[tier] ?? 0} | ${quota.actual[tier] ?? 0} |`,
-		)
-	}
-	if (quota.shortage.length > 0) {
-		lines.push('')
-		lines.push(`Shortage: ${quota.shortage.join(', ')}`)
-	}
-	lines.push('')
-	lines.push('## Reject reasons')
-	lines.push('')
-	for (const [reason, count] of Object.entries(counts.rejectCounts).sort()) {
-		lines.push(`- ${reason}: ${count}`)
-	}
-	lines.push('')
-	lines.push('## Collections')
-	lines.push('')
-	for (const [id, count] of Object.entries(distributions.byCollection).sort()) {
-		lines.push(`- ${id}: ${count}`)
-	}
-	lines.push('')
-	lines.push(
-		`Pattern share: ${(distributions.patternShare * 100).toFixed(1)}%`,
-	)
-	lines.push('')
-	lines.push('## Logic')
-	lines.push('')
-	lines.push(JSON.stringify(logic))
-	lines.push('')
-	lines.push('## Top near-duplicates')
-	lines.push('')
-	for (const pair of quality.nearDuplicates) {
-		lines.push(
-			`- ${pair.idA} (${pair.titleA}) ↔ ${pair.idB} (${pair.titleB}) ${pair.sizeKey} sim=${pair.similarity.toFixed(4)}`,
-		)
-	}
-	lines.push('')
-	lines.push('## Representatives')
-	lines.push('')
-	lines.push(`Playlist: ${representatives.playlist.join(', ')}`)
-	lines.push(`Edge: ${JSON.stringify(representatives.edge)}`)
-	lines.push('')
-	lines.push('## Artifacts')
-	lines.push('')
-	lines.push(`- manifest: \`${paths.manifestPath}\``)
-	lines.push(`- contact sheet: \`${paths.contactSheetPath}\``)
-	lines.push(
-		`- manifest bytes: ${artifactSize.manifestBytes} (×10 est ${artifactSize.estimated1000Bytes})`,
-	)
-	lines.push('')
-	lines.push('## Achievement risk')
-	lines.push('')
-	lines.push(achievementRisk.note)
-	lines.push('')
-	lines.push('## STOP')
-	lines.push('')
-	lines.push('READY FOR HUMAN PILOT CONTACT-SHEET REVIEW')
-	lines.push('')
-	lines.push('Do not scale to 1000 without explicit approval.')
-	lines.push('')
-	return `${lines.join('\n')}`
 }
 
 if (require.main === module) {

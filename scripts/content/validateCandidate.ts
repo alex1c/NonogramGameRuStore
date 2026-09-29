@@ -14,12 +14,14 @@ import { puzzleToSpec } from '../../src/solver/completeSolver'
 import type { DeductionReason } from '../../src/solver/logicalSolver'
 import { validateProductionPuzzle } from '../../src/solver/validator'
 import { toAscii, type Bitmap } from './bitmap'
+import { normalizeConceptId } from './constants'
 import { canonicalTransformationHash, solutionHash } from './hash'
 import { computeVisualMetrics, structuralRejectReason } from './metrics'
 import type {
 	CandidateAuditRecord,
 	RawCandidate,
 	RejectReason,
+	StructuralWarning,
 } from './types'
 
 const COMPLETE_MS_BUDGET = 8_000
@@ -217,6 +219,44 @@ function dailyEligibleFor(
 	return true
 }
 
+function collectWarnings(
+	visual: ReturnType<typeof computeVisualMetrics>,
+	width: number,
+	height: number,
+	tier: string,
+): StructuralWarning[] {
+	const warnings: StructuralWarning[] = []
+	if (visual.bboxCoverage < 0.18) {
+		warnings.push('tiny_bbox')
+	}
+	if (visual.fillRatio < 0.06 || visual.fillRatio > 0.88) {
+		warnings.push('extreme_fill')
+	}
+	if (visual.singletons >= 5) {
+		warnings.push('singleton_heavy')
+	}
+	if (visual.componentCount >= 8) {
+		warnings.push('many_components')
+	}
+	const small = Math.max(width, height) <= 5
+	const simple =
+		visual.componentCount <= 2 &&
+		visual.bboxCoverage > 0.35 &&
+		visual.fillRatio > 0.2 &&
+		visual.fillRatio < 0.7
+	if (small && simple && (tier === 'HARD' || tier === 'EXPERT')) {
+		warnings.push('simple_high_tier')
+	}
+	if (
+		Math.max(width, height) >= 15 &&
+		(tier === 'BEGINNER' || tier === 'EASY')
+	) {
+		warnings.push('large_easy_tier')
+	}
+	warnings.push('needs_human_recognizability_review')
+	return warnings
+}
+
 export function validateRawCandidate(
 	raw: RawCandidate,
 	opts?: {
@@ -232,14 +272,19 @@ export function validateRawCandidate(
 	const solHash = solutionHash(raw.bitmap)
 	const canonHash = canonicalTransformationHash(raw.bitmap)
 	const visual = computeVisualMetrics(raw.bitmap)
+	const conceptId = normalizeConceptId(raw.conceptId)
+	const compositionId = raw.compositionId.trim() || 'default'
 
 	const base = {
 		id: raw.id,
 		titleRu: raw.titleRu,
 		collectionId: raw.collectionId,
+		conceptId,
+		compositionId,
 		family: raw.family,
 		variant: raw.variant,
 		kind: raw.kind,
+		sourceKind: raw.sourceKind,
 		width,
 		height,
 		sizeKey,
@@ -259,6 +304,9 @@ export function validateRawCandidate(
 		seed: raw.seed,
 		hintReasons: emptyReasonBag(),
 		logicalReasons: emptyReasonBag(),
+		warnings: [] as StructuralWarning[],
+		needsHumanRecognizabilityReview: true,
+		notSelectedReason: null as string | null,
 	}
 
 	const fail = (
@@ -287,6 +335,12 @@ export function validateRawCandidate(
 	if (!raw.id.trim() || !raw.titleRu.trim()) {
 		return fail('invalid')
 	}
+	if (!conceptId) {
+		return fail('missing_concept')
+	}
+	if (!compositionId) {
+		return fail('invalid_composition')
+	}
 	if (opts?.knownIds?.has(raw.id)) {
 		return fail('duplicate_id')
 	}
@@ -308,7 +362,7 @@ export function validateRawCandidate(
 		title: raw.titleRu,
 		category: raw.collectionId,
 		collection: raw.collectionId,
-		tags: [raw.family, raw.kind],
+		tags: [raw.family, raw.kind, conceptId, compositionId],
 		width,
 		height,
 		solutionMatrix: raw.bitmap as readonly (readonly number[])[],
@@ -320,9 +374,14 @@ export function validateRawCandidate(
 	const completeMs = performance.now() - completeStarted
 
 	const logicalStarted = performance.now()
-	// validateProductionPuzzle already ran logical; re-time via analyzer path.
 	const difficulty = analyzeDifficulty(puzzle)
 	const logicalMs = performance.now() - logicalStarted
+	const warnings = collectWarnings(
+		visual,
+		width,
+		height,
+		difficulty.tier,
+	)
 
 	if (completeMs > COMPLETE_MS_BUDGET || logicalMs > LOGICAL_MS_BUDGET) {
 		return fail('performance', {
@@ -332,6 +391,7 @@ export function validateRawCandidate(
 			logicallySolvable: validation.logicallySolvable,
 			logicalStatus: String(validation.logicalStatus),
 			productionReady: false,
+			warnings,
 		})
 	}
 
@@ -341,6 +401,7 @@ export function validateRawCandidate(
 			logicalMs,
 			unique: false,
 			logicalStatus: String(validation.logicalStatus),
+			warnings,
 		})
 	}
 
@@ -350,6 +411,7 @@ export function validateRawCandidate(
 			logicalMs,
 			unique: true,
 			logicalStatus: 'CONTRADICTION',
+			warnings,
 		})
 	}
 
@@ -359,6 +421,7 @@ export function validateRawCandidate(
 			logicalMs,
 			unique: true,
 			logicalStatus: String(validation.logicalStatus),
+			warnings,
 		})
 	}
 
@@ -378,6 +441,7 @@ export function validateRawCandidate(
 			productionReady: validation.productionReady,
 			tier: difficulty.tier === 'UNRATED' ? 'UNRATED' : difficulty.tier,
 			score: difficulty.score,
+			warnings,
 		})
 	}
 	if (hint.status !== 'SOLVED') {
@@ -402,6 +466,7 @@ export function validateRawCandidate(
 			productionReady: false,
 			tier: difficulty.tier === 'UNRATED' ? 'UNRATED' : difficulty.tier,
 			score: difficulty.score,
+			warnings,
 		})
 	}
 
@@ -421,6 +486,7 @@ export function validateRawCandidate(
 			tier: difficulty.tier,
 			score: difficulty.score,
 			productionReady: false,
+			warnings,
 		})
 	}
 
@@ -448,6 +514,9 @@ export function validateRawCandidate(
 			raw.kind,
 		),
 		rejectReason: null,
+		warnings,
+		needsHumanRecognizabilityReview: true,
+		notSelectedReason: null,
 	}
 }
 
