@@ -44,6 +44,10 @@
     "audit:achievements": "tsx scripts/audit-achievements.ts",
     "audit:daily": "tsx scripts/audit-daily.ts",
     "audit:hints": "tsx scripts/audit-hints.ts",
+    "audit:production-content": "tsx scripts/audit-production-content.ts",
+    "content:generate-pilot": "tsx scripts/content/generatePilot.ts",
+    "content:build": "tsx scripts/content/build.ts",
+    "content:contact-sheets": "tsx scripts/content/contactSheetsCli.ts",
     "android:qa": "powershell -ExecutionPolicy Bypass -File ./scripts/android/android-device-qa.ps1"
   },
   "private": true

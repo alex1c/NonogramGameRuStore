@@ -6,10 +6,10 @@ This project was bootstrapped / Phase 7-checked against:
 - Version: **1.1.1**
 - `main` SHA: **ad2ff4469e2aaf301a4b4e93eb633ddf17c8490c**
 
-Fetched `origin/main` again before Phase 7; still v1.1.1 @ ad2ff446
-(unchanged vs Phase 6 pin).
+Fetched `origin/main` again before Phase 8A; still v1.1.1 @ ad2ff446
+(unchanged vs Phase 7B pin).
 
-Applied in Phase 0–7:
+Applied in Phase 0–8A:
 
 - README.md
 - VERSION

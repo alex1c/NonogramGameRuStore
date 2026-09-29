@@ -52,3 +52,6 @@ release-artifacts/
 *.apk
 gradle-error.txt
 tmp/
+
+# Phase 8 content review artifacts (contact sheets, local reports)
+review-artifacts/
