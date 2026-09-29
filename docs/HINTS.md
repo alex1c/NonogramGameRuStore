@@ -1,4 +1,4 @@
-# Hints + Teach Me (Phase 7)
+# Hints + Teach Me (Phase 7 / 7B)
 
 ## Architecture
 
@@ -7,35 +7,23 @@ PuzzleSpec + PlayerState
   → Logical Solver (enumerateLogicalSteps / findContradictoryLine)
   → Hint Engine (getHint)
   → Normalized HintStep
-  → Explanation layer (Russian templates)
+  → Explanation layer (compact Hint vs pedagogical Teach Me)
   → Game UI preview
   → Apply → one history transaction
 ```
 
 Runtime Hint path never receives authored `solution` and never calls the
-complete / backtracking solver. Authored solution is used only as an audit
-oracle in `npm run audit:hints` and unit tests.
+complete / backtracking solver.
 
-## HintResult
+## UX modes (Phase 7B)
 
-- `STEP` — one pedagogical logical idea (single action)
-- `CONTRADICTION` — player constraints conflict with clues
-- `STALLED` — no forced cell with current techniques (NO GUESSING)
-- `COMPLETE` — no UNKNOWN cells remain
-
-## Statistics
-
-| Metric | When | Persisted |
+| Mode | Answers | UI |
 | --- | --- | --- |
-| `hintRequests` | User asked Hint/Teach Me and got STEP/CONTRADICTION/STALLED | global |
-| `hintsApplied` | User pressed Применить | global |
-| `teachMeViews` | Teach Me opened a STEP explanation | global |
-| `hintsUsedThisRun` | Apply, or CONTRADICTION/STALLED diagnostic | active Campaign/Daily |
+| Подсказка | Что сделать? | line + action only |
+| Научи меня | Почему это можно сделать? | «Почему так?» + clue + pedagogy |
 
-Undo/Redo do not change counters. Restart resets `hintsUsedThisRun` only.
-UI shows **Подсказок применено** (`hintsApplied`).
+Help entry: bottom controls lightbulb **Подсказка** (not header `?`).
 
-## Schema
+## Statistics / schema
 
-Save schema **v3** adds the counters above. Storage key remains
-`nonogram.save.v1`. Transient Help overlay / highlight are never persisted.
+Unchanged from Phase 7 (schema v3). See previous docs.

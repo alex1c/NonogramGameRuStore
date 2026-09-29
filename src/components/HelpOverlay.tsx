@@ -1,5 +1,5 @@
 /**
- * Help overlay — Подсказка / Научи меня.
+ * Help overlay — Подсказка (compact) vs Научи меня (pedagogical).
  * Custom modal (no bottom-sheet dependency). Locks board input while open.
  */
 
@@ -49,7 +49,6 @@ export function HelpOverlay({
 			accessibilityViewIsModal
 			pointerEvents="box-none"
 		>
-			{/* Blocks board / controls interaction while help is open */}
 			<Pressable
 				style={styles.backdrop}
 				onPress={onClose}
@@ -75,20 +74,20 @@ export function HelpOverlay({
 							Подсказки
 						</Text>
 						<Text
-							style={[styles.subtitle, { color: palette.clueTextDimmed }]}
+							style={[styles.subtitle, { color: palette.clueText }]}
 						>
 							Подсказки используют только логику — без угадывания.
 						</Text>
 						<HelpOption
 							palette={palette}
 							title="Подсказка"
-							subtitle="Показать следующий логический ход"
+							subtitle="Что сделать? — следующий логический ход"
 							onPress={onRequestHint}
 						/>
 						<HelpOption
 							palette={palette}
 							title="Научи меня"
-							subtitle="Объяснить следующий ход"
+							subtitle="Почему это можно сделать? — объяснить правило"
 							onPress={onRequestTeach}
 						/>
 						<Pressable
@@ -98,7 +97,7 @@ export function HelpOverlay({
 							style={styles.secondaryButton}
 						>
 							<Text
-								style={[styles.secondaryText, { color: palette.clueTextDimmed }]}
+								style={[styles.secondaryText, { color: palette.clueText }]}
 							>
 								Закрыть
 							</Text>
@@ -120,35 +119,52 @@ export function HelpOverlay({
 						>
 							{phase.title}
 						</Text>
-						{phase.explanation !== null && phase.mode === 'TEACH' ? (
-							<>
+
+						{phase.mode === 'HINT' && phase.explanation !== null ? (
+							<View style={styles.hintCard}>
 								<Text
 									style={[styles.lineMeta, { color: palette.controlSelected }]}
 								>
-									{phase.explanation.lineTitle} ·{' '}
-									{phase.explanation.clueLabel.replace('Подсказка: ', '')}
+									{phase.explanation.lineTitle}
+								</Text>
+								<Text
+									style={[styles.actionLabel, { color: palette.headerText }]}
+								>
+									{phase.explanation.actionLabel}
+								</Text>
+							</View>
+						) : null}
+
+						{phase.mode === 'TEACH' && phase.explanation !== null ? (
+							<View style={styles.teachCard}>
+								{phase.explanation.whyAccent !== null ? (
+									<Text
+										style={[
+											styles.whyAccent,
+											{ color: palette.controlSelected },
+										]}
+									>
+										{phase.explanation.whyAccent}
+									</Text>
+								) : null}
+								<Text
+									style={[styles.lineMeta, { color: palette.controlSelected }]}
+								>
+									{phase.explanation.lineTitle} · подсказка{' '}
+									{phase.explanation.clueText}
 								</Text>
 								<Text style={[styles.body, { color: palette.headerText }]}>
 									{phase.explanation.body}
 								</Text>
-							</>
-						) : (
-							<>
-								{phase.explanation !== null ? (
-									<Text
-										style={[
-											styles.actionLabel,
-											{ color: palette.controlSelected },
-										]}
-									>
-										{phase.explanation.actionLabel}
-									</Text>
-								) : null}
-								<Text style={[styles.body, { color: palette.headerText }]}>
-									{phase.body}
-								</Text>
-							</>
-						)}
+							</View>
+						) : null}
+
+						{phase.explanation === null ? (
+							<Text style={[styles.body, { color: palette.headerText }]}>
+								{phase.body}
+							</Text>
+						) : null}
+
 						<View style={styles.actions}>
 							{phase.canApply ? (
 								<Pressable
@@ -174,14 +190,15 @@ export function HelpOverlay({
 										? 'Понятно'
 										: 'Закрыть'
 								}
-								onPress={phase.canApply ? onUnderstood : onClose}
+								onPress={
+									phase.canApply && phase.mode === 'TEACH'
+										? onUnderstood
+										: onClose
+								}
 								style={styles.secondaryButton}
 							>
 								<Text
-									style={[
-										styles.secondaryText,
-										{ color: palette.clueTextDimmed },
-									]}
+									style={[styles.secondaryText, { color: palette.clueText }]}
 								>
 									{phase.mode === 'TEACH' && phase.canApply
 										? 'Понятно'
@@ -223,7 +240,7 @@ function HelpOption({
 			<Text style={[styles.optionTitle, { color: palette.headerText }]}>
 				{title}
 			</Text>
-			<Text style={[styles.optionSub, { color: palette.clueTextDimmed }]}>
+			<Text style={[styles.optionSub, { color: palette.clueText }]}>
 				{subtitle}
 			</Text>
 		</Pressable>
@@ -257,18 +274,33 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		lineHeight: 18,
 		marginBottom: 4,
+		fontWeight: '500',
+	},
+	hintCard: {
+		gap: 8,
+		paddingVertical: 4,
+	},
+	teachCard: {
+		gap: 8,
+		paddingVertical: 4,
+	},
+	whyAccent: {
+		fontSize: 15,
+		fontWeight: '800',
+		letterSpacing: 0.2,
 	},
 	body: {
 		fontSize: 15,
 		lineHeight: 22,
 	},
 	lineMeta: {
-		fontSize: 14,
+		fontSize: 15,
 		fontWeight: '700',
 	},
 	actionLabel: {
-		fontSize: 15,
+		fontSize: 17,
 		fontWeight: '700',
+		lineHeight: 24,
 	},
 	option: {
 		borderWidth: 1,
@@ -284,6 +316,7 @@ const styles = StyleSheet.create({
 	optionSub: {
 		fontSize: 13,
 		marginTop: 2,
+		lineHeight: 18,
 	},
 	actions: {
 		flexDirection: 'row',

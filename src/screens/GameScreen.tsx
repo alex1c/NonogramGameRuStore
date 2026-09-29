@@ -73,6 +73,7 @@ import {
 	applyHintStep,
 	explainHintResult,
 	getHint,
+	lineContextForStep,
 	type HintResult,
 	type HintStep,
 } from '../hints'
@@ -713,7 +714,12 @@ export function GameScreen({
 
 	const presentHintResult = useCallback(
 		(result: HintResult, mode: 'HINT' | 'TEACH') => {
-			const explained = explainHintResult(result)
+			const current = liveGame.session
+			const lineCtx =
+				result.kind === 'STEP' && current !== null
+					? lineContextForStep(result.step, current.player)
+					: null
+			const explained = explainHintResult(result, mode, lineCtx)
 			const branch: 'campaign' | 'daily' | 'none' = isDaily
 				? 'daily'
 				: isReplay
@@ -921,59 +927,23 @@ export function GameScreen({
 						· {elapsed}
 					</Text>
 				</View>
-				<View style={styles.headerRight}>
-					{!session.completed ? (
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel="Подсказки"
-							onPress={() => {
-								setHelpPhase({ kind: 'menu' })
-								setHintStep(null)
-								setHintHighlight(null)
-								setHelpOpen(true)
-							}}
-							hitSlop={8}
-							style={styles.helpButton}
+				{!session.completed ? (
+					<Pressable
+						accessibilityRole="button"
+						accessibilityLabel="Начать заново"
+						onPress={handleRestart}
+						hitSlop={8}
+						style={styles.restartButton}
+					>
+						<Text
+							style={[styles.restartText, { color: palette.clueTextDimmed }]}
 						>
-							<View
-								style={[
-									styles.helpIcon,
-									{
-										borderColor: palette.controlSelected,
-									},
-								]}
-							>
-								<Text
-									style={[
-										styles.helpIconText,
-										{ color: palette.controlSelected },
-									]}
-								>
-									?
-								</Text>
-							</View>
-						</Pressable>
-					) : (
-						<View style={styles.helpButton} />
-					)}
-					{!session.completed ? (
-						<Pressable
-							accessibilityRole="button"
-							accessibilityLabel="Начать заново"
-							onPress={handleRestart}
-							hitSlop={8}
-							style={styles.restartButton}
-						>
-							<Text
-								style={[styles.restartText, { color: palette.clueTextDimmed }]}
-							>
-								Заново
-							</Text>
-						</Pressable>
-					) : (
-						<View style={styles.restartButton} />
-					)}
-				</View>
+							Заново
+						</Text>
+					</Pressable>
+				) : (
+					<View style={styles.restartButton} />
+				)}
 			</View>
 
 			<GestureDetector gesture={composed}>
@@ -1003,6 +973,7 @@ export function GameScreen({
 					canRedo={sessionCanRedo(session)}
 					palette={palette}
 					disabled={session.completed || helpOpen}
+					helpDisabled={session.completed}
 					onTool={(tool) =>
 						applySessionUpdate((current) => setTool(current, tool))
 					}
@@ -1017,6 +988,15 @@ export function GameScreen({
 						})
 					}
 					onFit={fitBoard}
+					onHelp={() => {
+						if (session.completed || session.activeGesture !== null) {
+							return
+						}
+						setHelpPhase({ kind: 'menu' })
+						setHintStep(null)
+						setHintHighlight(null)
+						setHelpOpen(true)
+					}}
 				/>
 			</View>
 
@@ -1120,30 +1100,6 @@ const styles = StyleSheet.create({
 	headerCenter: {
 		flex: 1,
 	},
-	headerRight: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		gap: 4,
-	},
-	helpButton: {
-		minWidth: 40,
-		minHeight: 44,
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-	helpIcon: {
-		width: 28,
-		height: 28,
-		borderRadius: 14,
-		borderWidth: 2,
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	helpIconText: {
-		fontSize: 16,
-		fontWeight: '800',
-		lineHeight: 18,
-	},
 	title: {
 		fontSize: 18,
 		fontWeight: '700',
@@ -1153,7 +1109,7 @@ const styles = StyleSheet.create({
 		marginTop: 2,
 	},
 	restartButton: {
-		minWidth: 56,
+		minWidth: 64,
 		minHeight: 44,
 		justifyContent: 'center',
 		alignItems: 'flex-end',

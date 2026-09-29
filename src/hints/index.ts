@@ -4,8 +4,8 @@
 
 export { getHint } from './engine'
 export type { GetHintInput } from './engine'
-export { explainHintStep, explainHintResult } from './explain'
-export type { HintExplanation } from './explain'
+export { explainHintCompact, explainTeachMe, explainHintResult, formatHintAction, lineContextForStep } from './explain'
+export type { HintExplanation, LinePlayerContext } from './explain'
 export { applyHintStep } from './apply'
 export type { ApplyHintOutcome } from './apply'
 export { playerStateToSolverGrid } from './playerGrid'

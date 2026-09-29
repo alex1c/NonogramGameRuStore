@@ -6,7 +6,7 @@ import { createEmptyPlayerState } from '../../domain/nonogram/playerState'
 import { PlayerCell, type PlayerState } from '../../domain/nonogram/types'
 import {
 	applyHintStep,
-	explainHintStep,
+	explainTeachMe,
 	getHint,
 	normalizeLogicalStep,
 } from '../index'
@@ -207,11 +207,12 @@ describe('hint explanation layer', () => {
 		if (result.kind !== 'STEP') {
 			return
 		}
-		const explanation = explainHintStep(result.step)
+		const explanation = explainTeachMe(result.step, null)
 		expect(explanation.lineTitle).toMatch(/^(Строка|Столбец) \d+$/)
 		expect(explanation.body).not.toMatch(/forced_|overlap|candidate/)
 		expect(explanation.actionLabel).toMatch(/Закрасьте|крестик/)
-		expect(explanation.clueLabel.startsWith('Подсказка:')).toBe(true)
+		expect(explanation.clueText.length).toBeGreaterThan(0)
+		expect(explanation.whyAccent).toBe('Почему так?')
 	})
 })
 
