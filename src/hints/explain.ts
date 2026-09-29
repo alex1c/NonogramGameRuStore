@@ -56,7 +56,10 @@ export function explainHintStep(step: HintStep): HintExplanation {
 		case 'overlap': {
 			const run = step.proof.runLength
 			if (run !== null && step.action === 'FILLED') {
-				body = `В ${where} блок из ${run} ${russianPlural(run, 'cell')} можно расположить несколькими способами, но ${cells} закрашены во всех вариантах.`
+				// Genitive after «из»: 1 клетки / 2–4 клетки is wrong — use клеток for 2+.
+				const cellWord = run === 1 ? 'клетки' : 'клеток'
+				const agree = targets === 1 ? 'закрашена' : 'закрашены'
+				body = `В ${where} блок из ${run} ${cellWord} можно расположить несколькими способами, но ${cells} ${agree} во всех вариантах.`
 			} else {
 				body = `По подсказкам ${where} ${cells} можно определить однозначно.`
 			}
