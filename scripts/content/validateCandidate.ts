@@ -310,6 +310,7 @@ export function validateRawCandidate(
 		needsHumanRecognizabilityReview: true,
 		rewardQualityStructuralPass: true,
 		rewardQualityFlags: [] as string[],
+		rewardQualityRiskScore: 0,
 		notSelectedReason: null as string | null,
 	}
 
@@ -367,6 +368,7 @@ export function validateRawCandidate(
 		return fail('reward_quality', {
 			rewardQualityStructuralPass: false,
 			rewardQualityFlags: [...reward.flags],
+			rewardQualityRiskScore: reward.riskScore,
 			warnings: reward.flags as StructuralWarning[],
 		})
 	}
@@ -531,6 +533,7 @@ export function validateRawCandidate(
 		needsHumanRecognizabilityReview: true,
 		rewardQualityStructuralPass: reward.structuralPass,
 		rewardQualityFlags: [...reward.flags],
+		rewardQualityRiskScore: reward.riskScore,
 		notSelectedReason: null,
 	}
 }

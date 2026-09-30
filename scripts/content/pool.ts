@@ -28,6 +28,8 @@ const TUTORIAL_IDS = new Set([
 	'beg-gate',
 	'beg-block',
 	'beg-colon',
+	'beg-l',
+	'beg-dot',
 ])
 
 function roleFor(template: ConceptTemplate): ContentRole {

@@ -1,0 +1,2410 @@
+{
+  "reportVersion": 2,
+  "status": "PHASE_8B_1_B250_R2_READY_FOR_TAIL_HUMAN_REVIEW",
+  "catalogVersion": "2026.1-b250-r2",
+  "generatorVersion": "prod-v2.1",
+  "checksum": "16390efd17651c127263833061b84442dfbe3947c15874cbc38513aab2d4d3b2",
+  "b250r1Checksum": "33d229c661ce7f2c4562bcd9ef825c049ca302e2bad85a6e86ff7b5b3bf2ead8",
+  "preservation": {
+    "preserved": 213,
+    "removed": 37,
+    "added": 37,
+    "preservationPct": 0.852,
+    "hardQualityRemoved": 12,
+    "softRiskRemoved": 25
+  },
+  "removals": [
+    {
+      "id": "b250-beanie",
+      "titleRu": "Шапка",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.98,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "hard": true
+    },
+    {
+      "id": "b250-board",
+      "titleRu": "Разделочная доска",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.98,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "hard": true
+    },
+    {
+      "id": "b250-boot",
+      "titleRu": "Резиновые сапоги",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.52,
+      "reasons": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-brush",
+      "titleRu": "Кисть",
+      "tier": "MEDIUM",
+      "kind": "object",
+      "risk": 0.52,
+      "reasons": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-drum",
+      "titleRu": "Барабан",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.98,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "hard": true
+    },
+    {
+      "id": "b250-guitar",
+      "titleRu": "Гитара",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.52,
+      "reasons": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-honey",
+      "titleRu": "Банка мёда",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.98,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "hard": true
+    },
+    {
+      "id": "b250-mic",
+      "titleRu": "Микрофон",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.7,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-mitt",
+      "titleRu": "Прихватка",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.52,
+      "reasons": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-paddle",
+      "titleRu": "Ракетка для настольного тенниса",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.52,
+      "reasons": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-salt",
+      "titleRu": "Солонка",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.52,
+      "reasons": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-scene-city",
+      "titleRu": "Городской квартал",
+      "tier": "EASY",
+      "kind": "scene",
+      "risk": 0.7,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "hard": true
+    },
+    {
+      "id": "b250-screwdriver",
+      "titleRu": "Отвёртка",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.52,
+      "reasons": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-skate",
+      "titleRu": "Скейтборд",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.76,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob"
+      ],
+      "hard": true
+    },
+    {
+      "id": "b250-socks",
+      "titleRu": "Носки",
+      "tier": "BEGINNER",
+      "kind": "object",
+      "risk": 0.7,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-spatula",
+      "titleRu": "Лопатка",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.52,
+      "reasons": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-suitcase",
+      "titleRu": "Чемодан",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.7,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-sunhat",
+      "titleRu": "Соломенная шляпа",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.7,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-ticket",
+      "titleRu": "Билет",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.98,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "hard": true
+    },
+    {
+      "id": "b250-tie",
+      "titleRu": "Галстук",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.52,
+      "reasons": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250-toolbox",
+      "titleRu": "Ящик для инструментов",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.98,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "hard": true
+    },
+    {
+      "id": "b250-whistle",
+      "titleRu": "Свисток",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.76,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob"
+      ],
+      "hard": true
+    },
+    {
+      "id": "b250hf-bamboo",
+      "titleRu": "Бамбуковая роща",
+      "tier": "HARD",
+      "kind": "scene",
+      "risk": 0.6,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "component_outlier"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250mb-brick",
+      "titleRu": "Кирпич ряд",
+      "tier": "BEGINNER",
+      "kind": "object",
+      "risk": 0.68,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "hard": true
+    },
+    {
+      "id": "b250mb-fridge",
+      "titleRu": "Холодильник блок",
+      "tier": "BEGINNER",
+      "kind": "object",
+      "risk": 0.8300000000000001,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250mb-mat",
+      "titleRu": "Коврик плотный",
+      "tier": "BEGINNER",
+      "kind": "object",
+      "risk": 0.8300000000000001,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250mb-oven2",
+      "titleRu": "Духовой шкаф",
+      "tier": "BEGINNER",
+      "kind": "object",
+      "risk": 0.65,
+      "reasons": [
+        "low_row_diversity",
+        "tiny_box"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250mb-radio",
+      "titleRu": "Радио блок",
+      "tier": "BEGINNER",
+      "kind": "object",
+      "risk": 0.65,
+      "reasons": [
+        "low_row_diversity",
+        "tiny_box"
+      ],
+      "hard": false
+    },
+    {
+      "id": "b250mb-window",
+      "titleRu": "Окно плотное",
+      "tier": "BEGINNER",
+      "kind": "object",
+      "risk": 0.8300000000000001,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "hard": false
+    },
+    {
+      "id": "beg-l",
+      "titleRu": "Эль",
+      "tier": "EASY",
+      "kind": "symbol",
+      "risk": 0.7799999999999999,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "corner_like"
+      ],
+      "hard": true
+    },
+    {
+      "id": "begfill-bone",
+      "titleRu": "Косточка",
+      "tier": "HARD",
+      "kind": "object",
+      "risk": 0.7,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "city-lamp",
+      "titleRu": "Фонарь",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.52,
+      "reasons": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "pat-weave",
+      "titleRu": "Плетение",
+      "tier": "EXPERT",
+      "kind": "pattern",
+      "risk": 0.6,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "component_outlier"
+      ],
+      "hard": false
+    },
+    {
+      "id": "spt-dumbbell",
+      "titleRu": "Гантель",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.7,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "hard": false
+    },
+    {
+      "id": "tbeg-boot",
+      "titleRu": "Ботинок",
+      "tier": "BEGINNER",
+      "kind": "object",
+      "risk": 0.68,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "hard": true
+    },
+    {
+      "id": "tbeg-cup",
+      "titleRu": "Чашечка",
+      "tier": "EASY",
+      "kind": "object",
+      "risk": 0.65,
+      "reasons": [
+        "low_row_diversity",
+        "tiny_box"
+      ],
+      "hard": false
+    },
+    {
+      "id": "tbeg-gift",
+      "titleRu": "Подарок",
+      "tier": "BEGINNER",
+      "kind": "object",
+      "risk": 0.8300000000000001,
+      "reasons": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "hard": false
+    }
+  ],
+  "additions": [
+    {
+      "id": "b250r2b-boot",
+      "titleRu": "Ботинок",
+      "tier": "BEGINNER",
+      "collectionId": "clothing",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-boot-sole",
+      "sourceKind": "authored",
+      "conceptId": "mini-boot-sole"
+    },
+    {
+      "id": "b250r2b-teapot",
+      "titleRu": "Чайник",
+      "tier": "BEGINNER",
+      "collectionId": "drinks",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-teapot",
+      "sourceKind": "authored",
+      "conceptId": "mini-teapot"
+    },
+    {
+      "id": "b250r2b-pretzel",
+      "titleRu": "Крендель",
+      "tier": "BEGINNER",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-pretzel",
+      "sourceKind": "authored",
+      "conceptId": "mini-pretzel"
+    },
+    {
+      "id": "b250r2b-gift7",
+      "titleRu": "Подарок большой",
+      "tier": "BEGINNER",
+      "collectionId": "objects",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-gift-ribbon",
+      "sourceKind": "authored",
+      "conceptId": "mini-gift-ribbon"
+    },
+    {
+      "id": "b250r2b-giftbow",
+      "titleRu": "Подарок с бантом",
+      "tier": "BEGINNER",
+      "collectionId": "objects",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-gift-bow",
+      "sourceKind": "authored",
+      "conceptId": "mini-gift-bow"
+    },
+    {
+      "id": "b250r2b-padlock",
+      "titleRu": "Навесной замок",
+      "tier": "BEGINNER",
+      "collectionId": "objects",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-padlock",
+      "sourceKind": "authored",
+      "conceptId": "mini-padlock"
+    },
+    {
+      "id": "b250r2b-smiley",
+      "titleRu": "Смайлик",
+      "tier": "BEGINNER",
+      "collectionId": "symbols",
+      "kind": "symbol",
+      "risk": 0,
+      "family": "authored-mini-smiley-face",
+      "sourceKind": "authored",
+      "conceptId": "mini-smiley-face"
+    },
+    {
+      "id": "b250r2b-bear",
+      "titleRu": "Мишка",
+      "tier": "BEGINNER",
+      "collectionId": "animals",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-bear-face",
+      "sourceKind": "authored",
+      "conceptId": "mini-bear-face"
+    },
+    {
+      "id": "b250r2b-pig",
+      "titleRu": "Хрюшка",
+      "tier": "BEGINNER",
+      "collectionId": "animals",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-pig-snout",
+      "sourceKind": "authored",
+      "conceptId": "mini-pig-snout"
+    },
+    {
+      "id": "b250r2-bagel",
+      "titleRu": "Бублик",
+      "tier": "EASY",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-bagel-ring",
+      "sourceKind": "authored",
+      "conceptId": "bagel-ring"
+    },
+    {
+      "id": "dens-cheese",
+      "titleRu": "Сыр",
+      "tier": "EASY",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-cheese-wedge",
+      "sourceKind": "authored",
+      "conceptId": "cheese-wedge"
+    },
+    {
+      "id": "dens-cookie",
+      "titleRu": "Печенье",
+      "tier": "EASY",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-round-cookie",
+      "sourceKind": "authored",
+      "conceptId": "round-cookie"
+    },
+    {
+      "id": "food-apple",
+      "titleRu": "Яблоко",
+      "tier": "EASY",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-apple",
+      "sourceKind": "authored",
+      "conceptId": "apple"
+    },
+    {
+      "id": "food-cake",
+      "titleRu": "Торт",
+      "tier": "EASY",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-cake",
+      "sourceKind": "authored",
+      "conceptId": "cake"
+    },
+    {
+      "id": "food-carrot",
+      "titleRu": "Морковь",
+      "tier": "EASY",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-carrot",
+      "sourceKind": "authored",
+      "conceptId": "carrot"
+    },
+    {
+      "id": "food-pear",
+      "titleRu": "Груша",
+      "tier": "EASY",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-pear",
+      "sourceKind": "authored",
+      "conceptId": "pear"
+    },
+    {
+      "id": "food-watermelon",
+      "titleRu": "Арбуз",
+      "tier": "EASY",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-watermelon",
+      "sourceKind": "authored",
+      "conceptId": "watermelon"
+    },
+    {
+      "id": "tbeg-apple",
+      "titleRu": "Яблочко",
+      "tier": "EASY",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-apple",
+      "sourceKind": "authored",
+      "conceptId": "mini-apple"
+    },
+    {
+      "id": "tbeg-cake",
+      "titleRu": "Тортик",
+      "tier": "EASY",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-cake",
+      "sourceKind": "authored",
+      "conceptId": "mini-cake"
+    },
+    {
+      "id": "begfill-house",
+      "titleRu": "Домик",
+      "tier": "EASY",
+      "collectionId": "home",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-house",
+      "sourceKind": "authored",
+      "conceptId": "mini-house"
+    },
+    {
+      "id": "dens-door",
+      "titleRu": "Дверь",
+      "tier": "EASY",
+      "collectionId": "home",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-closed-door",
+      "sourceKind": "authored",
+      "conceptId": "closed-door"
+    },
+    {
+      "id": "scn-house-tree",
+      "titleRu": "Дом у дерева",
+      "tier": "EASY",
+      "collectionId": "home",
+      "kind": "scene",
+      "risk": 0,
+      "family": "authored-house-tree",
+      "sourceKind": "authored",
+      "conceptId": "house-tree"
+    },
+    {
+      "id": "begfill-camera",
+      "titleRu": "Камера",
+      "tier": "EASY",
+      "collectionId": "objects",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-simple-camera",
+      "sourceKind": "authored",
+      "conceptId": "simple-camera"
+    },
+    {
+      "id": "begfill-gift",
+      "titleRu": "Подарок",
+      "tier": "EASY",
+      "collectionId": "objects",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-simple-gift",
+      "sourceKind": "authored",
+      "conceptId": "simple-gift"
+    },
+    {
+      "id": "tbeg-lock",
+      "titleRu": "Замочек",
+      "tier": "EASY",
+      "collectionId": "objects",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-lock",
+      "sourceKind": "authored",
+      "conceptId": "mini-lock"
+    },
+    {
+      "id": "beg-stairs",
+      "titleRu": "Ступени",
+      "tier": "EASY",
+      "collectionId": "symbols",
+      "kind": "symbol",
+      "risk": 0,
+      "family": "authored-stairs",
+      "sourceKind": "authored",
+      "conceptId": "stairs"
+    },
+    {
+      "id": "begfill-diamond",
+      "titleRu": "Ромб",
+      "tier": "EASY",
+      "collectionId": "symbols",
+      "kind": "symbol",
+      "risk": 0,
+      "family": "authored-simple-diamond-sym",
+      "sourceKind": "authored",
+      "conceptId": "simple-diamond-sym"
+    },
+    {
+      "id": "begfill-heart",
+      "titleRu": "Сердце",
+      "tier": "EASY",
+      "collectionId": "symbols",
+      "kind": "symbol",
+      "risk": 0,
+      "family": "authored-begfill-heart",
+      "sourceKind": "authored",
+      "conceptId": "begfill-heart"
+    },
+    {
+      "id": "hx-maze15",
+      "titleRu": "Лабиринт",
+      "tier": "EASY",
+      "collectionId": "patterns",
+      "kind": "pattern",
+      "risk": 0,
+      "family": "authored-maze-corridor",
+      "sourceKind": "authored",
+      "conceptId": "maze-corridor"
+    },
+    {
+      "id": "tbeg-circle",
+      "titleRu": "Круг",
+      "tier": "EASY",
+      "collectionId": "symbols",
+      "kind": "symbol",
+      "risk": 0,
+      "family": "authored-mini-circle",
+      "sourceKind": "authored",
+      "conceptId": "mini-circle"
+    },
+    {
+      "id": "tbeg-heart",
+      "titleRu": "Сердечко",
+      "tier": "EASY",
+      "collectionId": "symbols",
+      "kind": "symbol",
+      "risk": 0,
+      "family": "authored-mini-heart",
+      "sourceKind": "authored",
+      "conceptId": "mini-heart"
+    },
+    {
+      "id": "begfill-paw",
+      "titleRu": "Лапка",
+      "tier": "EASY",
+      "collectionId": "animals",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-simple-paw",
+      "sourceKind": "authored",
+      "conceptId": "simple-paw"
+    },
+    {
+      "id": "tbeg-butterfly",
+      "titleRu": "Бабочка",
+      "tier": "EASY",
+      "collectionId": "animals",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-mini-butterfly",
+      "sourceKind": "authored",
+      "conceptId": "mini-butterfly"
+    },
+    {
+      "id": "b250r2-bakeryloaf",
+      "titleRu": "Буханка",
+      "tier": "MEDIUM",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-bakery-loaf",
+      "sourceKind": "authored",
+      "conceptId": "bakery-loaf"
+    },
+    {
+      "id": "b250r2-corncob",
+      "titleRu": "Кукуруза",
+      "tier": "HARD",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-corn-cob",
+      "sourceKind": "authored",
+      "conceptId": "corn-cob"
+    },
+    {
+      "id": "b250r2-croissant",
+      "titleRu": "Круассан",
+      "tier": "HARD",
+      "collectionId": "food",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-croissant",
+      "sourceKind": "authored",
+      "conceptId": "croissant"
+    },
+    {
+      "id": "b250r2-coffeepot",
+      "titleRu": "Кофейник",
+      "tier": "EXPERT",
+      "collectionId": "home",
+      "kind": "object",
+      "risk": 0,
+      "family": "authored-coffee-pot",
+      "sourceKind": "authored",
+      "conceptId": "coffee-pot"
+    }
+  ],
+  "quota": {
+    "target": {
+      "BEGINNER": 25,
+      "EASY": 63,
+      "MEDIUM": 74,
+      "HARD": 63,
+      "EXPERT": 25
+    },
+    "actual": {
+      "BEGINNER": 25,
+      "EASY": 63,
+      "MEDIUM": 74,
+      "HARD": 63,
+      "EXPERT": 25
+    },
+    "shortage": []
+  },
+  "diversity": {
+    "distinctConcepts": 250,
+    "maxConceptFrequency": 1,
+    "patternCount": 12,
+    "patternShare": 0.048,
+    "expertPatternCount": 2
+  },
+  "quality": {
+    "exactDuplicates": [],
+    "transformDuplicates": [],
+    "nearDuplicates": [
+      {
+        "idA": "b250h-fountain",
+        "titleA": "Площадь с фонтаном",
+        "conceptA": "fountain-plaza",
+        "idB": "b250h-millwheel",
+        "titleB": "Мельничное колесо",
+        "conceptB": "mill-wheel",
+        "sizeKey": "15x15",
+        "similarity": 0.9777777777777777
+      },
+      {
+        "idA": "hx-snowflake15",
+        "titleA": "Снежинка узор",
+        "conceptA": "snowflake-ornament",
+        "idB": "hx3-orchid",
+        "titleB": "Орхидея",
+        "conceptB": "orchid",
+        "sizeKey": "15x15",
+        "similarity": 0.9688888888888889
+      },
+      {
+        "idA": "hx2-obelisk",
+        "titleA": "Обелиск",
+        "conceptA": "obelisk",
+        "idB": "hx2-ziggurat",
+        "titleB": "Зиккурат",
+        "conceptB": "ziggurat",
+        "sizeKey": "15x15",
+        "similarity": 0.9644444444444444
+      },
+      {
+        "idA": "b250-plate",
+        "titleA": "Тарелка",
+        "conceptA": "dining-plate",
+        "idB": "spt-basketball",
+        "titleB": "Баскетбольный мяч",
+        "conceptB": "basketball",
+        "sizeKey": "10x10",
+        "similarity": 0.96
+      },
+      {
+        "idA": "b250h-firehouse",
+        "titleA": "Пожарная часть",
+        "conceptA": "firehouse",
+        "idB": "b250hf-observ",
+        "titleB": "Купол обсерватории",
+        "conceptB": "observatory-dome",
+        "sizeKey": "15x15",
+        "similarity": 0.96
+      },
+      {
+        "idA": "b250mb-safe2",
+        "titleA": "Сейф дверь",
+        "conceptA": "safe-door",
+        "idB": "dens-tile",
+        "titleB": "Плитка",
+        "conceptB": "floor-tile",
+        "sizeKey": "5x5",
+        "similarity": 0.96
+      },
+      {
+        "idA": "beg-box",
+        "titleA": "Рамка",
+        "conceptA": "box-outline",
+        "idB": "dens-door",
+        "titleB": "Дверь",
+        "conceptB": "closed-door",
+        "sizeKey": "5x5",
+        "similarity": 0.96
+      },
+      {
+        "idA": "dens-card",
+        "titleA": "Карточка",
+        "conceptA": "id-card",
+        "idB": "dens-door",
+        "titleB": "Дверь",
+        "conceptB": "closed-door",
+        "sizeKey": "5x5",
+        "similarity": 0.96
+      },
+      {
+        "idA": "dens-cookie",
+        "titleA": "Печенье",
+        "conceptA": "round-cookie",
+        "idB": "tbeg-circle",
+        "titleB": "Круг",
+        "conceptB": "mini-circle",
+        "sizeKey": "5x5",
+        "similarity": 0.96
+      },
+      {
+        "idA": "drk-cup",
+        "titleA": "Чашка",
+        "conceptA": "cup",
+        "idB": "drk-mug",
+        "titleB": "Кружка",
+        "conceptB": "mug",
+        "sizeKey": "10x10",
+        "similarity": 0.96
+      },
+      {
+        "idA": "spc-planet",
+        "titleA": "Планета",
+        "conceptA": "planet",
+        "idB": "spt-basketball",
+        "titleB": "Баскетбольный мяч",
+        "conceptB": "basketball",
+        "sizeKey": "10x10",
+        "similarity": 0.96
+      },
+      {
+        "idA": "tbeg-crown",
+        "titleA": "Корона",
+        "conceptA": "mini-crown",
+        "idB": "tbeg-heart",
+        "titleB": "Сердечко",
+        "conceptB": "mini-heart",
+        "sizeKey": "5x5",
+        "similarity": 0.96
+      },
+      {
+        "idA": "hx-stadium",
+        "titleA": "Стадион",
+        "conceptA": "stadium",
+        "idB": "hx3-amphitheatre",
+        "titleB": "Амфитеатр",
+        "conceptB": "amphitheatre",
+        "sizeKey": "15x15",
+        "similarity": 0.9555555555555556
+      },
+      {
+        "idA": "b250h-firehouse",
+        "titleA": "Пожарная часть",
+        "conceptA": "firehouse",
+        "idB": "b250hf-gazebo",
+        "titleB": "Беседка в парке",
+        "conceptB": "park-gazebo",
+        "sizeKey": "15x15",
+        "similarity": 0.9511111111111111
+      },
+      {
+        "idA": "b250-axe",
+        "titleA": "Топор",
+        "conceptA": "splitting-axe",
+        "idB": "b250-chisel",
+        "titleB": "Стамеска",
+        "conceptB": "wood-chisel",
+        "sizeKey": "10x10",
+        "similarity": 0.95
+      },
+      {
+        "idA": "bird-duck",
+        "titleA": "Утка",
+        "conceptA": "duck",
+        "idB": "sea-dolphin",
+        "titleB": "Дельфин",
+        "conceptB": "dolphin",
+        "sizeKey": "10x10",
+        "similarity": 0.95
+      },
+      {
+        "idA": "food-apple",
+        "titleA": "Яблоко",
+        "conceptA": "apple",
+        "idB": "food-pear",
+        "titleB": "Груша",
+        "conceptB": "pear",
+        "sizeKey": "10x10",
+        "similarity": 0.95
+      },
+      {
+        "idA": "b250hf-gazebo",
+        "titleA": "Беседка в парке",
+        "conceptA": "park-gazebo",
+        "idB": "b250hf-observ",
+        "titleB": "Купол обсерватории",
+        "conceptB": "observatory-dome",
+        "sizeKey": "15x15",
+        "similarity": 0.9466666666666667
+      },
+      {
+        "idA": "hx-island-palm",
+        "titleA": "Остров с пальмой",
+        "conceptA": "palm-island",
+        "idB": "hx4-palm-hut",
+        "titleB": "Хижина у пальмы",
+        "conceptB": "palm-hut",
+        "sizeKey": "15x15",
+        "similarity": 0.9466666666666667
+      },
+      {
+        "idA": "hx2-accordion",
+        "titleA": "Гармонь",
+        "conceptA": "accordion",
+        "idB": "hx3-trellis",
+        "titleB": "Шпалера",
+        "conceptB": "trellis",
+        "sizeKey": "15x15",
+        "similarity": 0.9466666666666667
+      },
+      {
+        "idA": "b250hf-arena",
+        "titleA": "Арена",
+        "conceptA": "sports-arena",
+        "idB": "hx3-amphitheatre",
+        "titleB": "Амфитеатр",
+        "conceptB": "amphitheatre",
+        "sizeKey": "15x15",
+        "similarity": 0.9422222222222222
+      },
+      {
+        "idA": "b250-beetle",
+        "titleA": "Жук",
+        "conceptA": "rhinoceros-beetle",
+        "idB": "b250-pan",
+        "titleB": "Сковорода",
+        "conceptB": "frying-pan",
+        "sizeKey": "10x10",
+        "similarity": 0.94
+      },
+      {
+        "idA": "b250-beetle",
+        "titleA": "Жук",
+        "conceptA": "rhinoceros-beetle",
+        "idB": "b250-plate",
+        "titleB": "Тарелка",
+        "conceptB": "dining-plate",
+        "sizeKey": "10x10",
+        "similarity": 0.94
+      },
+      {
+        "idA": "b250-bowling",
+        "titleA": "Кегля",
+        "conceptA": "bowling-pin",
+        "idB": "food-pear",
+        "titleB": "Груша",
+        "conceptB": "pear",
+        "sizeKey": "10x10",
+        "similarity": 0.94
+      },
+      {
+        "idA": "bird-parrot",
+        "titleA": "Попугай",
+        "conceptA": "parrot",
+        "idB": "plt-leaf",
+        "titleB": "Лист",
+        "conceptB": "leaf",
+        "sizeKey": "10x10",
+        "similarity": 0.94
+      },
+      {
+        "idA": "spt-basketball",
+        "titleA": "Баскетбольный мяч",
+        "conceptA": "basketball",
+        "idB": "spt-football",
+        "titleB": "Футбольный мяч",
+        "conceptB": "football",
+        "sizeKey": "10x10",
+        "similarity": 0.94
+      },
+      {
+        "idA": "begfill-diamond",
+        "titleA": "Ромб",
+        "conceptA": "simple-diamond-sym",
+        "idB": "begfill-shell",
+        "titleB": "Ракушка",
+        "conceptB": "simple-shell",
+        "sizeKey": "7x7",
+        "similarity": 0.9387755102040817
+      },
+      {
+        "idA": "begfill-gift",
+        "titleA": "Подарок",
+        "conceptA": "simple-gift",
+        "idB": "begfill-house",
+        "titleB": "Домик",
+        "conceptB": "mini-house",
+        "sizeKey": "7x7",
+        "similarity": 0.9387755102040817
+      },
+      {
+        "idA": "hx-submarine",
+        "titleA": "Подлодка",
+        "conceptA": "submarine",
+        "idB": "hx3-gondola",
+        "titleB": "Гондола",
+        "conceptB": "gondola",
+        "sizeKey": "20x20",
+        "similarity": 0.935
+      },
+      {
+        "idA": "hx-forest",
+        "titleA": "Лес",
+        "conceptA": "forest",
+        "idB": "hx2-chevron",
+        "titleB": "Шеврон",
+        "conceptB": "chevron-field",
+        "sizeKey": "15x15",
+        "similarity": 0.9333333333333333
+      },
+      {
+        "idA": "b250-beetle",
+        "titleA": "Жук",
+        "conceptA": "rhinoceros-beetle",
+        "idB": "plt-leaf",
+        "titleB": "Лист",
+        "conceptB": "leaf",
+        "sizeKey": "10x10",
+        "similarity": 0.93
+      },
+      {
+        "idA": "b250-bowling",
+        "titleA": "Кегля",
+        "conceptA": "bowling-pin",
+        "idB": "plt-leaf",
+        "titleB": "Лист",
+        "conceptB": "leaf",
+        "sizeKey": "10x10",
+        "similarity": 0.93
+      },
+      {
+        "idA": "b250-plate",
+        "titleA": "Тарелка",
+        "conceptA": "dining-plate",
+        "idB": "food-apple",
+        "titleB": "Яблоко",
+        "conceptB": "apple",
+        "sizeKey": "10x10",
+        "similarity": 0.93
+      },
+      {
+        "idA": "food-pear",
+        "titleA": "Груша",
+        "conceptA": "pear",
+        "idB": "sea-sailboat",
+        "titleB": "Парусник",
+        "conceptB": "sailboat",
+        "sizeKey": "10x10",
+        "similarity": 0.93
+      },
+      {
+        "idA": "nat-cloud",
+        "titleA": "Облако",
+        "conceptA": "cloud",
+        "idB": "spc-ufo",
+        "titleB": "НЛО",
+        "conceptB": "ufo",
+        "sizeKey": "10x10",
+        "similarity": 0.93
+      },
+      {
+        "idA": "ani-hedgehog",
+        "titleA": "Ёж",
+        "conceptA": "hedgehog",
+        "idB": "food-cake",
+        "titleB": "Торт",
+        "conceptB": "cake",
+        "sizeKey": "10x10",
+        "similarity": 0.92
+      },
+      {
+        "idA": "b250-arrow",
+        "titleA": "Стрелка вверх",
+        "conceptA": "bold-arrow",
+        "idB": "beg-plus-simple",
+        "titleB": "Плюс",
+        "conceptB": "plus-sign",
+        "sizeKey": "5x5",
+        "similarity": 0.92
+      },
+      {
+        "idA": "b250-plate",
+        "titleA": "Тарелка",
+        "conceptA": "dining-plate",
+        "idB": "spc-planet",
+        "titleB": "Планета",
+        "conceptB": "planet",
+        "sizeKey": "10x10",
+        "similarity": 0.92
+      },
+      {
+        "idA": "b250hf-desert",
+        "titleA": "Пустынный форт",
+        "conceptA": "desert-fort",
+        "idB": "b250hf-icepalace",
+        "titleB": "Ледяной дворец",
+        "conceptB": "ice-palace",
+        "sizeKey": "15x15",
+        "similarity": 0.92
+      },
+      {
+        "idA": "b250mb-safe2",
+        "titleA": "Сейф дверь",
+        "conceptA": "safe-door",
+        "idB": "dens-door",
+        "titleB": "Дверь",
+        "conceptB": "closed-door",
+        "sizeKey": "5x5",
+        "similarity": 0.92
+      },
+      {
+        "idA": "b250mb-slab",
+        "titleA": "Плита плотная",
+        "conceptA": "dense-slab",
+        "idB": "dens-eraser",
+        "titleB": "Ластик",
+        "conceptB": "pencil-eraser",
+        "sizeKey": "5x5",
+        "similarity": 0.92
+      },
+      {
+        "idA": "b250r2b-bear",
+        "titleA": "Мишка",
+        "conceptA": "mini-bear-face",
+        "idB": "tbeg-dog",
+        "titleB": "Пёсик",
+        "conceptB": "mini-dog-face",
+        "sizeKey": "5x5",
+        "similarity": 0.92
+      },
+      {
+        "idA": "b250r2b-smiley",
+        "titleA": "Смайлик",
+        "conceptA": "mini-smiley-face",
+        "idB": "dens-tile",
+        "titleB": "Плитка",
+        "conceptB": "floor-tile",
+        "sizeKey": "5x5",
+        "similarity": 0.92
+      },
+      {
+        "idA": "beg-box",
+        "titleA": "Рамка",
+        "conceptA": "box-outline",
+        "idB": "dens-card",
+        "titleB": "Карточка",
+        "conceptB": "id-card",
+        "sizeKey": "5x5",
+        "similarity": 0.92
+      },
+      {
+        "idA": "beg-box",
+        "titleA": "Рамка",
+        "conceptA": "box-outline",
+        "idB": "dens-stamp",
+        "titleB": "Марка",
+        "conceptB": "postage-stamp",
+        "sizeKey": "5x5",
+        "similarity": 0.92
+      },
+      {
+        "idA": "dens-stamp",
+        "titleA": "Марка",
+        "conceptA": "postage-stamp",
+        "idB": "dens-tile",
+        "titleB": "Плитка",
+        "conceptB": "floor-tile",
+        "sizeKey": "5x5",
+        "similarity": 0.92
+      },
+      {
+        "idA": "food-apple",
+        "titleA": "Яблоко",
+        "conceptA": "apple",
+        "idB": "plt-leaf",
+        "titleB": "Лист",
+        "conceptB": "leaf",
+        "sizeKey": "10x10",
+        "similarity": 0.92
+      },
+      {
+        "idA": "plt-clover",
+        "titleA": "Клевер",
+        "conceptA": "clover",
+        "idB": "plt-flower",
+        "titleB": "Цветок",
+        "conceptB": "flower",
+        "sizeKey": "10x10",
+        "similarity": 0.92
+      },
+      {
+        "idA": "tbeg-cloud",
+        "titleA": "Облачко",
+        "conceptA": "mini-cloud",
+        "idB": "tbeg-snail",
+        "titleB": "Улитка",
+        "conceptB": "mini-snail",
+        "sizeKey": "5x5",
+        "similarity": 0.92
+      }
+    ],
+    "nearDuplicateAbsolute": 49,
+    "nearDuplicateNormalized": 0.0061120119745540725,
+    "duplicateTitles": {},
+    "hardQualitySelected": 0
+  },
+  "riskDistribution": {
+    "min": 0,
+    "median": 0,
+    "p75": 0,
+    "p90": 0.27,
+    "p95": 0.48,
+    "max": 0.65
+  },
+  "logic": {
+    "productionReady": 250,
+    "unique": 250,
+    "logical": 250,
+    "hintChain": 250
+  },
+  "distributions": {
+    "byTier": {
+      "BEGINNER": 25,
+      "EASY": 63,
+      "MEDIUM": 74,
+      "HARD": 63,
+      "EXPERT": 25
+    },
+    "bySize": {
+      "15x15": 77,
+      "10x10": 87,
+      "5x5": 48,
+      "8x8": 2,
+      "20x20": 16,
+      "12x12": 5,
+      "7x7": 14,
+      "5x3": 1
+    },
+    "byCollection": {
+      "animals": 16,
+      "symbols": 17,
+      "tools": 6,
+      "travel": 12,
+      "clothing": 4,
+      "sport": 14,
+      "patterns": 12,
+      "weather": 7,
+      "food": 19,
+      "nature": 21,
+      "city": 21,
+      "music": 5,
+      "transport": 18,
+      "plants": 13,
+      "sea": 17,
+      "home": 11,
+      "space": 10,
+      "objects": 16,
+      "drinks": 5,
+      "birds": 6
+    }
+  },
+  "reviewSamples": {
+    "worst20": [
+      {
+        "id": "b250mb-washer2",
+        "titleRu": "Стиральная машина",
+        "risk": 0.65,
+        "reasons": [
+          "low_column_diversity",
+          "tiny_box"
+        ],
+        "tier": "BEGINNER",
+        "kind": "object",
+        "sizeKey": "5x5"
+      },
+      {
+        "id": "b250-dotgrid",
+        "titleRu": "Точечная сетка",
+        "risk": 0.6,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity",
+          "component_outlier"
+        ],
+        "tier": "BEGINNER",
+        "kind": "pattern",
+        "sizeKey": "10x10"
+      },
+      {
+        "id": "b250-balloon",
+        "titleRu": "Воздушный шар",
+        "risk": 0.52,
+        "reasons": [
+          "low_row_diversity",
+          "vertical_blob"
+        ],
+        "tier": "EASY",
+        "kind": "object",
+        "sizeKey": "10x10"
+      },
+      {
+        "id": "b250-bowling",
+        "titleRu": "Кегля",
+        "risk": 0.52,
+        "reasons": [
+          "low_row_diversity",
+          "vertical_blob"
+        ],
+        "tier": "EASY",
+        "kind": "object",
+        "sizeKey": "10x10"
+      },
+      {
+        "id": "b250-chisel",
+        "titleRu": "Стамеска",
+        "risk": 0.52,
+        "reasons": [
+          "low_row_diversity",
+          "vertical_blob"
+        ],
+        "tier": "MEDIUM",
+        "kind": "object",
+        "sizeKey": "10x10"
+      },
+      {
+        "id": "b250-belt",
+        "titleRu": "Ремень",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "MEDIUM",
+        "kind": "object",
+        "sizeKey": "10x10"
+      },
+      {
+        "id": "b250-checker",
+        "titleRu": "Шахматная клетка",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "BEGINNER",
+        "kind": "pattern",
+        "sizeKey": "8x8"
+      },
+      {
+        "id": "b250-diamond",
+        "titleRu": "Ромбы",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "EASY",
+        "kind": "pattern",
+        "sizeKey": "10x10"
+      },
+      {
+        "id": "b250-map",
+        "titleRu": "Карта",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "MEDIUM",
+        "kind": "object",
+        "sizeKey": "10x10"
+      },
+      {
+        "id": "b250-plate",
+        "titleRu": "Тарелка",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "EASY",
+        "kind": "object",
+        "sizeKey": "10x10"
+      },
+      {
+        "id": "b250hf-ruins",
+        "titleRu": "Древние колонны",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "HARD",
+        "kind": "scene",
+        "sizeKey": "15x15"
+      },
+      {
+        "id": "b250mb-slab",
+        "titleRu": "Плита плотная",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "BEGINNER",
+        "kind": "object",
+        "sizeKey": "5x5"
+      },
+      {
+        "id": "beg-plus-simple",
+        "titleRu": "Плюс",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "EASY",
+        "kind": "symbol",
+        "sizeKey": "5x5"
+      },
+      {
+        "id": "beg-sprout",
+        "titleRu": "Росток",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "EASY",
+        "kind": "object",
+        "sizeKey": "5x5"
+      },
+      {
+        "id": "city-highrise",
+        "titleRu": "Многоэтажка",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "EASY",
+        "kind": "object",
+        "sizeKey": "10x10"
+      },
+      {
+        "id": "dens-eraser",
+        "titleRu": "Ластик",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "BEGINNER",
+        "kind": "object",
+        "sizeKey": "5x5"
+      },
+      {
+        "id": "hx-forest",
+        "titleRu": "Лес",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "MEDIUM",
+        "kind": "scene",
+        "sizeKey": "15x15"
+      },
+      {
+        "id": "hx2-accordion",
+        "titleRu": "Гармонь",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "BEGINNER",
+        "kind": "object",
+        "sizeKey": "15x15"
+      },
+      {
+        "id": "hx2-chevron",
+        "titleRu": "Шеврон",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "MEDIUM",
+        "kind": "pattern",
+        "sizeKey": "15x15"
+      },
+      {
+        "id": "hx3-trellis",
+        "titleRu": "Шпалера",
+        "risk": 0.48,
+        "reasons": [
+          "low_row_diversity",
+          "low_column_diversity"
+        ],
+        "tier": "EASY",
+        "kind": "object",
+        "sizeKey": "15x15"
+      }
+    ],
+    "randomSample30": [
+      "tbeg-cloud",
+      "hx3-village",
+      "drk-cup",
+      "food-apple",
+      "hx-locomotive",
+      "dens-stamp",
+      "drk-bottle",
+      "hx4-loco-smoke",
+      "hx2-obelisk",
+      "hx2-chevron",
+      "dens-cookie",
+      "nat-island",
+      "tbeg-note",
+      "pat-spiral",
+      "scn-mountains-sun",
+      "tbeg-bird",
+      "city-traffic",
+      "tbeg-umbrella",
+      "ani-cat-sit",
+      "hx3-amphitheatre",
+      "hx4-hard-anchor",
+      "bird-swan",
+      "b250-lightning",
+      "b250-rain",
+      "b250h-sled",
+      "ani-hedgehog",
+      "hx-sushi",
+      "b250-shovel",
+      "b250hf-waterfall2",
+      "begfill-diamond"
+    ],
+    "removedIds": [
+      "b250-beanie",
+      "b250-board",
+      "b250-boot",
+      "b250-brush",
+      "b250-drum",
+      "b250-guitar",
+      "b250-honey",
+      "b250-mic",
+      "b250-mitt",
+      "b250-paddle",
+      "b250-salt",
+      "b250-scene-city",
+      "b250-screwdriver",
+      "b250-skate",
+      "b250-socks",
+      "b250-spatula",
+      "b250-suitcase",
+      "b250-sunhat",
+      "b250-ticket",
+      "b250-tie",
+      "b250-toolbox",
+      "b250-whistle",
+      "b250hf-bamboo",
+      "b250mb-brick",
+      "b250mb-fridge",
+      "b250mb-mat",
+      "b250mb-oven2",
+      "b250mb-radio",
+      "b250mb-window",
+      "beg-l",
+      "begfill-bone",
+      "city-lamp",
+      "pat-weave",
+      "spt-dumbbell",
+      "tbeg-boot",
+      "tbeg-cup",
+      "tbeg-gift"
+    ],
+    "addedIds": [
+      "b250r2b-boot",
+      "b250r2b-teapot",
+      "b250r2b-pretzel",
+      "b250r2b-gift7",
+      "b250r2b-giftbow",
+      "b250r2b-padlock",
+      "b250r2b-smiley",
+      "b250r2b-bear",
+      "b250r2b-pig",
+      "b250r2-bagel",
+      "dens-cheese",
+      "dens-cookie",
+      "food-apple",
+      "food-cake",
+      "food-carrot",
+      "food-pear",
+      "food-watermelon",
+      "tbeg-apple",
+      "tbeg-cake",
+      "begfill-house",
+      "dens-door",
+      "scn-house-tree",
+      "begfill-camera",
+      "begfill-gift",
+      "tbeg-lock",
+      "beg-stairs",
+      "begfill-diamond",
+      "begfill-heart",
+      "hx-maze15",
+      "tbeg-circle",
+      "tbeg-heart",
+      "begfill-paw",
+      "tbeg-butterfly",
+      "b250r2-bakeryloaf",
+      "b250r2-corncob",
+      "b250r2-croissant",
+      "b250r2-coffeepot"
+    ]
+  },
+  "comparisonR1": {
+    "nearDuplicates": {
+      "r1": 50,
+      "r2": 49
+    },
+    "patterns": {
+      "r1": 12,
+      "r2": 12
+    },
+    "concepts": {
+      "r1": 250,
+      "r2": 250
+    }
+  },
+  "performance": {
+    "generationMs": 44625.5605,
+    "validationMs": 44546.796,
+    "rescoringMs": null
+  },
+  "campaignSimulation": {
+    "sets": [
+      {
+        "setId": "pilot-set-01",
+        "titleRu": "Набор 1",
+        "displayOrder": 1,
+        "puzzleIds": [
+          "b250mb-slab",
+          "b250r2b-smiley",
+          "begfill-gift",
+          "tbeg-lock",
+          "tbeg-circle",
+          "tr-ship",
+          "b250-diamond",
+          "tr-helicopter",
+          "ani-cat-sit",
+          "b250hf-lighthouse",
+          "home-house",
+          "hx3-biplane",
+          "b250-fog",
+          "drk-wineglass",
+          "begfill-ring",
+          "b250mb-washer2",
+          "dens-tile",
+          "dens-cookie",
+          "hx3-trellis",
+          "nat-cloud",
+          "obj-backpack",
+          "tbeg-cake",
+          "nat-island",
+          "city-traffic",
+          "hx-locomotive",
+          "dens-bag",
+          "tbeg-shield",
+          "beg-wave",
+          "b250hf-ruins",
+          "hx-snowflake15",
+          "tbeg-cloud",
+          "b250-checker",
+          "city-highrise",
+          "tbeg-moon",
+          "tbeg-sun",
+          "b250-crescent",
+          "tbeg-heart",
+          "b250-belt",
+          "b250-cruise-anchor",
+          "b250r2-croissant",
+          "b250r2-bakeryloaf",
+          "b250hf-icepalace",
+          "begfill-house",
+          "hx4-loco-smoke",
+          "hx3-orchid",
+          "b250mb-notebook",
+          "b250r2b-pretzel",
+          "pat-spiral",
+          "beg-stairs",
+          "tr-car"
+        ]
+      },
+      {
+        "setId": "pilot-set-02",
+        "titleRu": "Набор 2",
+        "displayOrder": 2,
+        "puzzleIds": [
+          "home-castle",
+          "b250-bowling",
+          "b250-at",
+          "food-cherry",
+          "b250r2-corncob",
+          "home-tower",
+          "tbeg-note",
+          "begfill-diamond",
+          "hx-garden",
+          "b250hf-coral",
+          "b250mb-safe2",
+          "b250r2b-giftbow",
+          "tbeg-butterfly",
+          "dens-door",
+          "begfill-paw",
+          "scn-boat-waves",
+          "spc-ufo",
+          "b250-pan",
+          "sea-fish",
+          "b250-shovel",
+          "cl-dress",
+          "hx3-village",
+          "b250r2-bagel",
+          "spt-racket",
+          "hx4-palm-hut",
+          "hx2-accordion",
+          "dens-eraser",
+          "hx-maze15",
+          "b250-nail",
+          "dens-cheese",
+          "pat-lattice",
+          "tbeg-bird",
+          "pat-snowflake",
+          "b250-scene-lake",
+          "ani-panda",
+          "nat-mountain",
+          "b250h-bandstand",
+          "food-watermelon",
+          "b250-scene-camp",
+          "hx4-temple-bell",
+          "dens-stamp",
+          "tbeg-dog",
+          "nat-bridge-arch",
+          "b250-peace",
+          "spc-saturn",
+          "tbeg-chair",
+          "food-cake",
+          "drk-cup",
+          "b250-tent",
+          "sea-octopus"
+        ]
+      },
+      {
+        "setId": "pilot-set-03",
+        "titleRu": "Набор 3",
+        "displayOrder": 3,
+        "puzzleIds": [
+          "plt-leaf",
+          "begfill-skey",
+          "b250-plate",
+          "b250h-crane",
+          "b250hf-gazebo",
+          "dens-card",
+          "b250r2b-teapot",
+          "food-carrot",
+          "plt-tulip",
+          "beg-box",
+          "b250-chisel",
+          "begfill-camera",
+          "plt-cactus",
+          "scn-mountains-sun",
+          "b250h-millwheel",
+          "sea-lighthouse",
+          "b250h-toboggan",
+          "begfill-fish",
+          "b250hf-jungle",
+          "b250hf-canal",
+          "b250r2b-boot",
+          "b250r2b-bear",
+          "nat-waterfall",
+          "ani-frog",
+          "ani-hedgehog",
+          "b250-passport",
+          "sea-whale",
+          "hx2-chevron",
+          "spc-planet",
+          "hx3-reef",
+          "spc-astronaut",
+          "b250h-fountain",
+          "b250-umbrella",
+          "b250h-crane10",
+          "b250hf-observ",
+          "tbeg-snail",
+          "tbeg-car",
+          "b250-beetle",
+          "beg-plus-simple",
+          "b250-lightning",
+          "tr-plane",
+          "begfill-boat",
+          "plt-clover",
+          "bird-swan",
+          "spc-satellite",
+          "spc-telescope",
+          "b250h-greenhouse",
+          "tbeg-boat",
+          "b250h-quarry",
+          "b250r2-coffeepot"
+        ]
+      },
+      {
+        "setId": "pilot-set-04",
+        "titleRu": "Набор 4",
+        "displayOrder": 4,
+        "puzzleIds": [
+          "b250-dotgrid",
+          "tbeg-crown",
+          "drk-bottle",
+          "tbeg-mushroom",
+          "tr-train",
+          "bird-duck",
+          "begfill-shell",
+          "sym-note",
+          "bird-owl",
+          "begfill-star",
+          "b250-arrow",
+          "b250h-marina",
+          "b250-balloon",
+          "b250h-tram",
+          "hx3-amphitheatre",
+          "b250r2b-padlock",
+          "b250r2b-pig",
+          "food-apple",
+          "begfill-heart",
+          "tbeg-apple",
+          "spt-basketball",
+          "scn-house-tree",
+          "b250-scene-oasis",
+          "drk-mug",
+          "hx3-gondola",
+          "hx-knot",
+          "b250h-firehouse",
+          "beg-sprout",
+          "b250h-windmill",
+          "hx3-medal",
+          "b250r2b-gift7",
+          "b250-wavelines",
+          "food-pear",
+          "sea-sailboat",
+          "bird-parrot",
+          "b250-map",
+          "b250-axe",
+          "ani-dog",
+          "scn-car-house",
+          "b250h-covbridge",
+          "b250-hoop",
+          "b250h-skijump",
+          "b250-rain",
+          "b250hf-pagoda",
+          "b250hf-waterfall2",
+          "b250hf-clocktower",
+          "b250-knife",
+          "ani-bear",
+          "tbeg-umbrella",
+          "spc-alien"
+        ]
+      },
+      {
+        "setId": "pilot-set-05",
+        "titleRu": "Набор 5",
+        "displayOrder": 5,
+        "puzzleIds": [
+          "hx2-bonsai",
+          "hx-castle-keep",
+          "b250-level",
+          "sea-dolphin",
+          "hx-peacock",
+          "spt-trophy",
+          "b250h-signalbox",
+          "spt-football",
+          "hx-sushi",
+          "hx4-hard-anchor",
+          "spc-rocket",
+          "begfill-smile",
+          "hx-factory",
+          "plt-flower",
+          "b250hf-workshop",
+          "hx-forest",
+          "hx-submarine",
+          "ani-fox",
+          "b250hf-hotair",
+          "b250h-stonearch",
+          "b250h-vineyard",
+          "obj-camera",
+          "b250h-bakery",
+          "b250h-grainsilo",
+          "hx2-labyrinth",
+          "hx2-harp",
+          "b250h-aqueduct",
+          "b250h-ferry",
+          "hx2-kraken",
+          "b250hf-desert",
+          "b250h-clocktower",
+          "b250h-sled10",
+          "b250h-carousel",
+          "b250h-sled",
+          "hx4-barn",
+          "b250h-lighthouse",
+          "b250hf-dockyard",
+          "b250h-icerink",
+          "hx-crocodile",
+          "hx2-ziggurat",
+          "hx-island-palm",
+          "b250hf-fountain",
+          "b250hf-waterfall4",
+          "b250hf-arena",
+          "hx-stadium",
+          "b250hf-railway",
+          "hx2-obelisk",
+          "hx3-hourglass",
+          "hx-wolf",
+          "hx3-totem"
+        ]
+      }
+    ],
+    "order": [
+      "b250mb-slab",
+      "b250r2b-smiley",
+      "begfill-gift",
+      "tbeg-lock",
+      "tbeg-circle",
+      "tr-ship",
+      "b250-diamond",
+      "tr-helicopter",
+      "ani-cat-sit",
+      "b250hf-lighthouse",
+      "home-house",
+      "hx3-biplane",
+      "b250-fog",
+      "drk-wineglass",
+      "begfill-ring",
+      "b250mb-washer2",
+      "dens-tile",
+      "dens-cookie",
+      "hx3-trellis",
+      "nat-cloud",
+      "obj-backpack",
+      "tbeg-cake",
+      "nat-island",
+      "city-traffic",
+      "hx-locomotive",
+      "dens-bag",
+      "tbeg-shield",
+      "beg-wave",
+      "b250hf-ruins",
+      "hx-snowflake15",
+      "tbeg-cloud",
+      "b250-checker",
+      "city-highrise",
+      "tbeg-moon",
+      "tbeg-sun",
+      "b250-crescent",
+      "tbeg-heart",
+      "b250-belt",
+      "b250-cruise-anchor",
+      "b250r2-croissant",
+      "b250r2-bakeryloaf",
+      "b250hf-icepalace",
+      "begfill-house",
+      "hx4-loco-smoke",
+      "hx3-orchid",
+      "b250mb-notebook",
+      "b250r2b-pretzel",
+      "pat-spiral",
+      "beg-stairs",
+      "tr-car",
+      "home-castle",
+      "b250-bowling",
+      "b250-at",
+      "food-cherry",
+      "b250r2-corncob",
+      "home-tower",
+      "tbeg-note",
+      "begfill-diamond",
+      "hx-garden",
+      "b250hf-coral",
+      "b250mb-safe2",
+      "b250r2b-giftbow",
+      "tbeg-butterfly",
+      "dens-door",
+      "begfill-paw",
+      "scn-boat-waves",
+      "spc-ufo",
+      "b250-pan",
+      "sea-fish",
+      "b250-shovel",
+      "cl-dress",
+      "hx3-village",
+      "b250r2-bagel",
+      "spt-racket",
+      "hx4-palm-hut",
+      "hx2-accordion",
+      "dens-eraser",
+      "hx-maze15",
+      "b250-nail",
+      "dens-cheese",
+      "pat-lattice",
+      "tbeg-bird",
+      "pat-snowflake",
+      "b250-scene-lake",
+      "ani-panda",
+      "nat-mountain",
+      "b250h-bandstand",
+      "food-watermelon",
+      "b250-scene-camp",
+      "hx4-temple-bell",
+      "dens-stamp",
+      "tbeg-dog",
+      "nat-bridge-arch",
+      "b250-peace",
+      "spc-saturn",
+      "tbeg-chair",
+      "food-cake",
+      "drk-cup",
+      "b250-tent",
+      "sea-octopus",
+      "plt-leaf",
+      "begfill-skey",
+      "b250-plate",
+      "b250h-crane",
+      "b250hf-gazebo",
+      "dens-card",
+      "b250r2b-teapot",
+      "food-carrot",
+      "plt-tulip",
+      "beg-box",
+      "b250-chisel",
+      "begfill-camera",
+      "plt-cactus",
+      "scn-mountains-sun",
+      "b250h-millwheel",
+      "sea-lighthouse",
+      "b250h-toboggan",
+      "begfill-fish",
+      "b250hf-jungle",
+      "b250hf-canal",
+      "b250r2b-boot",
+      "b250r2b-bear",
+      "nat-waterfall",
+      "ani-frog",
+      "ani-hedgehog",
+      "b250-passport",
+      "sea-whale",
+      "hx2-chevron",
+      "spc-planet",
+      "hx3-reef",
+      "spc-astronaut",
+      "b250h-fountain",
+      "b250-umbrella",
+      "b250h-crane10",
+      "b250hf-observ",
+      "tbeg-snail",
+      "tbeg-car",
+      "b250-beetle",
+      "beg-plus-simple",
+      "b250-lightning",
+      "tr-plane",
+      "begfill-boat",
+      "plt-clover",
+      "bird-swan",
+      "spc-satellite",
+      "spc-telescope",
+      "b250h-greenhouse",
+      "tbeg-boat",
+      "b250h-quarry",
+      "b250r2-coffeepot",
+      "b250-dotgrid",
+      "tbeg-crown",
+      "drk-bottle",
+      "tbeg-mushroom",
+      "tr-train",
+      "bird-duck",
+      "begfill-shell",
+      "sym-note",
+      "bird-owl",
+      "begfill-star",
+      "b250-arrow",
+      "b250h-marina",
+      "b250-balloon",
+      "b250h-tram",
+      "hx3-amphitheatre",
+      "b250r2b-padlock",
+      "b250r2b-pig",
+      "food-apple",
+      "begfill-heart",
+      "tbeg-apple",
+      "spt-basketball",
+      "scn-house-tree",
+      "b250-scene-oasis",
+      "drk-mug",
+      "hx3-gondola",
+      "hx-knot",
+      "b250h-firehouse",
+      "beg-sprout",
+      "b250h-windmill",
+      "hx3-medal",
+      "b250r2b-gift7",
+      "b250-wavelines",
+      "food-pear",
+      "sea-sailboat",
+      "bird-parrot",
+      "b250-map",
+      "b250-axe",
+      "ani-dog",
+      "scn-car-house",
+      "b250h-covbridge",
+      "b250-hoop",
+      "b250h-skijump",
+      "b250-rain",
+      "b250hf-pagoda",
+      "b250hf-waterfall2",
+      "b250hf-clocktower",
+      "b250-knife",
+      "ani-bear",
+      "tbeg-umbrella",
+      "spc-alien",
+      "hx2-bonsai",
+      "hx-castle-keep",
+      "b250-level",
+      "sea-dolphin",
+      "hx-peacock",
+      "spt-trophy",
+      "b250h-signalbox",
+      "spt-football",
+      "hx-sushi",
+      "hx4-hard-anchor",
+      "spc-rocket",
+      "begfill-smile",
+      "hx-factory",
+      "plt-flower",
+      "b250hf-workshop",
+      "hx-forest",
+      "hx-submarine",
+      "ani-fox",
+      "b250hf-hotair",
+      "b250h-stonearch",
+      "b250h-vineyard",
+      "obj-camera",
+      "b250h-bakery",
+      "b250h-grainsilo",
+      "hx2-labyrinth",
+      "hx2-harp",
+      "b250h-aqueduct",
+      "b250h-ferry",
+      "hx2-kraken",
+      "b250hf-desert",
+      "b250h-clocktower",
+      "b250h-sled10",
+      "b250h-carousel",
+      "b250h-sled",
+      "hx4-barn",
+      "b250h-lighthouse",
+      "b250hf-dockyard",
+      "b250h-icerink",
+      "hx-crocodile",
+      "hx2-ziggurat",
+      "hx-island-palm",
+      "b250hf-fountain",
+      "b250hf-waterfall4",
+      "b250hf-arena",
+      "hx-stadium",
+      "b250hf-railway",
+      "hx2-obelisk",
+      "hx3-hourglass",
+      "hx-wolf",
+      "hx3-totem"
+    ],
+    "maxDifficultyStreak": 14,
+    "maxCollectionStreak": 2,
+    "maxSizeStreak": 9
+  },
+  "runtimeIsolation": {
+    "campaignUntouched": true,
+    "galleryUntouched": true,
+    "dailyUntouched": true,
+    "schemaVersion": 4,
+    "candidateNotImported": true
+  },
+  "gateFailures": [],
+  "artifactSize": {
+    "manifestBytes": 196207,
+    "contactSheetBytes": 1350486
+  }
+}

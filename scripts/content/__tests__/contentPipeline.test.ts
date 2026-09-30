@@ -72,6 +72,7 @@ function fakeRecord(
 		needsHumanRecognizabilityReview: true,
 		rewardQualityStructuralPass: true,
 		rewardQualityFlags: [],
+		rewardQualityRiskScore: 0,
 		contentRole: 'production',
 		notSelectedReason: null,
 		...partial,
@@ -420,8 +421,8 @@ describe('semantic diversity selection', () => {
 })
 
 describe('generator version pin', () => {
-	it('uses prod-v2 for Phase 8B', () => {
-		expect(CONTENT_GENERATOR_VERSION).toBe('prod-v2')
+	it('uses prod-v2.1 for Phase 8B.1', () => {
+		expect(CONTENT_GENERATOR_VERSION).toBe('prod-v2.1')
 	})
 })
 
@@ -443,7 +444,7 @@ describe('reward quality structural gate', () => {
 		expect(analyzeRewardQuality(line, 'symbol').hardReject).toBe(true)
 	})
 
-	it('passes good simple symbols (heart / star)', () => {
+	it('passes good simple symbols (heart / star / arrow / lightning)', () => {
 		const { analyzeRewardQuality } = require('../rewardQuality') as typeof import('../rewardQuality')
 		const heart = parseAscii([
 			'.#.#.',
@@ -457,8 +458,69 @@ describe('reward quality structural gate', () => {
 			'.###.',
 			'.#.#.',
 		])
+		const arrow = parseAscii([
+			'..#..',
+			'.###.',
+			'#####',
+			'..#..',
+			'..#..',
+		])
+		const lightning = parseAscii([
+			'.##..',
+			'..#..',
+			'.###.',
+			'..#..',
+			'..##.',
+		])
 		expect(analyzeRewardQuality(heart, 'symbol').structuralPass).toBe(true)
 		expect(analyzeRewardQuality(star, 'symbol').structuralPass).toBe(true)
+		expect(analyzeRewardQuality(arrow, 'symbol').structuralPass).toBe(true)
+		expect(analyzeRewardQuality(lightning, 'symbol').structuralPass).toBe(true)
+	})
+
+	it('title does not affect reward-quality result', () => {
+		const { analyzeRewardQuality } = require('../rewardQuality') as typeof import('../rewardQuality')
+		const bitmap = parseAscii(['#####', '#####', '#####'])
+		const a = analyzeRewardQuality(bitmap, 'object')
+		const b = analyzeRewardQuality(bitmap, 'object')
+		expect(a.hardReject).toBe(b.hardReject)
+		expect(a.riskScore).toBe(b.riskScore)
+		expect([...a.flags]).toEqual([...b.flags])
+	})
+
+	it('flags solid brick / L-corner / vertical blob / tiny box as hard or extreme risk', () => {
+		const { analyzeRewardQuality } = require('../rewardQuality') as typeof import('../rewardQuality')
+		const brick = analyzeRewardQuality(
+			parseAscii(['#####', '#####', '#####', '.....', '.....']),
+			'object',
+		)
+		const el = analyzeRewardQuality(
+			parseAscii(['#....', '#....', '#....', '#....', '#####']),
+			'symbol',
+		)
+		const salt = analyzeRewardQuality(
+			parseAscii([
+				'..........',
+				'....##....',
+				'...####...',
+				'...####...',
+				'...####...',
+				'...####...',
+				'..######..',
+				'..######..',
+				'..........',
+				'..........',
+			]),
+			'object',
+		)
+		const tiny = analyzeRewardQuality(
+			parseAscii(['###', '###', '###']),
+			'object',
+		)
+		expect(brick.hardReject || brick.riskScore >= 0.5).toBe(true)
+		expect(el.hardReject || el.riskScore >= 0.5).toBe(true)
+		expect(salt.hardReject || salt.riskScore >= 0.45).toBe(true)
+		expect(tiny.hardReject || tiny.riskScore >= 0.5).toBe(true)
 	})
 
 	it('excludes tutorial primitives from production pool', () => {
@@ -471,6 +533,7 @@ describe('reward quality structural gate', () => {
 		expect(ids.has('beg-corner')).toBe(false)
 		expect(ids.has('beg-dash')).toBe(false)
 		expect(ids.has('beg-ledge')).toBe(false)
+		expect(ids.has('beg-l')).toBe(false)
 		expect(production.every((r) => r.contentRole === 'production')).toBe(true)
 	})
 })

@@ -44,6 +44,17 @@ export type StructuralWarning =
 	| 'line_like'
 	| 'tiny_trivial'
 	| 'noise_like'
+	| 'low_row_diversity'
+	| 'low_column_diversity'
+	| 'low_transition_complexity'
+	| 'solid_blob'
+	| 'corner_like'
+	| 'vertical_blob'
+	| 'tiny_box'
+	| 'low_bbox_usage'
+	| 'excessive_components'
+	| 'extreme_density'
+	| 'component_outlier'
 
 export interface RawCandidate {
 	readonly id: string
@@ -122,6 +133,7 @@ export interface CandidateAuditRecord {
 	readonly needsHumanRecognizabilityReview: boolean
 	readonly rewardQualityStructuralPass: boolean
 	readonly rewardQualityFlags: readonly string[]
+	readonly rewardQualityRiskScore: number
 	/** Selection skip reason when valid but not chosen. */
 	readonly notSelectedReason: string | null
 }

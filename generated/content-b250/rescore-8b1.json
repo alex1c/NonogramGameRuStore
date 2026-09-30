@@ -1,0 +1,5560 @@
+{
+  "catalogVersion": "2026.1-b250-r1",
+  "checksum": "33d229c661ce7f2c4562bcd9ef825c049ca302e2bad85a6e86ff7b5b3bf2ead8",
+  "total": 250,
+  "hardReject": 12,
+  "hardRejectShare": 0.048,
+  "warning": 85,
+  "clean": 153,
+  "overreachStop": false,
+  "riskDistribution": {
+    "min": 0,
+    "median": 0,
+    "p75": 0.18,
+    "p90": 0.65,
+    "p95": 0.76,
+    "max": 0.98
+  },
+  "reasonCounts": {
+    "low_row_diversity": 73,
+    "low_column_diversity": 53,
+    "solid_blob": 8,
+    "vertical_blob": 26,
+    "tiny_box": 10,
+    "corner_like": 1,
+    "component_outlier": 18,
+    "excessive_components": 1
+  },
+  "byKind": {
+    "object": {
+      "selected": 186,
+      "hardRejects": 10,
+      "warnings": 63,
+      "medianRisk": 0
+    },
+    "symbol": {
+      "selected": 20,
+      "hardRejects": 1,
+      "warnings": 4,
+      "medianRisk": 0
+    },
+    "scene": {
+      "selected": 32,
+      "hardRejects": 1,
+      "warnings": 9,
+      "medianRisk": 0
+    },
+    "pattern": {
+      "selected": 12,
+      "hardRejects": 0,
+      "warnings": 9,
+      "medianRisk": 0.48
+    }
+  },
+  "humanWeak": [
+    {
+      "id": "b250mb-brick",
+      "titleRu": "Кирпич ряд",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": true,
+      "hardRejectReason": "tiny_box",
+      "riskScore": 0.68,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.2,
+        "trans": 0.3333333333333333,
+        "fillBbox": 1
+      },
+      "rank": 21
+    },
+    {
+      "id": "beg-l",
+      "titleRu": "Эль",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": true,
+      "hardRejectReason": "corner_like",
+      "riskScore": 0.7799999999999999,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "corner_like"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.4,
+        "trans": 0.32,
+        "fillBbox": 0.36
+      },
+      "rank": 11
+    },
+    {
+      "id": "b250mb-safe2",
+      "titleRu": "Сейф дверь",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8,
+        "colDiv": 0.6,
+        "trans": 0.72,
+        "fillBbox": 0.76
+      },
+      "rank": 159
+    },
+    {
+      "id": "b250-salt",
+      "titleRu": "Солонка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.5,
+        "trans": 0.6190476190476191,
+        "fillBbox": 0.7142857142857143
+      },
+      "rank": 38
+    }
+  ],
+  "humanGood": [
+    {
+      "id": "ani-bear",
+      "titleRu": "Медведь",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8181818181818182,
+        "colDiv": 0.4666666666666667,
+        "trans": 0.5212121212121212,
+        "fillBbox": 0.6666666666666666
+      },
+      "rank": 98
+    },
+    {
+      "id": "ani-hedgehog",
+      "titleRu": "Ёж",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.6825396825396826,
+        "fillBbox": 0.6984126984126984
+      },
+      "rank": 103
+    },
+    {
+      "id": "b250-lightning",
+      "titleRu": "Молния",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 1,
+        "trans": 0.8095238095238095,
+        "fillBbox": 0.47619047619047616
+      },
+      "rank": 110
+    },
+    {
+      "id": "b250-peace",
+      "titleRu": "Знак мира",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5,
+        "trans": 0.8888888888888888,
+        "fillBbox": 0.5
+      },
+      "rank": 112
+    },
+    {
+      "id": "hx2-harp",
+      "titleRu": "Арфа",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5333333333333333,
+        "trans": 1.0555555555555556,
+        "fillBbox": 0.4666666666666667
+      },
+      "rank": 93
+    },
+    {
+      "id": "hx2-kraken",
+      "titleRu": "Кракен",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.8181818181818182,
+        "colDiv": 0.6666666666666666,
+        "trans": 1.187878787878788,
+        "fillBbox": 0.41818181818181815
+      },
+      "rank": 94
+    },
+    {
+      "id": "sea-octopus",
+      "titleRu": "Осьминог",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.8571428571428571,
+        "colDiv": 1,
+        "trans": 0.9428571428571428,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 97
+    },
+    {
+      "id": "b250hf-clocktower",
+      "titleRu": "Часовая башня",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5454545454545454,
+        "trans": 0.487012987012987,
+        "fillBbox": 0.4935064935064935
+      },
+      "rank": 146
+    },
+    {
+      "id": "hx4-palm-hut",
+      "titleRu": "Хижина у пальмы",
+      "kind": "scene",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.9230769230769231,
+        "colDiv": 0.9333333333333333,
+        "trans": 0.6307692307692307,
+        "fillBbox": 0.4256410256410256
+      },
+      "rank": 203
+    }
+  ],
+  "worst20": [
+    {
+      "id": "b250-beanie",
+      "titleRu": "Шапка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.375,
+        "trans": 0.5833333333333334,
+        "fillBbox": 0.8333333333333334
+      },
+      "rank": 1
+    },
+    {
+      "id": "b250-board",
+      "titleRu": "Разделочная доска",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.2857142857142857,
+        "colDiv": 0.25,
+        "trans": 0.5357142857142857,
+        "fillBbox": 0.9285714285714286
+      },
+      "rank": 2
+    },
+    {
+      "id": "b250-drum",
+      "titleRu": "Барабан",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.25,
+        "trans": 0.5833333333333334,
+        "fillBbox": 0.9166666666666666
+      },
+      "rank": 3
+    },
+    {
+      "id": "b250-honey",
+      "titleRu": "Банка мёда",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.2857142857142857,
+        "colDiv": 0.3333333333333333,
+        "trans": 0.6190476190476191,
+        "fillBbox": 0.9047619047619048
+      },
+      "rank": 4
+    },
+    {
+      "id": "b250-ticket",
+      "titleRu": "Билет",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.375,
+        "trans": 0.5357142857142857,
+        "fillBbox": 0.8214285714285714
+      },
+      "rank": 5
+    },
+    {
+      "id": "b250-toolbox",
+      "titleRu": "Ящик для инструментов",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.25,
+        "colDiv": 0.25,
+        "trans": 0.5,
+        "fillBbox": 0.9375
+      },
+      "rank": 6
+    },
+    {
+      "id": "b250mb-fridge",
+      "titleRu": "Холодильник блок",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.8300000000000001,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.4,
+        "trans": 0.64,
+        "fillBbox": 0.76
+      },
+      "rank": 7
+    },
+    {
+      "id": "b250mb-mat",
+      "titleRu": "Коврик плотный",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.8300000000000001,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.6666666666666666,
+        "colDiv": 0.4,
+        "trans": 1.2,
+        "fillBbox": 0.8666666666666667
+      },
+      "rank": 8
+    },
+    {
+      "id": "b250mb-window",
+      "titleRu": "Окно плотное",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.8300000000000001,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.4,
+        "trans": 0.64,
+        "fillBbox": 0.84
+      },
+      "rank": 9
+    },
+    {
+      "id": "tbeg-gift",
+      "titleRu": "Подарок",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.8300000000000001,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.4,
+        "trans": 0.4,
+        "fillBbox": 0.8
+      },
+      "rank": 10
+    },
+    {
+      "id": "beg-l",
+      "titleRu": "Эль",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": true,
+      "hardRejectReason": "corner_like",
+      "riskScore": 0.7799999999999999,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "corner_like"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.4,
+        "trans": 0.32,
+        "fillBbox": 0.36
+      },
+      "rank": 11
+    },
+    {
+      "id": "b250-skate",
+      "titleRu": "Скейтборд",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.76,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.25,
+        "trans": 0.75,
+        "fillBbox": 0.875
+      },
+      "rank": 12
+    },
+    {
+      "id": "b250-whistle",
+      "titleRu": "Свисток",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.76,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.3333333333333333,
+        "trans": 0.8333333333333334,
+        "fillBbox": 0.8333333333333334
+      },
+      "rank": 13
+    },
+    {
+      "id": "b250-mic",
+      "titleRu": "Микрофон",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.5,
+        "trans": 1,
+        "fillBbox": 0.75
+      },
+      "rank": 14
+    },
+    {
+      "id": "b250-scene-city",
+      "titleRu": "Городской квартал",
+      "kind": "scene",
+      "tier": "EASY",
+      "sizeKey": "20x20",
+      "hardReject": true,
+      "hardRejectReason": "vertical_blob",
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.10526315789473684,
+        "colDiv": 0.16666666666666666,
+        "trans": 0.4144736842105263,
+        "fillBbox": 0.7302631578947368
+      },
+      "rank": 15
+    },
+    {
+      "id": "b250-socks",
+      "titleRu": "Носки",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.5,
+        "trans": 0.8333333333333334,
+        "fillBbox": 0.6666666666666666
+      },
+      "rank": 16
+    },
+    {
+      "id": "b250-suitcase",
+      "titleRu": "Чемодан",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.375,
+        "colDiv": 0.375,
+        "trans": 0.5,
+        "fillBbox": 0.8125
+      },
+      "rank": 17
+    },
+    {
+      "id": "b250-sunhat",
+      "titleRu": "Соломенная шляпа",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.375,
+        "trans": 0.65,
+        "fillBbox": 0.5
+      },
+      "rank": 18
+    },
+    {
+      "id": "begfill-bone",
+      "titleRu": "Косточка",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "7x7",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.42857142857142855,
+        "trans": 0.5714285714285714,
+        "fillBbox": 0.5918367346938775
+      },
+      "rank": 19
+    },
+    {
+      "id": "spt-dumbbell",
+      "titleRu": "Гантель",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.2,
+        "trans": 0.56,
+        "fillBbox": 0.52
+      },
+      "rank": 20
+    }
+  ],
+  "hardRejectIds": [
+    "b250-beanie",
+    "b250-board",
+    "b250-drum",
+    "b250-honey",
+    "b250-ticket",
+    "b250-toolbox",
+    "beg-l",
+    "b250-skate",
+    "b250-whistle",
+    "b250-scene-city",
+    "b250mb-brick",
+    "tbeg-boot"
+  ],
+  "ranked": [
+    {
+      "id": "b250-beanie",
+      "titleRu": "Шапка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.375,
+        "trans": 0.5833333333333334,
+        "fillBbox": 0.8333333333333334
+      },
+      "rank": 1
+    },
+    {
+      "id": "b250-board",
+      "titleRu": "Разделочная доска",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.2857142857142857,
+        "colDiv": 0.25,
+        "trans": 0.5357142857142857,
+        "fillBbox": 0.9285714285714286
+      },
+      "rank": 2
+    },
+    {
+      "id": "b250-drum",
+      "titleRu": "Барабан",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.25,
+        "trans": 0.5833333333333334,
+        "fillBbox": 0.9166666666666666
+      },
+      "rank": 3
+    },
+    {
+      "id": "b250-honey",
+      "titleRu": "Банка мёда",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.2857142857142857,
+        "colDiv": 0.3333333333333333,
+        "trans": 0.6190476190476191,
+        "fillBbox": 0.9047619047619048
+      },
+      "rank": 4
+    },
+    {
+      "id": "b250-ticket",
+      "titleRu": "Билет",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.375,
+        "trans": 0.5357142857142857,
+        "fillBbox": 0.8214285714285714
+      },
+      "rank": 5
+    },
+    {
+      "id": "b250-toolbox",
+      "titleRu": "Ящик для инструментов",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.98,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.25,
+        "colDiv": 0.25,
+        "trans": 0.5,
+        "fillBbox": 0.9375
+      },
+      "rank": 6
+    },
+    {
+      "id": "b250mb-fridge",
+      "titleRu": "Холодильник блок",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.8300000000000001,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.4,
+        "trans": 0.64,
+        "fillBbox": 0.76
+      },
+      "rank": 7
+    },
+    {
+      "id": "b250mb-mat",
+      "titleRu": "Коврик плотный",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.8300000000000001,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.6666666666666666,
+        "colDiv": 0.4,
+        "trans": 1.2,
+        "fillBbox": 0.8666666666666667
+      },
+      "rank": 8
+    },
+    {
+      "id": "b250mb-window",
+      "titleRu": "Окно плотное",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.8300000000000001,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.4,
+        "trans": 0.64,
+        "fillBbox": 0.84
+      },
+      "rank": 9
+    },
+    {
+      "id": "tbeg-gift",
+      "titleRu": "Подарок",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.8300000000000001,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.4,
+        "trans": 0.4,
+        "fillBbox": 0.8
+      },
+      "rank": 10
+    },
+    {
+      "id": "beg-l",
+      "titleRu": "Эль",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": true,
+      "hardRejectReason": "corner_like",
+      "riskScore": 0.7799999999999999,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "corner_like"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.4,
+        "trans": 0.32,
+        "fillBbox": 0.36
+      },
+      "rank": 11
+    },
+    {
+      "id": "b250-skate",
+      "titleRu": "Скейтборд",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.76,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.25,
+        "trans": 0.75,
+        "fillBbox": 0.875
+      },
+      "rank": 12
+    },
+    {
+      "id": "b250-whistle",
+      "titleRu": "Свисток",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": true,
+      "hardRejectReason": "solid_blob",
+      "riskScore": 0.76,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "solid_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.3333333333333333,
+        "trans": 0.8333333333333334,
+        "fillBbox": 0.8333333333333334
+      },
+      "rank": 13
+    },
+    {
+      "id": "b250-mic",
+      "titleRu": "Микрофон",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.5,
+        "trans": 1,
+        "fillBbox": 0.75
+      },
+      "rank": 14
+    },
+    {
+      "id": "b250-scene-city",
+      "titleRu": "Городской квартал",
+      "kind": "scene",
+      "tier": "EASY",
+      "sizeKey": "20x20",
+      "hardReject": true,
+      "hardRejectReason": "vertical_blob",
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.10526315789473684,
+        "colDiv": 0.16666666666666666,
+        "trans": 0.4144736842105263,
+        "fillBbox": 0.7302631578947368
+      },
+      "rank": 15
+    },
+    {
+      "id": "b250-socks",
+      "titleRu": "Носки",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.5,
+        "trans": 0.8333333333333334,
+        "fillBbox": 0.6666666666666666
+      },
+      "rank": 16
+    },
+    {
+      "id": "b250-suitcase",
+      "titleRu": "Чемодан",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.375,
+        "colDiv": 0.375,
+        "trans": 0.5,
+        "fillBbox": 0.8125
+      },
+      "rank": 17
+    },
+    {
+      "id": "b250-sunhat",
+      "titleRu": "Соломенная шляпа",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.375,
+        "trans": 0.65,
+        "fillBbox": 0.5
+      },
+      "rank": 18
+    },
+    {
+      "id": "begfill-bone",
+      "titleRu": "Косточка",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "7x7",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.42857142857142855,
+        "trans": 0.5714285714285714,
+        "fillBbox": 0.5918367346938775
+      },
+      "rank": 19
+    },
+    {
+      "id": "spt-dumbbell",
+      "titleRu": "Гантель",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.7,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.2,
+        "trans": 0.56,
+        "fillBbox": 0.52
+      },
+      "rank": 20
+    },
+    {
+      "id": "b250mb-brick",
+      "titleRu": "Кирпич ряд",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": true,
+      "hardRejectReason": "tiny_box",
+      "riskScore": 0.68,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.2,
+        "trans": 0.3333333333333333,
+        "fillBbox": 1
+      },
+      "rank": 21
+    },
+    {
+      "id": "tbeg-boot",
+      "titleRu": "Ботинок",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": true,
+      "hardRejectReason": "tiny_box",
+      "riskScore": 0.68,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.4,
+        "trans": 0.45,
+        "fillBbox": 0.7
+      },
+      "rank": 22
+    },
+    {
+      "id": "b250mb-oven2",
+      "titleRu": "Духовой шкаф",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.65,
+      "flags": [
+        "low_row_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.64,
+        "fillBbox": 0.8
+      },
+      "rank": 23
+    },
+    {
+      "id": "b250mb-radio",
+      "titleRu": "Радио блок",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.65,
+      "flags": [
+        "low_row_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.52,
+        "fillBbox": 0.8
+      },
+      "rank": 24
+    },
+    {
+      "id": "b250mb-washer2",
+      "titleRu": "Стиральная машина",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.65,
+      "flags": [
+        "low_column_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.48,
+        "fillBbox": 0.84
+      },
+      "rank": 25
+    },
+    {
+      "id": "tbeg-cup",
+      "titleRu": "Чашечка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.65,
+      "flags": [
+        "low_row_diversity",
+        "tiny_box"
+      ],
+      "metrics": {
+        "rowDiv": 0.75,
+        "colDiv": 0.6,
+        "trans": 0.75,
+        "fillBbox": 0.75
+      },
+      "rank": 26
+    },
+    {
+      "id": "b250-dotgrid",
+      "titleRu": "Точечная сетка",
+      "kind": "pattern",
+      "tier": "BEGINNER",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.6,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.25,
+        "colDiv": 0.3333333333333333,
+        "trans": 0.6984126984126984,
+        "fillBbox": 0.19047619047619047
+      },
+      "rank": 27
+    },
+    {
+      "id": "b250hf-bamboo",
+      "titleRu": "Бамбуковая роща",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.6,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.3076923076923077,
+        "colDiv": 0.3333333333333333,
+        "trans": 0.9435897435897436,
+        "fillBbox": 0.48717948717948717
+      },
+      "rank": 28
+    },
+    {
+      "id": "pat-weave",
+      "titleRu": "Плетение",
+      "kind": "pattern",
+      "tier": "EXPERT",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.6,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity",
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.3,
+        "colDiv": 0.2,
+        "trans": 0.72,
+        "fillBbox": 0.6
+      },
+      "rank": 29
+    },
+    {
+      "id": "b250-balloon",
+      "titleRu": "Воздушный шар",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.375,
+        "colDiv": 0.5,
+        "trans": 0.6666666666666666,
+        "fillBbox": 0.625
+      },
+      "rank": 30
+    },
+    {
+      "id": "b250-boot",
+      "titleRu": "Резиновые сапоги",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5,
+        "trans": 0.5,
+        "fillBbox": 0.53125
+      },
+      "rank": 31
+    },
+    {
+      "id": "b250-bowling",
+      "titleRu": "Кегля",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.5,
+        "trans": 0.6190476190476191,
+        "fillBbox": 0.7142857142857143
+      },
+      "rank": 32
+    },
+    {
+      "id": "b250-brush",
+      "titleRu": "Кисть",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.3,
+        "colDiv": 0.5,
+        "trans": 0.5333333333333333,
+        "fillBbox": 0.6333333333333333
+      },
+      "rank": 33
+    },
+    {
+      "id": "b250-chisel",
+      "titleRu": "Стамеска",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.5,
+        "trans": 0.35,
+        "fillBbox": 0.55
+      },
+      "rank": 34
+    },
+    {
+      "id": "b250-guitar",
+      "titleRu": "Гитара",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.5,
+        "trans": 0.6190476190476191,
+        "fillBbox": 0.6190476190476191
+      },
+      "rank": 35
+    },
+    {
+      "id": "b250-mitt",
+      "titleRu": "Прихватка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.5,
+        "trans": 0.6190476190476191,
+        "fillBbox": 0.7142857142857143
+      },
+      "rank": 36
+    },
+    {
+      "id": "b250-paddle",
+      "titleRu": "Ракетка для настольного тенниса",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5,
+        "trans": 0.6666666666666666,
+        "fillBbox": 0.7222222222222222
+      },
+      "rank": 37
+    },
+    {
+      "id": "b250-salt",
+      "titleRu": "Солонка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.5,
+        "trans": 0.6190476190476191,
+        "fillBbox": 0.7142857142857143
+      },
+      "rank": 38
+    },
+    {
+      "id": "b250-screwdriver",
+      "titleRu": "Отвёртка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.3,
+        "colDiv": 0.5,
+        "trans": 0.4666666666666667,
+        "fillBbox": 0.5333333333333333
+      },
+      "rank": 39
+    },
+    {
+      "id": "b250-spatula",
+      "titleRu": "Лопатка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.5,
+        "trans": 0.6190476190476191,
+        "fillBbox": 0.6190476190476191
+      },
+      "rank": 40
+    },
+    {
+      "id": "b250-tie",
+      "titleRu": "Галстук",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.5,
+        "trans": 0.7142857142857143,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 41
+    },
+    {
+      "id": "city-lamp",
+      "titleRu": "Фонарь",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.52,
+      "flags": [
+        "low_row_diversity",
+        "vertical_blob"
+      ],
+      "metrics": {
+        "rowDiv": 0.375,
+        "colDiv": 0.5,
+        "trans": 0.75,
+        "fillBbox": 0.625
+      },
+      "rank": 42
+    },
+    {
+      "id": "b250-belt",
+      "titleRu": "Ремень",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.375,
+        "trans": 0.9111111111111111,
+        "fillBbox": 0.6
+      },
+      "rank": 43
+    },
+    {
+      "id": "b250-checker",
+      "titleRu": "Шахматная клетка",
+      "kind": "pattern",
+      "tier": "BEGINNER",
+      "sizeKey": "8x8",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.25,
+        "colDiv": 0.125,
+        "trans": 1,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 44
+    },
+    {
+      "id": "b250-diamond",
+      "titleRu": "Ромбы",
+      "kind": "pattern",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.5,
+        "trans": 1,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 45
+    },
+    {
+      "id": "b250-map",
+      "titleRu": "Карта",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.2857142857142857,
+        "colDiv": 0.375,
+        "trans": 0.8095238095238095,
+        "fillBbox": 0.5873015873015873
+      },
+      "rank": 46
+    },
+    {
+      "id": "b250-plate",
+      "titleRu": "Тарелка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.375,
+        "trans": 0.5357142857142857,
+        "fillBbox": 0.7857142857142857
+      },
+      "rank": 47
+    },
+    {
+      "id": "b250hf-ruins",
+      "titleRu": "Древние колонны",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.35714285714285715,
+        "colDiv": 0.4,
+        "trans": 0.7761904761904762,
+        "fillBbox": 0.5952380952380952
+      },
+      "rank": 48
+    },
+    {
+      "id": "b250mb-slab",
+      "titleRu": "Плита плотная",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.2,
+        "trans": 0.6666666666666666,
+        "fillBbox": 1
+      },
+      "rank": 49
+    },
+    {
+      "id": "beg-plus-simple",
+      "titleRu": "Плюс",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.4,
+        "trans": 0.64,
+        "fillBbox": 0.36
+      },
+      "rank": 50
+    },
+    {
+      "id": "beg-sprout",
+      "titleRu": "Росток",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6666666666666666,
+        "trans": 1.3333333333333333,
+        "fillBbox": 0.5333333333333333
+      },
+      "rank": 51
+    },
+    {
+      "id": "city-highrise",
+      "titleRu": "Многоэтажка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.25,
+        "colDiv": 0.25,
+        "trans": 0.875,
+        "fillBbox": 0.90625
+      },
+      "rank": 52
+    },
+    {
+      "id": "dens-eraser",
+      "titleRu": "Ластик",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.6666666666666666,
+        "colDiv": 0.4,
+        "trans": 0.8,
+        "fillBbox": 0.8666666666666667
+      },
+      "rank": 53
+    },
+    {
+      "id": "hx-forest",
+      "titleRu": "Лес",
+      "kind": "scene",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.23076923076923078,
+        "colDiv": 0.23076923076923078,
+        "trans": 0.6512820512820513,
+        "fillBbox": 0.4564102564102564
+      },
+      "rank": 54
+    },
+    {
+      "id": "hx2-accordion",
+      "titleRu": "Гармонь",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.2222222222222222,
+        "colDiv": 0.13333333333333333,
+        "trans": 1.0518518518518518,
+        "fillBbox": 0.7925925925925926
+      },
+      "rank": 55
+    },
+    {
+      "id": "hx2-chevron",
+      "titleRu": "Шеврон",
+      "kind": "pattern",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.3,
+        "colDiv": 0.23076923076923078,
+        "trans": 0.6533333333333333,
+        "fillBbox": 0.49333333333333335
+      },
+      "rank": 56
+    },
+    {
+      "id": "hx3-trellis",
+      "titleRu": "Шпалера",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.2,
+        "trans": 0.9933333333333333,
+        "fillBbox": 0.6866666666666666
+      },
+      "rank": 57
+    },
+    {
+      "id": "nat-waterfall",
+      "titleRu": "Водопад",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.3,
+        "trans": 0.8571428571428571,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 58
+    },
+    {
+      "id": "pat-lattice",
+      "titleRu": "Решётка",
+      "kind": "pattern",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.48,
+      "flags": [
+        "low_row_diversity",
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.2,
+        "colDiv": 0.2,
+        "trans": 0.6,
+        "fillBbox": 0.7
+      },
+      "rank": 59
+    },
+    {
+      "id": "b250hf-workshop",
+      "titleRu": "Столярная мастерская",
+      "kind": "scene",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.3,
+      "flags": [
+        "low_row_diversity",
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.6,
+        "trans": 0.719047619047619,
+        "fillBbox": 0.6095238095238096
+      },
+      "rank": 60
+    },
+    {
+      "id": "hx3-biplane",
+      "titleRu": "Биплан",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.3,
+      "flags": [
+        "low_column_diversity",
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.46153846153846156,
+        "colDiv": 0.45,
+        "trans": 0.8307692307692308,
+        "fillBbox": 0.4153846153846154
+      },
+      "rank": 61
+    },
+    {
+      "id": "hx3-orchid",
+      "titleRu": "Орхидея",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.27,
+      "flags": [
+        "excessive_components",
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.6153846153846154,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.8,
+        "fillBbox": 0.31794871794871793
+      },
+      "rank": 62
+    },
+    {
+      "id": "b250-cruise-anchor",
+      "titleRu": "Якорь",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 1,
+        "trans": 0.75,
+        "fillBbox": 0.5
+      },
+      "rank": 63
+    },
+    {
+      "id": "b250-fog",
+      "titleRu": "Туман",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.6666666666666666,
+        "colDiv": 0.25,
+        "trans": 1.15,
+        "fillBbox": 0.5
+      },
+      "rank": 64
+    },
+    {
+      "id": "b250-hoop",
+      "titleRu": "Кольцо для баскетбола",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.5,
+        "trans": 0.7857142857142857,
+        "fillBbox": 0.5
+      },
+      "rank": 65
+    },
+    {
+      "id": "b250-level",
+      "titleRu": "Уровень",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.9444444444444444,
+        "fillBbox": 0.5370370370370371
+      },
+      "rank": 66
+    },
+    {
+      "id": "b250-nail",
+      "titleRu": "Гвоздь",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.3333333333333333,
+        "colDiv": 0.5,
+        "trans": 0.5185185185185185,
+        "fillBbox": 0.48148148148148145
+      },
+      "rank": 67
+    },
+    {
+      "id": "b250-passport",
+      "titleRu": "Паспорт",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.375,
+        "colDiv": 0.5555555555555556,
+        "trans": 0.6666666666666666,
+        "fillBbox": 0.75
+      },
+      "rank": 68
+    },
+    {
+      "id": "b250-shovel",
+      "titleRu": "Лопата",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.45555555555555555,
+        "fillBbox": 0.4
+      },
+      "rank": 69
+    },
+    {
+      "id": "b250-umbrella",
+      "titleRu": "Зонт",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.5,
+        "trans": 0.5357142857142857,
+        "fillBbox": 0.4642857142857143
+      },
+      "rank": 70
+    },
+    {
+      "id": "b250-wavelines",
+      "titleRu": "Волнистые линии",
+      "kind": "pattern",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.2857142857142857,
+        "colDiv": 0.5,
+        "trans": 1.2244897959183674,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 71
+    },
+    {
+      "id": "beg-wave",
+      "titleRu": "Волна",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "5x3",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.4,
+        "trans": 1.6,
+        "fillBbox": 0.5
+      },
+      "rank": 72
+    },
+    {
+      "id": "city-traffic",
+      "titleRu": "Светофор",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5,
+        "trans": 1.1666666666666667,
+        "fillBbox": 0.7083333333333334
+      },
+      "rank": 73
+    },
+    {
+      "id": "drk-bottle",
+      "titleRu": "Бутылка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.375,
+        "colDiv": 0.5,
+        "trans": 0.75,
+        "fillBbox": 0.7916666666666666
+      },
+      "rank": 74
+    },
+    {
+      "id": "drk-cup",
+      "titleRu": "Чашка",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.8333333333333334,
+        "colDiv": 0.5,
+        "trans": 0.875,
+        "fillBbox": 0.5208333333333334
+      },
+      "rank": 75
+    },
+    {
+      "id": "drk-mug",
+      "titleRu": "Кружка",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.6666666666666666,
+        "colDiv": 0.5,
+        "trans": 0.8958333333333334,
+        "fillBbox": 0.5625
+      },
+      "rank": 76
+    },
+    {
+      "id": "home-castle",
+      "titleRu": "Замок",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.36363636363636365,
+        "colDiv": 0.45454545454545453,
+        "trans": 0.8099173553719008,
+        "fillBbox": 0.7107438016528925
+      },
+      "rank": 77
+    },
+    {
+      "id": "home-tower",
+      "titleRu": "Башня",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.4,
+        "trans": 0.6,
+        "fillBbox": 0.6
+      },
+      "rank": 78
+    },
+    {
+      "id": "nat-bridge-arch",
+      "titleRu": "Арочный мост",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.3333333333333333,
+        "trans": 0.49523809523809526,
+        "fillBbox": 0.42857142857142855
+      },
+      "rank": 79
+    },
+    {
+      "id": "pat-snowflake",
+      "titleRu": "Снежинка",
+      "kind": "pattern",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.4,
+        "trans": 0.6857142857142857,
+        "fillBbox": 0.42857142857142855
+      },
+      "rank": 80
+    },
+    {
+      "id": "spc-satellite",
+      "titleRu": "Спутник",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.4,
+        "trans": 0.7142857142857143,
+        "fillBbox": 0.45714285714285713
+      },
+      "rank": 81
+    },
+    {
+      "id": "spc-saturn",
+      "titleRu": "Сатурн",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_column_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.26666666666666666,
+        "trans": 0.4,
+        "fillBbox": 0.42857142857142855
+      },
+      "rank": 82
+    },
+    {
+      "id": "tbeg-boat",
+      "titleRu": "Лодочка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.75,
+        "colDiv": 0.6,
+        "trans": 0.65,
+        "fillBbox": 0.5
+      },
+      "rank": 83
+    },
+    {
+      "id": "tr-plane",
+      "titleRu": "Самолёт",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.5,
+        "trans": 0.475,
+        "fillBbox": 0.45
+      },
+      "rank": 84
+    },
+    {
+      "id": "tr-train",
+      "titleRu": "Поезд",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.18,
+      "flags": [
+        "low_row_diversity"
+      ],
+      "metrics": {
+        "rowDiv": 0.6666666666666666,
+        "colDiv": 0.8,
+        "trans": 0.8,
+        "fillBbox": 0.7
+      },
+      "rank": 85
+    },
+    {
+      "id": "b250-at",
+      "titleRu": "Собачка",
+      "kind": "symbol",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.625,
+        "trans": 0.9629629629629629,
+        "fillBbox": 0.4074074074074074
+      },
+      "rank": 86
+    },
+    {
+      "id": "b250h-marina",
+      "titleRu": "Причал марины",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.75,
+        "colDiv": 0.8666666666666667,
+        "trans": 0.9384615384615385,
+        "fillBbox": 0.47692307692307695
+      },
+      "rank": 87
+    },
+    {
+      "id": "b250hf-coral",
+      "titleRu": "Коралловый риф",
+      "kind": "scene",
+      "tier": "EXPERT",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.7222222222222222,
+        "colDiv": 1,
+        "trans": 0.8416666666666667,
+        "fillBbox": 0.5027777777777778
+      },
+      "rank": 88
+    },
+    {
+      "id": "b250hf-dockyard",
+      "titleRu": "Портовый кран",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.6666666666666666,
+        "colDiv": 0.8,
+        "trans": 0.7055555555555556,
+        "fillBbox": 0.39444444444444443
+      },
+      "rank": 89
+    },
+    {
+      "id": "b250hf-waterfall4",
+      "titleRu": "Скалистый берег",
+      "kind": "scene",
+      "tier": "EXPERT",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.9,
+        "trans": 0.7083333333333334,
+        "fillBbox": 0.43333333333333335
+      },
+      "rank": 90
+    },
+    {
+      "id": "begfill-smile",
+      "titleRu": "Улыбка",
+      "kind": "symbol",
+      "tier": "MEDIUM",
+      "sizeKey": "7x7",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.7142857142857143,
+        "trans": 0.8163265306122449,
+        "fillBbox": 0.5306122448979592
+      },
+      "rank": 91
+    },
+    {
+      "id": "hx-snowflake15",
+      "titleRu": "Снежинка узор",
+      "kind": "pattern",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.5384615384615384,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.8717948717948718,
+        "fillBbox": 0.3435897435897436
+      },
+      "rank": 92
+    },
+    {
+      "id": "hx2-harp",
+      "titleRu": "Арфа",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5333333333333333,
+        "trans": 1.0555555555555556,
+        "fillBbox": 0.4666666666666667
+      },
+      "rank": 93
+    },
+    {
+      "id": "hx2-kraken",
+      "titleRu": "Кракен",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.8181818181818182,
+        "colDiv": 0.6666666666666666,
+        "trans": 1.187878787878788,
+        "fillBbox": 0.41818181818181815
+      },
+      "rank": 94
+    },
+    {
+      "id": "hx2-obelisk",
+      "titleRu": "Обелиск",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.6923076923076923,
+        "colDiv": 0.6,
+        "trans": 0.6974358974358974,
+        "fillBbox": 0.3282051282051282
+      },
+      "rank": 95
+    },
+    {
+      "id": "hx3-reef",
+      "titleRu": "Риф",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.6666666666666666,
+        "trans": 1.1444444444444444,
+        "fillBbox": 0.5055555555555555
+      },
+      "rank": 96
+    },
+    {
+      "id": "sea-octopus",
+      "titleRu": "Осьминог",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0.12,
+      "flags": [
+        "component_outlier"
+      ],
+      "metrics": {
+        "rowDiv": 0.8571428571428571,
+        "colDiv": 1,
+        "trans": 0.9428571428571428,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 97
+    },
+    {
+      "id": "ani-bear",
+      "titleRu": "Медведь",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8181818181818182,
+        "colDiv": 0.4666666666666667,
+        "trans": 0.5212121212121212,
+        "fillBbox": 0.6666666666666666
+      },
+      "rank": 98
+    },
+    {
+      "id": "ani-cat-sit",
+      "titleRu": "Кот",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.6527777777777778,
+        "fillBbox": 0.7222222222222222
+      },
+      "rank": 99
+    },
+    {
+      "id": "ani-dog",
+      "titleRu": "Собака",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.875,
+        "colDiv": 0.7,
+        "trans": 0.675,
+        "fillBbox": 0.6625
+      },
+      "rank": 100
+    },
+    {
+      "id": "ani-fox",
+      "titleRu": "Лиса",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.9,
+        "trans": 0.5625,
+        "fillBbox": 0.55
+      },
+      "rank": 101
+    },
+    {
+      "id": "ani-frog",
+      "titleRu": "Лягушка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.8,
+        "trans": 0.7142857142857143,
+        "fillBbox": 0.6714285714285714
+      },
+      "rank": 102
+    },
+    {
+      "id": "ani-hedgehog",
+      "titleRu": "Ёж",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.6825396825396826,
+        "fillBbox": 0.6984126984126984
+      },
+      "rank": 103
+    },
+    {
+      "id": "ani-panda",
+      "titleRu": "Панда",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.875,
+        "colDiv": 0.5,
+        "trans": 0.925,
+        "fillBbox": 0.55
+      },
+      "rank": 104
+    },
+    {
+      "id": "b250-arrow",
+      "titleRu": "Стрелка вверх",
+      "kind": "symbol",
+      "tier": "MEDIUM",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.64,
+        "fillBbox": 0.44
+      },
+      "rank": 105
+    },
+    {
+      "id": "b250-axe",
+      "titleRu": "Топор",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5555555555555556,
+        "trans": 0.32222222222222224,
+        "fillBbox": 0.5444444444444444
+      },
+      "rank": 106
+    },
+    {
+      "id": "b250-beetle",
+      "titleRu": "Жук",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.5,
+        "trans": 0.5357142857142857,
+        "fillBbox": 0.6785714285714286
+      },
+      "rank": 107
+    },
+    {
+      "id": "b250-crescent",
+      "titleRu": "Полумесяц",
+      "kind": "symbol",
+      "tier": "MEDIUM",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.75,
+        "trans": 0.9375,
+        "fillBbox": 0.625
+      },
+      "rank": 108
+    },
+    {
+      "id": "b250-knife",
+      "titleRu": "Нож",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.875,
+        "colDiv": 1,
+        "trans": 0.640625,
+        "fillBbox": 0.34375
+      },
+      "rank": 109
+    },
+    {
+      "id": "b250-lightning",
+      "titleRu": "Молния",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 1,
+        "trans": 0.8095238095238095,
+        "fillBbox": 0.47619047619047616
+      },
+      "rank": 110
+    },
+    {
+      "id": "b250-pan",
+      "titleRu": "Сковорода",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.75,
+        "trans": 0.5625,
+        "fillBbox": 0.625
+      },
+      "rank": 111
+    },
+    {
+      "id": "b250-peace",
+      "titleRu": "Знак мира",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5,
+        "trans": 0.8888888888888888,
+        "fillBbox": 0.5
+      },
+      "rank": 112
+    },
+    {
+      "id": "b250-rain",
+      "titleRu": "Дождь",
+      "kind": "symbol",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.875,
+        "trans": 0.75,
+        "fillBbox": 0.5625
+      },
+      "rank": 113
+    },
+    {
+      "id": "b250-scene-camp",
+      "titleRu": "Кемпинг",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.9411764705882353,
+        "colDiv": 1,
+        "trans": 0.48739495798319327,
+        "fillBbox": 0.42857142857142855
+      },
+      "rank": 114
+    },
+    {
+      "id": "b250-scene-lake",
+      "titleRu": "Горное озеро",
+      "kind": "scene",
+      "tier": "MEDIUM",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5,
+        "trans": 0.25,
+        "fillBbox": 0.5625
+      },
+      "rank": 115
+    },
+    {
+      "id": "b250-scene-oasis",
+      "titleRu": "Оазис",
+      "kind": "scene",
+      "tier": "MEDIUM",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.875,
+        "trans": 0.36666666666666664,
+        "fillBbox": 0.6166666666666667
+      },
+      "rank": 116
+    },
+    {
+      "id": "b250-tent",
+      "titleRu": "Палатка",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.5,
+        "trans": 0.5625,
+        "fillBbox": 0.625
+      },
+      "rank": 117
+    },
+    {
+      "id": "b250h-aqueduct",
+      "titleRu": "Арки акведука",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8181818181818182,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.8121212121212121,
+        "fillBbox": 0.44242424242424244
+      },
+      "rank": 118
+    },
+    {
+      "id": "b250h-bakery",
+      "titleRu": "Витрина пекарни",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6428571428571429,
+        "colDiv": 0.7333333333333333,
+        "trans": 0.6857142857142857,
+        "fillBbox": 0.5761904761904761
+      },
+      "rank": 119
+    },
+    {
+      "id": "b250h-bandstand",
+      "titleRu": "Эстрада",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6923076923076923,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.6358974358974359,
+        "fillBbox": 0.5846153846153846
+      },
+      "rank": 120
+    },
+    {
+      "id": "b250h-carousel",
+      "titleRu": "Конь карусели",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "12x12",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8,
+        "colDiv": 0.9166666666666666,
+        "trans": 0.7166666666666667,
+        "fillBbox": 0.4583333333333333
+      },
+      "rank": 121
+    },
+    {
+      "id": "b250h-clocktower",
+      "titleRu": "Часовая площадь",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.8,
+        "trans": 0.5190476190476191,
+        "fillBbox": 0.46190476190476193
+      },
+      "rank": 122
+    },
+    {
+      "id": "b250h-covbridge",
+      "titleRu": "Крытый мост",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6666666666666666,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.8111111111111111,
+        "fillBbox": 0.5444444444444444
+      },
+      "rank": 123
+    },
+    {
+      "id": "b250h-crane",
+      "titleRu": "Грузовой кран",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "12x12",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7272727272727273,
+        "colDiv": 0.75,
+        "trans": 0.6363636363636364,
+        "fillBbox": 0.4696969696969697
+      },
+      "rank": 124
+    },
+    {
+      "id": "b250h-crane10",
+      "titleRu": "Кран порт",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7,
+        "colDiv": 0.7,
+        "trans": 0.54,
+        "fillBbox": 0.46
+      },
+      "rank": 125
+    },
+    {
+      "id": "b250h-ferry",
+      "titleRu": "Паром",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.9333333333333333,
+        "trans": 0.7272727272727273,
+        "fillBbox": 0.4727272727272727
+      },
+      "rank": 126
+    },
+    {
+      "id": "b250h-firehouse",
+      "titleRu": "Пожарная часть",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7857142857142857,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.49047619047619045,
+        "fillBbox": 0.5619047619047619
+      },
+      "rank": 127
+    },
+    {
+      "id": "b250h-fountain",
+      "titleRu": "Площадь с фонтаном",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6153846153846154,
+        "colDiv": 0.7333333333333333,
+        "trans": 0.7384615384615385,
+        "fillBbox": 0.5794871794871795
+      },
+      "rank": 128
+    },
+    {
+      "id": "b250h-grainsilo",
+      "titleRu": "Зерновой элеватор",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6153846153846154,
+        "colDiv": 0.8666666666666667,
+        "trans": 0.764102564102564,
+        "fillBbox": 0.6051282051282051
+      },
+      "rank": 129
+    },
+    {
+      "id": "b250h-greenhouse",
+      "titleRu": "Теплица каркас",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.7333333333333333,
+        "trans": 0.5285714285714286,
+        "fillBbox": 0.5571428571428572
+      },
+      "rank": 130
+    },
+    {
+      "id": "b250h-icerink",
+      "titleRu": "Каток",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6428571428571429,
+        "colDiv": 0.7333333333333333,
+        "trans": 0.7238095238095238,
+        "fillBbox": 0.5285714285714286
+      },
+      "rank": 131
+    },
+    {
+      "id": "b250h-lighthouse",
+      "titleRu": "Маяк крупно",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8571428571428571,
+        "colDiv": 0.8,
+        "trans": 0.5380952380952381,
+        "fillBbox": 0.45714285714285713
+      },
+      "rank": 132
+    },
+    {
+      "id": "b250h-millwheel",
+      "titleRu": "Мельничное колесо",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6153846153846154,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.7487179487179487,
+        "fillBbox": 0.5743589743589743
+      },
+      "rank": 133
+    },
+    {
+      "id": "b250h-quarry",
+      "titleRu": "Карьер",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.75,
+        "colDiv": 0.7333333333333333,
+        "trans": 0.8333333333333334,
+        "fillBbox": 0.5777777777777777
+      },
+      "rank": 134
+    },
+    {
+      "id": "b250h-signalbox",
+      "titleRu": "Будка стрелочника",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.7333333333333333,
+        "trans": 0.6285714285714286,
+        "fillBbox": 0.5238095238095238
+      },
+      "rank": 135
+    },
+    {
+      "id": "b250h-skijump",
+      "titleRu": "Трамплин",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "12x12",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.9,
+        "colDiv": 0.8181818181818182,
+        "trans": 0.5454545454545454,
+        "fillBbox": 0.509090909090909
+      },
+      "rank": 136
+    },
+    {
+      "id": "b250h-sled",
+      "titleRu": "Сани",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "12x12",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 1,
+        "trans": 0.8518518518518519,
+        "fillBbox": 0.5185185185185185
+      },
+      "rank": 137
+    },
+    {
+      "id": "b250h-sled10",
+      "titleRu": "Санки",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.5,
+        "trans": 0.875,
+        "fillBbox": 0.575
+      },
+      "rank": 138
+    },
+    {
+      "id": "b250h-stonearch",
+      "titleRu": "Каменная арка",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8333333333333334,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.8111111111111111,
+        "fillBbox": 0.5388888888888889
+      },
+      "rank": 139
+    },
+    {
+      "id": "b250h-toboggan",
+      "titleRu": "Тобогган",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "12x12",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.75,
+        "trans": 0.8541666666666666,
+        "fillBbox": 0.5520833333333334
+      },
+      "rank": 140
+    },
+    {
+      "id": "b250h-tram",
+      "titleRu": "Городской трамвай",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7272727272727273,
+        "colDiv": 0.7333333333333333,
+        "trans": 0.8,
+        "fillBbox": 0.5757575757575758
+      },
+      "rank": 141
+    },
+    {
+      "id": "b250h-vineyard",
+      "titleRu": "Террасы виноградника",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.8666666666666667,
+        "trans": 0.8222222222222222,
+        "fillBbox": 0.4722222222222222
+      },
+      "rank": 142
+    },
+    {
+      "id": "b250h-windmill",
+      "titleRu": "Мельница башня",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7857142857142857,
+        "colDiv": 0.4666666666666667,
+        "trans": 0.40476190476190477,
+        "fillBbox": 0.38571428571428573
+      },
+      "rank": 143
+    },
+    {
+      "id": "b250hf-arena",
+      "titleRu": "Арена",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6153846153846154,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.7282051282051282,
+        "fillBbox": 0.517948717948718
+      },
+      "rank": 144
+    },
+    {
+      "id": "b250hf-canal",
+      "titleRu": "Городской канал",
+      "kind": "scene",
+      "tier": "EXPERT",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8823529411764706,
+        "colDiv": 0.5,
+        "trans": 0.65,
+        "fillBbox": 0.4222222222222222
+      },
+      "rank": 145
+    },
+    {
+      "id": "b250hf-clocktower",
+      "titleRu": "Часовая башня",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5454545454545454,
+        "trans": 0.487012987012987,
+        "fillBbox": 0.4935064935064935
+      },
+      "rank": 146
+    },
+    {
+      "id": "b250hf-desert",
+      "titleRu": "Пустынный форт",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.6238095238095238,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 147
+    },
+    {
+      "id": "b250hf-fountain",
+      "titleRu": "Городской фонтан",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6428571428571429,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.6047619047619047,
+        "fillBbox": 0.4095238095238095
+      },
+      "rank": 148
+    },
+    {
+      "id": "b250hf-gazebo",
+      "titleRu": "Беседка в парке",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7857142857142857,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.5666666666666667,
+        "fillBbox": 0.5095238095238095
+      },
+      "rank": 149
+    },
+    {
+      "id": "b250hf-hotair",
+      "titleRu": "Ярмарка с шарами",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6923076923076923,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.5952380952380952,
+        "fillBbox": 0.5428571428571428
+      },
+      "rank": 150
+    },
+    {
+      "id": "b250hf-icepalace",
+      "titleRu": "Ледяной дворец",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.6428571428571429,
+        "fillBbox": 0.6
+      },
+      "rank": 151
+    },
+    {
+      "id": "b250hf-jungle",
+      "titleRu": "Руины в джунглях",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6923076923076923,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.7589743589743589,
+        "fillBbox": 0.5897435897435898
+      },
+      "rank": 152
+    },
+    {
+      "id": "b250hf-lighthouse",
+      "titleRu": "Маяк на скале",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.5384615384615384,
+        "trans": 0.4010989010989011,
+        "fillBbox": 0.44505494505494503
+      },
+      "rank": 153
+    },
+    {
+      "id": "b250hf-observ",
+      "titleRu": "Купол обсерватории",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7857142857142857,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.5,
+        "fillBbox": 0.5190476190476191
+      },
+      "rank": 154
+    },
+    {
+      "id": "b250hf-pagoda",
+      "titleRu": "Пагода",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7857142857142857,
+        "colDiv": 0.4666666666666667,
+        "trans": 0.680952380952381,
+        "fillBbox": 0.49047619047619045
+      },
+      "rank": 155
+    },
+    {
+      "id": "b250hf-railway",
+      "titleRu": "Железнодорожный узел",
+      "kind": "scene",
+      "tier": "EXPERT",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7222222222222222,
+        "colDiv": 0.8,
+        "trans": 0.5777777777777777,
+        "fillBbox": 0.3333333333333333
+      },
+      "rank": 156
+    },
+    {
+      "id": "b250hf-waterfall2",
+      "titleRu": "Ущелье с рекой",
+      "kind": "scene",
+      "tier": "EXPERT",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6111111111111112,
+        "colDiv": 0.5,
+        "trans": 0.5111111111111111,
+        "fillBbox": 0.4
+      },
+      "rank": 157
+    },
+    {
+      "id": "b250mb-notebook",
+      "titleRu": "Блокнот плотный",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.48,
+        "fillBbox": 0.8
+      },
+      "rank": 158
+    },
+    {
+      "id": "b250mb-safe2",
+      "titleRu": "Сейф дверь",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8,
+        "colDiv": 0.6,
+        "trans": 0.72,
+        "fillBbox": 0.76
+      },
+      "rank": 159
+    },
+    {
+      "id": "beg-box",
+      "titleRu": "Рамка",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.4,
+        "colDiv": 0.4,
+        "trans": 0.48,
+        "fillBbox": 0.64
+      },
+      "rank": 160
+    },
+    {
+      "id": "begfill-boat",
+      "titleRu": "Лодка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "7x7",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8,
+        "colDiv": 0.5714285714285714,
+        "trans": 0.6285714285714286,
+        "fillBbox": 0.6
+      },
+      "rank": 161
+    },
+    {
+      "id": "begfill-fish",
+      "titleRu": "Рыбка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "7x7",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.5714285714285714,
+        "trans": 0.8,
+        "fillBbox": 0.7142857142857143
+      },
+      "rank": 162
+    },
+    {
+      "id": "begfill-ring",
+      "titleRu": "Кольцо",
+      "kind": "symbol",
+      "tier": "EXPERT",
+      "sizeKey": "7x7",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.42857142857142855,
+        "colDiv": 0.42857142857142855,
+        "trans": 0.5714285714285714,
+        "fillBbox": 0.4897959183673469
+      },
+      "rank": 163
+    },
+    {
+      "id": "begfill-shell",
+      "titleRu": "Ракушка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "7x7",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.5714285714285714,
+        "trans": 0.5714285714285714,
+        "fillBbox": 0.6938775510204082
+      },
+      "rank": 164
+    },
+    {
+      "id": "begfill-skey",
+      "titleRu": "Ключик",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "8x8",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.8333333333333334,
+        "trans": 0.6666666666666666,
+        "fillBbox": 0.5625
+      },
+      "rank": 165
+    },
+    {
+      "id": "begfill-star",
+      "titleRu": "Звезда",
+      "kind": "symbol",
+      "tier": "HARD",
+      "sizeKey": "7x7",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.5714285714285714,
+        "trans": 0.5918367346938775,
+        "fillBbox": 0.5918367346938775
+      },
+      "rank": 166
+    },
+    {
+      "id": "bird-duck",
+      "titleRu": "Утка",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.7777777777777778,
+        "trans": 0.4583333333333333,
+        "fillBbox": 0.6111111111111112
+      },
+      "rank": 167
+    },
+    {
+      "id": "bird-owl",
+      "titleRu": "Сова",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.875,
+        "colDiv": 0.8888888888888888,
+        "trans": 0.7083333333333334,
+        "fillBbox": 0.6944444444444444
+      },
+      "rank": 168
+    },
+    {
+      "id": "bird-parrot",
+      "titleRu": "Попугай",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.875,
+        "colDiv": 0.875,
+        "trans": 0.625,
+        "fillBbox": 0.578125
+      },
+      "rank": 169
+    },
+    {
+      "id": "bird-swan",
+      "titleRu": "Лебедь",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.75,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.4583333333333333,
+        "fillBbox": 0.5416666666666666
+      },
+      "rank": 170
+    },
+    {
+      "id": "cl-dress",
+      "titleRu": "Платье",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.5,
+        "trans": 0.8571428571428571,
+        "fillBbox": 0.6785714285714286
+      },
+      "rank": 171
+    },
+    {
+      "id": "dens-bag",
+      "titleRu": "Сумка",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.68,
+        "fillBbox": 0.64
+      },
+      "rank": 172
+    },
+    {
+      "id": "dens-card",
+      "titleRu": "Карточка",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.64,
+        "fillBbox": 0.72
+      },
+      "rank": 173
+    },
+    {
+      "id": "dens-stamp",
+      "titleRu": "Марка",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.64,
+        "fillBbox": 0.72
+      },
+      "rank": 174
+    },
+    {
+      "id": "dens-tile",
+      "titleRu": "Плитка",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.8,
+        "fillBbox": 0.8
+      },
+      "rank": 175
+    },
+    {
+      "id": "drk-wineglass",
+      "titleRu": "Бокал",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.5,
+        "trans": 0.71875,
+        "fillBbox": 0.46875
+      },
+      "rank": 176
+    },
+    {
+      "id": "food-cherry",
+      "titleRu": "Вишня",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8333333333333334,
+        "colDiv": 0.5555555555555556,
+        "trans": 0.7962962962962963,
+        "fillBbox": 0.3888888888888889
+      },
+      "rank": 177
+    },
+    {
+      "id": "home-house",
+      "titleRu": "Дом",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.75,
+        "colDiv": 0.5555555555555556,
+        "trans": 0.6111111111111112,
+        "fillBbox": 0.6944444444444444
+      },
+      "rank": 178
+    },
+    {
+      "id": "hx-castle-keep",
+      "titleRu": "Крепость",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.8235294117647058,
+        "trans": 0.8067226890756303,
+        "fillBbox": 0.6176470588235294
+      },
+      "rank": 179
+    },
+    {
+      "id": "hx-crocodile",
+      "titleRu": "Крокодил",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 1,
+        "trans": 0.596875,
+        "fillBbox": 0.421875
+      },
+      "rank": 180
+    },
+    {
+      "id": "hx-factory",
+      "titleRu": "Завод",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5384615384615384,
+        "colDiv": 0.5714285714285714,
+        "trans": 0.6978021978021978,
+        "fillBbox": 0.5824175824175825
+      },
+      "rank": 181
+    },
+    {
+      "id": "hx-garden",
+      "titleRu": "Сад",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6153846153846154,
+        "colDiv": 0.8,
+        "trans": 0.841025641025641,
+        "fillBbox": 0.48205128205128206
+      },
+      "rank": 182
+    },
+    {
+      "id": "hx-island-palm",
+      "titleRu": "Остров с пальмой",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6923076923076923,
+        "colDiv": 0.7333333333333333,
+        "trans": 0.5641025641025641,
+        "fillBbox": 0.3641025641025641
+      },
+      "rank": 183
+    },
+    {
+      "id": "hx-knot",
+      "titleRu": "Узел",
+      "kind": "pattern",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5454545454545454,
+        "colDiv": 0.5454545454545454,
+        "trans": 1.1900826446280992,
+        "fillBbox": 0.5950413223140496
+      },
+      "rank": 184
+    },
+    {
+      "id": "hx-locomotive",
+      "titleRu": "Паровоз",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.95,
+        "trans": 0.6384615384615384,
+        "fillBbox": 0.4576923076923077
+      },
+      "rank": 185
+    },
+    {
+      "id": "hx-peacock",
+      "titleRu": "Павлин",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6923076923076923,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.7076923076923077,
+        "fillBbox": 0.3641025641025641
+      },
+      "rank": 186
+    },
+    {
+      "id": "hx-stadium",
+      "titleRu": "Стадион",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.7555555555555555,
+        "fillBbox": 0.43333333333333335
+      },
+      "rank": 187
+    },
+    {
+      "id": "hx-submarine",
+      "titleRu": "Подлодка",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 1,
+        "trans": 0.6428571428571429,
+        "fillBbox": 0.44285714285714284
+      },
+      "rank": 188
+    },
+    {
+      "id": "hx-sushi",
+      "titleRu": "Суши",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7777777777777778,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.8444444444444444,
+        "fillBbox": 0.42962962962962964
+      },
+      "rank": 189
+    },
+    {
+      "id": "hx-wolf",
+      "titleRu": "Волк",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.7589743589743589,
+        "fillBbox": 0.4564102564102564
+      },
+      "rank": 190
+    },
+    {
+      "id": "hx2-bonsai",
+      "titleRu": "Бонсай",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.75,
+        "colDiv": 0.5555555555555556,
+        "trans": 0.8518518518518519,
+        "fillBbox": 0.5185185185185185
+      },
+      "rank": 191
+    },
+    {
+      "id": "hx2-labyrinth",
+      "titleRu": "Лабиринт круглый",
+      "kind": "pattern",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5454545454545454,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.8121212121212121,
+        "fillBbox": 0.4666666666666667
+      },
+      "rank": 192
+    },
+    {
+      "id": "hx2-ziggurat",
+      "titleRu": "Зиккурат",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5384615384615384,
+        "colDiv": 0.4666666666666667,
+        "trans": 0.6461538461538462,
+        "fillBbox": 0.36923076923076925
+      },
+      "rank": 193
+    },
+    {
+      "id": "hx3-amphitheatre",
+      "titleRu": "Амфитеатр",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5833333333333334,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.7555555555555555,
+        "fillBbox": 0.4888888888888889
+      },
+      "rank": 194
+    },
+    {
+      "id": "hx3-gondola",
+      "titleRu": "Гондола",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 1,
+        "trans": 0.5964285714285714,
+        "fillBbox": 0.35714285714285715
+      },
+      "rank": 195
+    },
+    {
+      "id": "hx3-hourglass",
+      "titleRu": "Песочные часы",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6153846153846154,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.7282051282051282,
+        "fillBbox": 0.36923076923076925
+      },
+      "rank": 196
+    },
+    {
+      "id": "hx3-medal",
+      "titleRu": "Медаль",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5833333333333334,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.7555555555555555,
+        "fillBbox": 0.38333333333333336
+      },
+      "rank": 197
+    },
+    {
+      "id": "hx3-totem",
+      "titleRu": "Тотем",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.6,
+        "trans": 0.7666666666666667,
+        "fillBbox": 0.41904761904761906
+      },
+      "rank": 198
+    },
+    {
+      "id": "hx3-village",
+      "titleRu": "Деревня",
+      "kind": "scene",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8333333333333334,
+        "colDiv": 1,
+        "trans": 0.7738095238095238,
+        "fillBbox": 0.5773809523809523
+      },
+      "rank": 199
+    },
+    {
+      "id": "hx4-barn",
+      "titleRu": "Амбар",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7692307692307693,
+        "colDiv": 0.5,
+        "trans": 0.7197802197802198,
+        "fillBbox": 0.5054945054945055
+      },
+      "rank": 200
+    },
+    {
+      "id": "hx4-hard-anchor",
+      "titleRu": "Якорный двор",
+      "kind": "scene",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6923076923076923,
+        "colDiv": 0.6,
+        "trans": 0.8153846153846154,
+        "fillBbox": 0.4205128205128205
+      },
+      "rank": 201
+    },
+    {
+      "id": "hx4-loco-smoke",
+      "titleRu": "Паровоз дым",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "20x20",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 1,
+        "trans": 0.7038461538461539,
+        "fillBbox": 0.48846153846153845
+      },
+      "rank": 202
+    },
+    {
+      "id": "hx4-palm-hut",
+      "titleRu": "Хижина у пальмы",
+      "kind": "scene",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.9230769230769231,
+        "colDiv": 0.9333333333333333,
+        "trans": 0.6307692307692307,
+        "fillBbox": 0.4256410256410256
+      },
+      "rank": 203
+    },
+    {
+      "id": "hx4-temple-bell",
+      "titleRu": "Храм с колоколом",
+      "kind": "object",
+      "tier": "EXPERT",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7692307692307693,
+        "colDiv": 0.5333333333333333,
+        "trans": 0.6461538461538462,
+        "fillBbox": 0.48717948717948717
+      },
+      "rank": 204
+    },
+    {
+      "id": "nat-cloud",
+      "titleRu": "Облако",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.6,
+        "trans": 0.62,
+        "fillBbox": 0.72
+      },
+      "rank": 205
+    },
+    {
+      "id": "nat-island",
+      "titleRu": "Остров",
+      "kind": "scene",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7777777777777778,
+        "colDiv": 0.46153846153846156,
+        "trans": 0.5128205128205128,
+        "fillBbox": 0.48717948717948717
+      },
+      "rank": 206
+    },
+    {
+      "id": "nat-mountain",
+      "titleRu": "Гора",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8571428571428571,
+        "colDiv": 0.5,
+        "trans": 0.6857142857142857,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 207
+    },
+    {
+      "id": "obj-backpack",
+      "titleRu": "Рюкзак",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.7777777777777778,
+        "trans": 0.9047619047619048,
+        "fillBbox": 0.6825396825396826
+      },
+      "rank": 208
+    },
+    {
+      "id": "obj-camera",
+      "titleRu": "Фотоаппарат",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.5,
+        "trans": 0.9,
+        "fillBbox": 0.55
+      },
+      "rank": 209
+    },
+    {
+      "id": "pat-spiral",
+      "titleRu": "Спираль",
+      "kind": "pattern",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.9,
+        "colDiv": 0.9,
+        "trans": 0.74,
+        "fillBbox": 0.64
+      },
+      "rank": 210
+    },
+    {
+      "id": "plt-cactus",
+      "titleRu": "Кактус",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.75,
+        "colDiv": 0.75,
+        "trans": 0.609375,
+        "fillBbox": 0.40625
+      },
+      "rank": 211
+    },
+    {
+      "id": "plt-clover",
+      "titleRu": "Клевер",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8571428571428571,
+        "colDiv": 0.5,
+        "trans": 0.7142857142857143,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 212
+    },
+    {
+      "id": "plt-flower",
+      "titleRu": "Цветок",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.5,
+        "trans": 0.71875,
+        "fillBbox": 0.5
+      },
+      "rank": 213
+    },
+    {
+      "id": "plt-leaf",
+      "titleRu": "Лист",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.625,
+        "trans": 0.5,
+        "fillBbox": 0.515625
+      },
+      "rank": 214
+    },
+    {
+      "id": "plt-tulip",
+      "titleRu": "Тюльпан",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.5,
+        "trans": 0.8095238095238095,
+        "fillBbox": 0.5714285714285714
+      },
+      "rank": 215
+    },
+    {
+      "id": "scn-boat-waves",
+      "titleRu": "Лодка на волнах",
+      "kind": "scene",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.6,
+        "trans": 0.6666666666666666,
+        "fillBbox": 0.425
+      },
+      "rank": 216
+    },
+    {
+      "id": "scn-car-house",
+      "titleRu": "Машина у дома",
+      "kind": "scene",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.5714285714285714,
+        "trans": 0.47619047619047616,
+        "fillBbox": 0.4444444444444444
+      },
+      "rank": 217
+    },
+    {
+      "id": "scn-mountains-sun",
+      "titleRu": "Горы и солнце",
+      "kind": "scene",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8888888888888888,
+        "colDiv": 1,
+        "trans": 0.5777777777777777,
+        "fillBbox": 0.6222222222222222
+      },
+      "rank": 218
+    },
+    {
+      "id": "sea-dolphin",
+      "titleRu": "Дельфин",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.75,
+        "colDiv": 0.5555555555555556,
+        "trans": 0.4861111111111111,
+        "fillBbox": 0.5416666666666666
+      },
+      "rank": 219
+    },
+    {
+      "id": "sea-fish",
+      "titleRu": "Рыба",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8571428571428571,
+        "colDiv": 0.6666666666666666,
+        "trans": 0.6031746031746031,
+        "fillBbox": 0.6507936507936508
+      },
+      "rank": 220
+    },
+    {
+      "id": "sea-lighthouse",
+      "titleRu": "Маяк",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.5,
+        "trans": 0.55,
+        "fillBbox": 0.575
+      },
+      "rank": 221
+    },
+    {
+      "id": "sea-sailboat",
+      "titleRu": "Парусник",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.7777777777777778,
+        "trans": 0.49206349206349204,
+        "fillBbox": 0.49206349206349204
+      },
+      "rank": 222
+    },
+    {
+      "id": "sea-whale",
+      "titleRu": "Кит",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.46153846153846156,
+        "trans": 0.5494505494505495,
+        "fillBbox": 0.6923076923076923
+      },
+      "rank": 223
+    },
+    {
+      "id": "spc-alien",
+      "titleRu": "Инопланетянин",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8888888888888888,
+        "colDiv": 0.5384615384615384,
+        "trans": 0.5641025641025641,
+        "fillBbox": 0.4700854700854701
+      },
+      "rank": 224
+    },
+    {
+      "id": "spc-astronaut",
+      "titleRu": "Космонавт",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.5,
+        "trans": 0.8125,
+        "fillBbox": 0.65625
+      },
+      "rank": 225
+    },
+    {
+      "id": "spc-planet",
+      "titleRu": "Планета",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.6,
+        "trans": 0.6571428571428571,
+        "fillBbox": 0.6285714285714286
+      },
+      "rank": 226
+    },
+    {
+      "id": "spc-rocket",
+      "titleRu": "Ракета",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.625,
+        "colDiv": 0.5,
+        "trans": 0.71875,
+        "fillBbox": 0.53125
+      },
+      "rank": 227
+    },
+    {
+      "id": "spc-telescope",
+      "titleRu": "Телескоп",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 1,
+        "trans": 0.7142857142857143,
+        "fillBbox": 0.35714285714285715
+      },
+      "rank": 228
+    },
+    {
+      "id": "spc-ufo",
+      "titleRu": "НЛО",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.6,
+        "trans": 0.64,
+        "fillBbox": 0.62
+      },
+      "rank": 229
+    },
+    {
+      "id": "spt-basketball",
+      "titleRu": "Баскетбольный мяч",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.5,
+        "trans": 0.8214285714285714,
+        "fillBbox": 0.7142857142857143
+      },
+      "rank": 230
+    },
+    {
+      "id": "spt-football",
+      "titleRu": "Футбольный мяч",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5714285714285714,
+        "colDiv": 0.5,
+        "trans": 1.1785714285714286,
+        "fillBbox": 0.6071428571428571
+      },
+      "rank": 231
+    },
+    {
+      "id": "spt-racket",
+      "titleRu": "Ракетка",
+      "kind": "object",
+      "tier": "HARD",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.5,
+        "colDiv": 0.5,
+        "trans": 0.71875,
+        "fillBbox": 0.40625
+      },
+      "rank": 232
+    },
+    {
+      "id": "spt-trophy",
+      "titleRu": "Кубок",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.7142857142857143,
+        "colDiv": 0.5,
+        "trans": 0.7857142857142857,
+        "fillBbox": 0.5
+      },
+      "rank": 233
+    },
+    {
+      "id": "sym-note",
+      "titleRu": "Нота",
+      "kind": "symbol",
+      "tier": "MEDIUM",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 1,
+        "trans": 0.7,
+        "fillBbox": 0.4
+      },
+      "rank": 234
+    },
+    {
+      "id": "tbeg-bird",
+      "titleRu": "Птичка",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.8,
+        "trans": 0.7,
+        "fillBbox": 0.6
+      },
+      "rank": 235
+    },
+    {
+      "id": "tbeg-car",
+      "titleRu": "Машинка",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.6,
+        "trans": 1.0666666666666667,
+        "fillBbox": 0.7333333333333333
+      },
+      "rank": 236
+    },
+    {
+      "id": "tbeg-chair",
+      "titleRu": "Стул",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.8,
+        "trans": 0.48,
+        "fillBbox": 0.52
+      },
+      "rank": 237
+    },
+    {
+      "id": "tbeg-cloud",
+      "titleRu": "Облачко",
+      "kind": "symbol",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6666666666666666,
+        "colDiv": 0.4,
+        "trans": 0.8,
+        "fillBbox": 0.8
+      },
+      "rank": 238
+    },
+    {
+      "id": "tbeg-crown",
+      "titleRu": "Корона",
+      "kind": "symbol",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.75,
+        "colDiv": 0.6,
+        "trans": 0.65,
+        "fillBbox": 0.8
+      },
+      "rank": 239
+    },
+    {
+      "id": "tbeg-dog",
+      "titleRu": "Пёсик",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8,
+        "colDiv": 0.6,
+        "trans": 0.64,
+        "fillBbox": 0.76
+      },
+      "rank": 240
+    },
+    {
+      "id": "tbeg-moon",
+      "titleRu": "Луна",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.75,
+        "trans": 0.55,
+        "fillBbox": 0.85
+      },
+      "rank": 241
+    },
+    {
+      "id": "tbeg-mushroom",
+      "titleRu": "Грибочек",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.48,
+        "fillBbox": 0.6
+      },
+      "rank": 242
+    },
+    {
+      "id": "tbeg-note",
+      "titleRu": "Нотка",
+      "kind": "symbol",
+      "tier": "HARD",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8,
+        "colDiv": 0.8,
+        "trans": 0.56,
+        "fillBbox": 0.44
+      },
+      "rank": 243
+    },
+    {
+      "id": "tbeg-shield",
+      "titleRu": "Щит",
+      "kind": "symbol",
+      "tier": "HARD",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8,
+        "colDiv": 0.6,
+        "trans": 0.8,
+        "fillBbox": 0.48
+      },
+      "rank": 244
+    },
+    {
+      "id": "tbeg-snail",
+      "titleRu": "Улитка",
+      "kind": "object",
+      "tier": "BEGINNER",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.6,
+        "trans": 1.0666666666666667,
+        "fillBbox": 0.8
+      },
+      "rank": 245
+    },
+    {
+      "id": "tbeg-sun",
+      "titleRu": "Солнышко",
+      "kind": "symbol",
+      "tier": "EASY",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.6,
+        "colDiv": 0.6,
+        "trans": 0.96,
+        "fillBbox": 0.68
+      },
+      "rank": 246
+    },
+    {
+      "id": "tbeg-umbrella",
+      "titleRu": "Зонтик",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "5x5",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 0.8,
+        "colDiv": 0.8,
+        "trans": 0.6,
+        "fillBbox": 0.48
+      },
+      "rank": 247
+    },
+    {
+      "id": "tr-car",
+      "titleRu": "Автомобиль",
+      "kind": "object",
+      "tier": "EASY",
+      "sizeKey": "10x10",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.8,
+        "trans": 0.6166666666666667,
+        "fillBbox": 0.6
+      },
+      "rank": 248
+    },
+    {
+      "id": "tr-helicopter",
+      "titleRu": "Вертолёт",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.4666666666666667,
+        "trans": 0.7238095238095238,
+        "fillBbox": 0.41904761904761906
+      },
+      "rank": 249
+    },
+    {
+      "id": "tr-ship",
+      "titleRu": "Корабль",
+      "kind": "object",
+      "tier": "MEDIUM",
+      "sizeKey": "15x15",
+      "hardReject": false,
+      "hardRejectReason": null,
+      "riskScore": 0,
+      "flags": [],
+      "metrics": {
+        "rowDiv": 1,
+        "colDiv": 0.7142857142857143,
+        "trans": 0.32857142857142857,
+        "fillBbox": 0.5357142857142857
+      },
+      "rank": 250
+    }
+  ]
+}

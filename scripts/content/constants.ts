@@ -2,8 +2,12 @@
  * Phase 8B production content pipeline constants (Batch 250).
  */
 
-export const CONTENT_GENERATOR_VERSION = 'prod-v2' as const
-export const CONTENT_CATALOG_VERSION = '2026.1-b250-r1' as const
+export const CONTENT_GENERATOR_VERSION = 'prod-v2.1' as const
+export const CONTENT_CATALOG_VERSION = '2026.1-b250-r2' as const
+
+/** B250-R1 human-review baseline (Phase 8B) — do not overwrite. */
+export const B250_R1_CHECKSUM =
+	'33d229c661ce7f2c4562bcd9ef825c049ca302e2bad85a6e86ff7b5b3bf2ead8' as const
 
 /** Rejected human-review baseline (Phase 8A Pilot R1). */
 export const PILOT_R1_REJECTED_CHECKSUM =
@@ -13,6 +17,11 @@ export const PILOT_R1_HUMAN_STATUS = 'HUMAN REVIEW: NOT APPROVED' as const
 /** R2 candidate baseline checksum for comparison reports. */
 export const PILOT_R2_CHECKSUM =
 	'd7c7c6fbe5838dec67ae8343d1169c814a9c302fc4954677e2f2f478f659f19c' as const
+
+/** Soft near-duplicate report target for B250-R2. */
+export const NEAR_DUPLICATE_PAIR_TARGET = 25
+/** Soft near-duplicate report threshold (not auto-reject). */
+export const NEAR_SIMILARITY_REPORT = 0.92
 
 export const B250_TARGET = 250 as const
 /** Alias kept for older selection helpers / tests. */
@@ -27,11 +36,6 @@ export const B250_TIER_QUOTA = Object.freeze({
 })
 /** Alias kept for older selection helpers / tests. */
 export const PILOT_TIER_QUOTA = B250_TIER_QUOTA
-
-/** Soft near-duplicate report threshold (not auto-reject). */
-export const NEAR_SIMILARITY_REPORT = 0.92
-/** Soft review target for near-duplicate pairs (B250). */
-export const NEAR_DUPLICATE_PAIR_TARGET = 12
 
 export const MAX_CANDIDATE_ATTEMPTS = 4000
 

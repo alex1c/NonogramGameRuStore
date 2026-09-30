@@ -21,6 +21,7 @@ import {
 	B250_HARD_ONLY_FILL,
 	B250_MORE_BEGINNER,
 } from './b250HardOnly'
+import { B250_R2_REPLACEMENTS, B250_R2_BEGINNER_EXTRA } from './b250R2Replacements'
 import {
 	R2_BEGINNER_EXPANSION,
 	R2_HARD_EXPERT_EXPANSION,
@@ -1997,4 +1998,6 @@ export const R2_CONCEPT_LIBRARY: readonly ConceptTemplate[] = Object.freeze([
 	...B250_BEGINNER_DENSE,
 	...B250_HARD_ONLY_FILL,
 	...B250_MORE_BEGINNER,
+	...B250_R2_REPLACEMENTS,
+	...B250_R2_BEGINNER_EXTRA,
 ])

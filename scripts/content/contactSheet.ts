@@ -58,14 +58,21 @@ export function buildContactSheetHtml(
 		readonly worstCase20?: readonly string[]
 		readonly distinctConcepts?: number
 		readonly patternShare?: number
+		readonly removedIds?: readonly string[]
+		readonly addedIds?: readonly string[]
+		readonly title?: string
 	},
 ): string {
 	const shortlist = new Set(meta.blindShortlist ?? [])
 	const randomSet = new Set(meta.randomSample30 ?? [])
 	const worstSet = new Set(meta.worstCase20 ?? [])
+	const removedSet = new Set(meta.removedIds ?? [])
+	const addedSet = new Set(meta.addedIds ?? [])
 	const repeatedIds = new Set(
 		(meta.repeatedConcepts ?? []).flatMap((r) => r.ids),
 	)
+	const pageTitle =
+		meta.title ?? 'Phase 8B Production 250 — CANDIDATE'
 
 	const payload = records.map((row) => ({
 		id: row.id,
@@ -84,6 +91,7 @@ export function buildContactSheetHtml(
 		warnings: row.warnings,
 		hintSteps: row.hintSteps,
 		flags: row.rewardQualityFlags,
+		rewardQualityRiskScore: row.rewardQualityRiskScore,
 	}))
 
 	const cards = payload
@@ -101,11 +109,12 @@ export function buildContactSheetHtml(
 				row.flags.length > 0
 			const isSmall = row.width <= 5 && row.height <= 5
 			const isExpert = String(row.tier) === 'EXPERT'
-			return `<article class="card" data-collection="${escapeHtml(row.collectionId)}" data-tier="${escapeHtml(String(row.tier))}" data-size="${escapeHtml(row.sizeKey)}" data-family="${escapeHtml(row.family)}" data-kind="${escapeHtml(row.kind)}" data-concept="${escapeHtml(row.conceptId)}" data-id="${escapeHtml(row.id)}" data-shortlist="${shortlist.has(row.id) ? '1' : '0'}" data-random="${randomSet.has(row.id) ? '1' : '0'}" data-worst="${worstSet.has(row.id) ? '1' : '0'}" data-repeated="${repeatedIds.has(row.id) ? '1' : '0'}" data-warn="${hasWarn ? '1' : '0'}" data-small="${isSmall ? '1' : '0'}" data-expert="${isExpert ? '1' : '0'}">
+			const risk = row.rewardQualityRiskScore ?? 0
+			return `<article class="card" data-collection="${escapeHtml(row.collectionId)}" data-tier="${escapeHtml(String(row.tier))}" data-size="${escapeHtml(row.sizeKey)}" data-family="${escapeHtml(row.family)}" data-kind="${escapeHtml(row.kind)}" data-concept="${escapeHtml(row.conceptId)}" data-id="${escapeHtml(row.id)}" data-shortlist="${shortlist.has(row.id) ? '1' : '0'}" data-random="${randomSet.has(row.id) ? '1' : '0'}" data-worst="${worstSet.has(row.id) ? '1' : '0'}" data-repeated="${repeatedIds.has(row.id) ? '1' : '0'}" data-warn="${hasWarn ? '1' : '0'}" data-small="${isSmall ? '1' : '0'}" data-expert="${isExpert ? '1' : '0'}" data-removed="${removedSet.has(row.id) ? '1' : '0'}" data-added="${addedSet.has(row.id) ? '1' : '0'}" data-risk="${risk.toFixed(3)}">
   <div class="thumb">${svg}</div>
   <h3 class="title">${escapeHtml(row.titleRu)}</h3>
   <div class="meta default-meta">${escapeHtml(row.collectionId)} · ${escapeHtml(row.sizeKey)} · ${escapeHtml(String(row.tier))}</div>
-  <div class="meta tech hidden">ID: ${escapeHtml(row.id)}<br/>concept: ${escapeHtml(row.conceptId)} / ${escapeHtml(row.compositionId)}<br/>family: ${escapeHtml(row.family)} · score: ${row.score ?? 'n/a'} · hints: ${row.hintSteps}<br/>${warn}${flags}</div>
+  <div class="meta tech hidden">ID: ${escapeHtml(row.id)}<br/>concept: ${escapeHtml(row.conceptId)} / ${escapeHtml(row.compositionId)}<br/>family: ${escapeHtml(row.family)} · score: ${row.score ?? 'n/a'} · risk: ${risk.toFixed(2)} · hints: ${row.hintSteps}<br/>${warn}${flags}</div>
   <div class="review">
     <button type="button" data-dec="APPROVE">Approve</button>
     <button type="button" data-dec="REJECT">Reject</button>
@@ -147,7 +156,7 @@ export function buildContactSheetHtml(
 <html lang="ru">
 <head>
 <meta charset="utf-8"/>
-<title>Phase 8B Production 250 — CANDIDATE</title>
+<title>${escapeHtml(pageTitle)}</title>
 <style>
   :root { color-scheme: light; }
   body { font-family: Segoe UI, Tahoma, sans-serif; margin: 16px; background: #e8e6e1; color: #222; }
@@ -183,16 +192,18 @@ export function buildContactSheetHtml(
 </style>
 </head>
 <body>
-<h1>Phase 8B Production 250 — CANDIDATE</h1>
+<h1>${escapeHtml(pageTitle)}</h1>
 <p class="stats">catalog=${escapeHtml(meta.catalogVersion)} · generator=${escapeHtml(meta.generatorVersion)} · selected=${records.length}<br/>
 checksum=${escapeHtml(meta.checksum)} · distinctConcepts=${meta.distinctConcepts ?? 'n/a'} · patternShare=${patternPct}%<br/>
 visible=<span id="visibleCount">${records.length}</span>/${records.length}</p>
 <p class="counters">Reviewed <span id="cReviewed">0</span> / ${records.length} · Approved <span id="cApproved">0</span> · Rejected <span id="cRejected">0</span> · Fix <span id="cFix">0</span> · Unreviewed <span id="cUnreviewed">${records.length}</span></p>
 <div class="views">
-  <button type="button" class="viewBtn active" data-view="all">All 250</button>
-  <button type="button" class="viewBtn" data-view="blind">Blind shortlist</button>
+  <button type="button" class="viewBtn active" data-view="worst">Worst 20</button>
   <button type="button" class="viewBtn" data-view="random">Random 30</button>
-  <button type="button" class="viewBtn" data-view="worst">Worst-case 20</button>
+  <button type="button" class="viewBtn" data-view="removed">Removed (R1)</button>
+  <button type="button" class="viewBtn" data-view="added">Added</button>
+  <button type="button" class="viewBtn" data-view="all">All 250</button>
+  <button type="button" class="viewBtn" data-view="blind">Blind shortlist</button>
   <button type="button" class="viewBtn" data-view="expert">Expert</button>
   <button type="button" class="viewBtn" data-view="small">5×5 / small</button>
   <button type="button" class="viewBtn" data-view="warnings">Warnings</button>
@@ -228,8 +239,10 @@ ${cards}
 (function () {
   var CHECKSUM = ${JSON.stringify(meta.checksum)};
   var STORAGE_KEY = 'b250-r1-review-' + CHECKSUM;
-  var currentView = 'all';
+  var currentView = 'worst';
   var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+  document.body.classList.add('blind');
+  document.body.classList.add('blind-collection');
   function unique(attr) {
     var set = {};
     cards.forEach(function (c) { set[c.getAttribute(attr)] = true; });
@@ -306,14 +319,16 @@ ${cards}
   updateCounters();
 
   function viewMatch(c) {
-    if (currentView === 'all') return true;
+    if (currentView === 'all') return c.getAttribute('data-removed') !== '1';
     if (currentView === 'blind') return c.getAttribute('data-shortlist') === '1';
     if (currentView === 'random') return c.getAttribute('data-random') === '1';
     if (currentView === 'worst') return c.getAttribute('data-worst') === '1';
-    if (currentView === 'expert') return c.getAttribute('data-expert') === '1';
-    if (currentView === 'small') return c.getAttribute('data-small') === '1';
-    if (currentView === 'warnings') return c.getAttribute('data-warn') === '1';
-    if (currentView === 'repeated') return c.getAttribute('data-repeated') === '1';
+    if (currentView === 'removed') return c.getAttribute('data-removed') === '1';
+    if (currentView === 'added') return c.getAttribute('data-added') === '1';
+    if (currentView === 'expert') return c.getAttribute('data-expert') === '1' && c.getAttribute('data-removed') !== '1';
+    if (currentView === 'small') return c.getAttribute('data-small') === '1' && c.getAttribute('data-removed') !== '1';
+    if (currentView === 'warnings') return c.getAttribute('data-warn') === '1' && c.getAttribute('data-removed') !== '1';
+    if (currentView === 'repeated') return c.getAttribute('data-repeated') === '1' && c.getAttribute('data-removed') !== '1';
     return true;
   }
 
