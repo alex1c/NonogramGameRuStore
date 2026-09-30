@@ -61,6 +61,8 @@ export function buildContactSheetHtml(
 		readonly removedIds?: readonly string[]
 		readonly addedIds?: readonly string[]
 		readonly title?: string
+		/** Cards per page in All view (keeps 1000 DOM usable). */
+		readonly pageSize?: number
 	},
 ): string {
 	const shortlist = new Set(meta.blindShortlist ?? [])
@@ -71,6 +73,10 @@ export function buildContactSheetHtml(
 	const repeatedIds = new Set(
 		(meta.repeatedConcepts ?? []).flatMap((r) => r.ids),
 	)
+	const randomLabel = `Random ${meta.randomSample30?.length ?? 30}`
+	const worstLabel = `Worst ${meta.worstCase20?.length ?? 20}`
+	const allLabel = `All ${records.length}`
+	const pageSize = meta.pageSize ?? (records.length > 400 ? 60 : 250)
 	const pageTitle =
 		meta.title ?? 'Phase 8B Production 250 — CANDIDATE'
 
@@ -198,16 +204,22 @@ checksum=${escapeHtml(meta.checksum)} · distinctConcepts=${meta.distinctConcept
 visible=<span id="visibleCount">${records.length}</span>/${records.length}</p>
 <p class="counters">Reviewed <span id="cReviewed">0</span> / ${records.length} · Approved <span id="cApproved">0</span> · Rejected <span id="cRejected">0</span> · Fix <span id="cFix">0</span> · Unreviewed <span id="cUnreviewed">${records.length}</span></p>
 <div class="views">
-  <button type="button" class="viewBtn active" data-view="worst">Worst 20</button>
-  <button type="button" class="viewBtn" data-view="random">Random 30</button>
-  <button type="button" class="viewBtn" data-view="removed">Removed (R1)</button>
+  <button type="button" class="viewBtn active" data-view="worst">${escapeHtml(worstLabel)}</button>
+  <button type="button" class="viewBtn" data-view="random">${escapeHtml(randomLabel)}</button>
+  <button type="button" class="viewBtn" data-view="removed">Removed</button>
   <button type="button" class="viewBtn" data-view="added">Added</button>
-  <button type="button" class="viewBtn" data-view="all">All 250</button>
+  <button type="button" class="viewBtn" data-view="all">${escapeHtml(allLabel)}</button>
   <button type="button" class="viewBtn" data-view="blind">Blind shortlist</button>
   <button type="button" class="viewBtn" data-view="expert">Expert</button>
   <button type="button" class="viewBtn" data-view="small">5×5 / small</button>
   <button type="button" class="viewBtn" data-view="warnings">Warnings</button>
   <button type="button" class="viewBtn" data-view="repeated">Repeated concepts</button>
+  <button type="button" class="viewBtn" data-view="near">Near pairs</button>
+</div>
+<div class="pager" id="pager" style="display:none;margin:8px 0;gap:8px;align-items:center;">
+  <button type="button" id="prevPage">Prev</button>
+  <span id="pageInfo">1/1</span>
+  <button type="button" id="nextPage">Next</button>
 </div>
 <div class="modes">
   <button type="button" id="toggleBlind">Проверка без названий</button>
@@ -238,9 +250,13 @@ ${cards}
 <script>
 (function () {
   var CHECKSUM = ${JSON.stringify(meta.checksum)};
-  var STORAGE_KEY = 'b250-r1-review-' + CHECKSUM;
+  var CATALOG = ${JSON.stringify(meta.catalogVersion)};
+  var STORAGE_KEY = 'content-review-' + CHECKSUM;
+  var PAGE_SIZE = ${pageSize};
   var currentView = 'worst';
+  var pageIndex = 0;
   var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+  var pager = document.getElementById('pager');
   document.body.classList.add('blind');
   document.body.classList.add('blind-collection');
   function unique(attr) {
@@ -329,6 +345,7 @@ ${cards}
     if (currentView === 'small') return c.getAttribute('data-small') === '1' && c.getAttribute('data-removed') !== '1';
     if (currentView === 'warnings') return c.getAttribute('data-warn') === '1' && c.getAttribute('data-removed') !== '1';
     if (currentView === 'repeated') return c.getAttribute('data-repeated') === '1' && c.getAttribute('data-removed') !== '1';
+    if (currentView === 'near') return false;
     return true;
   }
 
@@ -340,7 +357,7 @@ ${cards}
     var concept = document.getElementById('fConcept').value;
     var kind = document.getElementById('fKind').value;
     var q = document.getElementById('fSearch').value.trim().toLowerCase();
-    var visible = 0;
+    var matched = [];
     cards.forEach(function (c) {
       var ok = viewMatch(c);
       if (col && c.getAttribute('data-collection') !== col) ok = false;
@@ -353,27 +370,53 @@ ${cards}
         var text = (c.textContent || '').toLowerCase();
         if (text.indexOf(q) === -1) ok = false;
       }
+      if (ok) matched.push(c);
+    });
+    var usePager = currentView === 'all' && matched.length > PAGE_SIZE;
+    pager.style.display = usePager ? 'flex' : 'none';
+    var pages = usePager ? Math.ceil(matched.length / PAGE_SIZE) : 1;
+    if (pageIndex >= pages) pageIndex = Math.max(0, pages - 1);
+    var start = usePager ? pageIndex * PAGE_SIZE : 0;
+    var end = usePager ? start + PAGE_SIZE : matched.length;
+    var pageSet = {};
+    for (var i = start; i < end; i += 1) pageSet[matched[i].getAttribute('data-id')] = true;
+    var visible = 0;
+    cards.forEach(function (c) {
+      var id = c.getAttribute('data-id');
+      var ok = matched.indexOf(c) !== -1 && (!usePager || pageSet[id]);
       c.classList.toggle('hidden', !ok);
       if (ok) visible += 1;
     });
-    document.getElementById('visibleCount').textContent = String(visible);
+    document.getElementById('visibleCount').textContent = String(matched.length);
+    document.getElementById('pageInfo').textContent = (pageIndex + 1) + '/' + pages + ' (showing ' + visible + ')';
+    if (currentView === 'near') {
+      document.querySelector('.panels').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
   ['fCollection','fTier','fSize','fFamily','fConcept','fKind','fSearch'].forEach(function (id) {
-    document.getElementById(id).addEventListener('input', apply);
-    document.getElementById(id).addEventListener('change', apply);
+    document.getElementById(id).addEventListener('input', function () { pageIndex = 0; apply(); });
+    document.getElementById(id).addEventListener('change', function () { pageIndex = 0; apply(); });
   });
 
   document.querySelectorAll('.viewBtn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       currentView = btn.getAttribute('data-view');
+      pageIndex = 0;
       document.querySelectorAll('.viewBtn').forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
-      if (currentView === 'blind') {
+      if (currentView === 'blind' || currentView === 'worst' || currentView === 'random') {
         document.body.classList.add('blind');
         document.body.classList.add('blind-collection');
       }
       apply();
     });
+  });
+
+  document.getElementById('prevPage').addEventListener('click', function () {
+    if (pageIndex > 0) { pageIndex -= 1; apply(); }
+  });
+  document.getElementById('nextPage').addEventListener('click', function () {
+    pageIndex += 1; apply();
   });
 
   document.getElementById('toggleBlind').addEventListener('click', function () {
@@ -396,13 +439,13 @@ ${cards}
     });
     var payload = {
       catalogChecksum: CHECKSUM,
-      catalogVersion: ${JSON.stringify(meta.catalogVersion)},
+      catalogVersion: CATALOG,
       decisions: decisions
     };
     var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'b250-r1-review.json';
+    a.download = CATALOG + '-review.json';
     a.click();
   });
   apply();

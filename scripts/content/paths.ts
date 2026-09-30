@@ -1,7 +1,7 @@
 /**
  * Repo-relative path helpers (Windows-safe, no hardcoded drive letters).
- * Active generation target: Phase 8B.1 Batch 250-R2.
- * Historical R1 / Pilot R2 / B250-R1 remain for comparison.
+ * Active generation target: Phase 8C Batch 1000-R1 candidate.
+ * Historical B250-R2 / B500 / B750 remain for ancestry comparison.
  */
 
 import path from 'node:path'
@@ -18,24 +18,26 @@ export function contentPaths() {
 		generatedPilotR2Dir: path.join(root, 'generated', 'content-pilot-r2'),
 		/** B250-R1 baseline (Phase 8B) — do not overwrite. */
 		generatedB250R1Dir: path.join(root, 'generated', 'content-b250'),
-		/** Active B250-R2 candidate output. */
-		generatedPilotDir: path.join(root, 'generated', 'content-b250-r2'),
+		/** B250-R2 accepted additive ancestor. */
+		generatedB250R2Dir: path.join(root, 'generated', 'content-b250-r2'),
+		/** Active B1000-R1 candidate output. */
+		generatedPilotDir: path.join(root, 'generated', 'content-b1000'),
 		manifestPath: path.join(
 			root,
 			'generated',
-			'content-b250-r2',
+			'content-b1000',
 			'manifest.json',
 		),
 		reportJsonPath: path.join(
 			root,
 			'generated',
-			'content-b250-r2',
+			'content-b1000',
 			'report.json',
 		),
 		checksumPath: path.join(
 			root,
 			'generated',
-			'content-b250-r2',
+			'content-b1000',
 			'checksum.txt',
 		),
 		rejectionsPath: path.join(root, 'content-src', 'rejections.json'),
@@ -43,21 +45,21 @@ export function contentPaths() {
 			root,
 			'review-artifacts',
 			'production-content',
-			'b250-r2',
+			'b1000-r1',
 		),
 		contactSheetPath: path.join(
 			root,
 			'review-artifacts',
 			'production-content',
-			'b250-r2',
+			'b1000-r1',
 			'contact-sheet.html',
 		),
 		reportMdPath: path.join(
 			root,
 			'review-artifacts',
 			'production-content',
-			'b250-r2',
-			'pilot-report.md',
+			'b1000-r1',
+			'report.md',
 		),
 		r1BaselineReport: path.join(
 			root,
@@ -75,6 +77,12 @@ export function contentPaths() {
 			root,
 			'generated',
 			'content-b250',
+			'manifest.json',
+		),
+		b250R2Manifest: path.join(
+			root,
+			'generated',
+			'content-b250-r2',
 			'manifest.json',
 		),
 	}

@@ -48,6 +48,10 @@
     "content:generate-pilot": "tsx scripts/content/generatePilot.ts",
     "content:generate-b250": "tsx scripts/content/generatePilot.ts",
     "content:generate-b250-r2": "tsx scripts/content/generateB250R2.ts",
+    "content:generate-b500": "tsx scripts/content/generateScaleUp.ts b500",
+    "content:generate-b750": "tsx scripts/content/generateScaleUp.ts b750",
+    "content:generate-b1000": "tsx scripts/content/generateScaleUp.ts b1000",
+    "content:generate-scale": "tsx scripts/content/generateScaleUp.ts all",
     "content:build": "tsx scripts/content/build.ts",
     "content:contact-sheets": "tsx scripts/content/contactSheetsCli.ts",
     "android:qa": "powershell -ExecutionPolicy Bypass -File ./scripts/android/android-device-qa.ps1"

@@ -59,11 +59,22 @@ export function findTransformDuplicatePairs(
 	return pairs
 }
 
-export function topNearDuplicatePairs(
+export interface NearDuplicateStats {
+	readonly absolute: number
+	readonly eligibleSameSizePairs: number
+	readonly normalizedRate: number
+	readonly pairs: readonly SimilarityPair[]
+}
+
+/**
+ * Full same-size near-duplicate scan with normalized rate.
+ * Absolute pair count alone is not comparable across catalog sizes.
+ */
+export function computeNearDuplicateStats(
 	records: readonly CandidateAuditRecord[],
 	bitmaps: ReadonlyMap<string, Bitmap>,
-	limit = 20,
-): readonly SimilarityPair[] {
+	threshold = NEAR_SIMILARITY_REPORT,
+): NearDuplicateStats {
 	const bySize = new Map<string, CandidateAuditRecord[]>()
 	for (const row of records) {
 		const list = bySize.get(row.sizeKey) ?? []
@@ -71,19 +82,19 @@ export function topNearDuplicatePairs(
 		bySize.set(row.sizeKey, list)
 	}
 	const pairs: SimilarityPair[] = []
+	let eligible = 0
 	for (const group of bySize.values()) {
 		for (let i = 0; i < group.length; i += 1) {
 			for (let j = i + 1; j < group.length; j += 1) {
+				eligible += 1
 				const a = group[i]!
 				const b = group[j]!
 				if (a.solutionHash === b.solutionHash) {
 					continue
 				}
-				// Skip exact transform dups (already reported separately).
 				if (a.canonicalHash === b.canonicalHash) {
 					continue
 				}
-				// Fill-ratio prefilter.
 				if (Math.abs(a.fillRatio - b.fillRatio) > 0.25) {
 					continue
 				}
@@ -93,7 +104,7 @@ export function topNearDuplicatePairs(
 					continue
 				}
 				const similarity = hammingSimilarity(ba, bb)
-				if (similarity >= NEAR_SIMILARITY_REPORT) {
+				if (similarity >= threshold) {
 					pairs.push({
 						idA: a.id,
 						titleA: a.titleRu,
@@ -108,8 +119,23 @@ export function topNearDuplicatePairs(
 			}
 		}
 	}
-	pairs.sort((x, y) => y.similarity - x.similarity || x.idA.localeCompare(y.idA))
-	return pairs.slice(0, limit)
+	pairs.sort(
+		(x, y) => y.similarity - x.similarity || x.idA.localeCompare(y.idA),
+	)
+	return {
+		absolute: pairs.length,
+		eligibleSameSizePairs: eligible,
+		normalizedRate: eligible === 0 ? 0 : pairs.length / eligible,
+		pairs,
+	}
+}
+
+export function topNearDuplicatePairs(
+	records: readonly CandidateAuditRecord[],
+	bitmaps: ReadonlyMap<string, Bitmap>,
+	limit = 20,
+): readonly SimilarityPair[] {
+	return computeNearDuplicateStats(records, bitmaps).pairs.slice(0, limit)
 }
 
 export function findDuplicateTitles(

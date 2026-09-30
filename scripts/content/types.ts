@@ -183,6 +183,8 @@ export interface PilotManifest {
 	readonly reviewStatus: 'candidate'
 	readonly puzzleCount: number
 	readonly checksum: string
+	/** Previous checkpoint checksum (additive ancestry). Absent for root baselines. */
+	readonly parentChecksum?: string
 	readonly puzzles: readonly PilotManifestPuzzle[]
 }
 

@@ -411,18 +411,71 @@ describe('semantic diversity selection', () => {
 				solutionHash: `h${i}`,
 				canonicalHash: `c${i}`,
 				conceptId: `p-concept-${i}`,
+				collectionId: (['animals', 'nature', 'transport', 'home', 'symbols'] as const)[
+					i % 5
+				]!,
+				sizeKey: (['5x5', '10x10', '15x15'] as const)[i % 3]!,
 			}),
 		)
 		const a = arrangePilotCampaign(rows)
 		const b = arrangePilotCampaign(rows)
 		expect(a.order).toEqual(b.order)
-		expect(a.sets.length).toBeGreaterThanOrEqual(2)
+		expect(a.sets.length).toBe(5)
+		expect(a.sets.every((s) => s.puzzleIds.length === 50)).toBe(true)
+		expect(a.unlockAfterCompletions).toBe(35)
+		expect(a.maxDifficultyStreak).toBeLessThanOrEqual(8)
+	})
+})
+
+describe('Phase 8C ancestry artifacts', () => {
+	const fs = require('node:fs') as typeof import('node:fs')
+	const path = require('node:path') as typeof import('node:path')
+
+	function loadManifest(rel: string): {
+		readonly puzzleCount: number
+		readonly checksum: string
+		readonly parentChecksum?: string
+		readonly puzzles: readonly { readonly id: string }[]
+	} | null {
+		const p = path.join(process.cwd(), rel)
+		if (!fs.existsSync(p)) return null
+		return JSON.parse(fs.readFileSync(p, 'utf8')) as {
+			readonly puzzleCount: number
+			readonly checksum: string
+			readonly parentChecksum?: string
+			readonly puzzles: readonly { readonly id: string }[]
+		}
+	}
+
+	it('preserves additive IDs across B250-R2 → B500 → B750 → B1000 when artifacts exist', () => {
+		const r2 = loadManifest('generated/content-b250-r2/manifest.json')
+		const b500 = loadManifest('generated/content-b500/manifest.json')
+		const b750 = loadManifest('generated/content-b750/manifest.json')
+		const b1000 = loadManifest('generated/content-b1000/manifest.json')
+		if (r2 === null || b500 === null || b750 === null || b1000 === null) {
+			console.warn('scale manifests missing — skip ancestry assertion')
+			return
+		}
+		expect(r2.puzzleCount).toBe(250)
+		expect(b500.puzzleCount).toBe(500)
+		expect(b750.puzzleCount).toBe(750)
+		expect(b1000.puzzleCount).toBe(1000)
+		expect(b500.parentChecksum).toBe(r2.checksum)
+		expect(b750.parentChecksum).toBe(b500.checksum)
+		expect(b1000.parentChecksum).toBe(b750.checksum)
+		const r2Ids = new Set(r2.puzzles.map((p) => p.id))
+		const b500Ids = new Set(b500.puzzles.map((p) => p.id))
+		const b750Ids = new Set(b750.puzzles.map((p) => p.id))
+		const b1000Ids = new Set(b1000.puzzles.map((p) => p.id))
+		for (const id of r2Ids) expect(b500Ids.has(id)).toBe(true)
+		for (const id of b500Ids) expect(b750Ids.has(id)).toBe(true)
+		for (const id of b750Ids) expect(b1000Ids.has(id)).toBe(true)
 	})
 })
 
 describe('generator version pin', () => {
-	it('uses prod-v2.1 for Phase 8B.1', () => {
-		expect(CONTENT_GENERATOR_VERSION).toBe('prod-v2.1')
+	it('uses prod-v2.2 for Phase 8C scale-up', () => {
+		expect(CONTENT_GENERATOR_VERSION).toBe('prod-v2.2')
 	})
 })
 
