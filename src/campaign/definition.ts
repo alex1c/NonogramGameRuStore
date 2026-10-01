@@ -1,73 +1,138 @@
 /**
- * Phase 4 development campaign baseline.
- *
- * IMPORTANT: these 21 productionReady mini-catalog puzzles are a temporary
- * campaign for persistence / unlock / Levels QA — NOT the final RuStore
- * content pack. Future phases may replace order and size without changing
- * stable puzzle IDs (progress stays keyed by ID).
+ * Production Campaign — Phase 8D B1000 (20 sets × 50).
+ * Stable puzzle IDs are independent of set / position / display number.
  */
 
-import { getProductionPuzzleById } from '../content/playable'
+import {
+	CAMPAIGN_SET_UNLOCK_AFTER,
+	getRuntimeCampaignSets,
+	getRuntimePuzzleById,
+	getRuntimePuzzleEntry,
+	PRODUCTION_PUZZLE_COUNT,
+} from '../content/runtime'
 import type { CatalogPuzzle } from '../content/types'
+import type { DifficultyTier } from '../domain/difficulty/tiers'
 
 export interface CampaignEntry {
-	/** 1-based display order — independent of puzzle ID. */
+	/** Global 1-based display number (1…1000). */
 	readonly order: number
 	readonly puzzleId: string
+	readonly setId: string
+	readonly setDisplayOrder: number
+	/** 1-based index within the set. */
+	readonly setSlot: number
 }
 
-/**
- * Display order for the temporary Phase 4 campaign.
- * Order can change in a later release without losing completed progress.
- */
-export const PHASE4_CAMPAIGN_ENTRIES: readonly CampaignEntry[] = Object.freeze([
-	{ order: 1, puzzleId: 'mini-beginner-bar' },
-	{ order: 2, puzzleId: 'mini-beginner-full' },
-	{ order: 3, puzzleId: 'mini-beginner-frame' },
-	{ order: 4, puzzleId: 'mini-easy-block' },
-	{ order: 5, puzzleId: 'mini-easy-stairs' },
-	{ order: 6, puzzleId: 'mini-easy-plus' },
-	{ order: 7, puzzleId: 'mini-easy-checker' },
-	{ order: 8, puzzleId: 'mini-easy-weave' },
-	{ order: 9, puzzleId: 'mini-medium-heart' },
-	{ order: 10, puzzleId: 'mini-medium-letter-h' },
-	{ order: 11, puzzleId: 'mini-medium-boat' },
-	{ order: 12, puzzleId: 'mini-medium-diamond' },
-	{ order: 13, puzzleId: 'mini-medium-spiral' },
-	{ order: 14, puzzleId: 'mini-medium-maze' },
-	{ order: 15, puzzleId: 'mini-hard-tree' },
-	{ order: 16, puzzleId: 'mini-hard-bridge' },
-	{ order: 17, puzzleId: 'mini-hard-arrows' },
-	{ order: 18, puzzleId: 'mini-hard-window' },
-	{ order: 19, puzzleId: 'mini-hard-frame-cross' },
-	{ order: 20, puzzleId: 'mini-expert-scatter' },
-	{ order: 21, puzzleId: 'mini-expert-lattice' },
-])
+export interface CampaignSetDef {
+	readonly setId: string
+	readonly titleRu: string
+	readonly displayOrder: number
+	readonly puzzleIds: readonly string[]
+	/** Global display numbers for slots 1…50. */
+	readonly firstOrder: number
+	readonly lastOrder: number
+}
 
-/** How many leading levels are open on a fresh save. */
+/** Completions in set N required to unlock set N+1. */
+export const SET_UNLOCK_AFTER_COMPLETIONS = CAMPAIGN_SET_UNLOCK_AFTER
+
+/** First N levels of Set 1 open immediately (soft onboarding). */
 export const INITIAL_UNLOCKED_COUNT = 5
 
+function buildEntriesAndSets(): {
+	readonly entries: readonly CampaignEntry[]
+	readonly sets: readonly CampaignSetDef[]
+} {
+	const runtimeSets = getRuntimeCampaignSets()
+	const entries: CampaignEntry[] = []
+	const sets: CampaignSetDef[] = []
+	let order = 1
+	for (const set of runtimeSets) {
+		const firstOrder = order
+		let slot = 1
+		for (const puzzleId of set.puzzleIds) {
+			entries.push({
+				order,
+				puzzleId,
+				setId: set.setId,
+				setDisplayOrder: set.displayOrder,
+				setSlot: slot,
+			})
+			order += 1
+			slot += 1
+		}
+		sets.push({
+			setId: set.setId,
+			titleRu: set.titleRu,
+			displayOrder: set.displayOrder,
+			puzzleIds: set.puzzleIds,
+			firstOrder,
+			lastOrder: order - 1,
+		})
+	}
+	return {
+		entries: Object.freeze(entries),
+		sets: Object.freeze(sets),
+	}
+}
+
+const BUILT = buildEntriesAndSets()
+
+export const CAMPAIGN_ENTRIES: readonly CampaignEntry[] = BUILT.entries
+export const CAMPAIGN_SETS: readonly CampaignSetDef[] = BUILT.sets
+
+/** @deprecated Alias — Phase 4 name retained for gradual test migration. */
+export const PHASE4_CAMPAIGN_ENTRIES = CAMPAIGN_ENTRIES
+
 export function getCampaignTotal(): number {
-	return PHASE4_CAMPAIGN_ENTRIES.length
+	return PRODUCTION_PUZZLE_COUNT
+}
+
+export function getCampaignSets(): readonly CampaignSetDef[] {
+	return CAMPAIGN_SETS
+}
+
+export function getCampaignSetById(setId: string): CampaignSetDef | null {
+	return CAMPAIGN_SETS.find((s) => s.setId === setId) ?? null
 }
 
 export function getCampaignEntryByOrder(
 	order: number,
 ): CampaignEntry | null {
-	return PHASE4_CAMPAIGN_ENTRIES.find((entry) => entry.order === order) ?? null
+	return CAMPAIGN_ENTRIES.find((entry) => entry.order === order) ?? null
 }
 
 export function getCampaignEntryByPuzzleId(
 	puzzleId: string,
 ): CampaignEntry | null {
 	return (
-		PHASE4_CAMPAIGN_ENTRIES.find((entry) => entry.puzzleId === puzzleId) ??
-		null
+		CAMPAIGN_ENTRIES.find((entry) => entry.puzzleId === puzzleId) ?? null
 	)
 }
 
 export function resolveCampaignPuzzle(
 	puzzleId: string,
 ): CatalogPuzzle | null {
-	return getProductionPuzzleById(puzzleId)
+	return getRuntimePuzzleById(puzzleId)
+}
+
+export function getCampaignPuzzleTier(
+	puzzleId: string,
+): DifficultyTier | 'UNRATED' {
+	const entry = getRuntimePuzzleEntry(puzzleId)
+	return entry?.tier ?? 'UNRATED'
+}
+
+export function getCampaignPuzzleSize(
+	puzzleId: string,
+): { readonly width: number; readonly height: number } | null {
+	const entry = getRuntimePuzzleEntry(puzzleId)
+	if (entry === null) {
+		return null
+	}
+	return { width: entry.width, height: entry.height }
+}
+
+export function isProductionCampaignId(puzzleId: string): boolean {
+	return getCampaignEntryByPuzzleId(puzzleId) !== null
 }

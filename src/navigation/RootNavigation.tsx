@@ -9,12 +9,14 @@ import { HomeScreen } from '../screens/HomeScreen'
 import { LevelsScreen, type LevelOpenIntent } from '../screens/LevelsScreen'
 import { StatisticsScreen } from '../screens/StatisticsScreen'
 import { GalleryScreen } from '../screens/GalleryScreen'
+import { GalleryCollectionScreen } from '../screens/GalleryCollectionScreen'
 import { GalleryDetailScreen } from '../screens/GalleryDetailScreen'
 import { AchievementsScreen } from '../screens/AchievementsScreen'
 import { DailyScreen } from '../screens/DailyScreen'
 import { GameScreen } from '../screens/GameScreen'
 import { useProgress } from '../progress/ProgressProvider'
 import { isGalleryPuzzleUnlocked } from '../gallery'
+import { resolvePlayablePuzzleById } from '../content/playable'
 import type { DayKey } from '../daily/dateUtils'
 
 /** Explicit game session mode — never overlapping booleans. */
@@ -44,7 +46,8 @@ type Route =
 	| { readonly name: 'levels' }
 	| { readonly name: 'statistics' }
 	| { readonly name: 'gallery' }
-	| { readonly name: 'galleryDetail'; readonly puzzleId: string }
+	| { readonly name: 'galleryCollection'; readonly collectionId: string }
+	| { readonly name: 'galleryDetail'; readonly puzzleId: string; readonly collectionId: string }
 	| { readonly name: 'achievements' }
 	| { readonly name: 'daily'; readonly focusDayKey?: DayKey }
 	| { readonly name: 'game'; readonly session: GameSessionDescriptor }
@@ -95,6 +98,11 @@ export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
 	const handleContinue = useCallback(() => {
 		const activeId = save.activeGame?.puzzleId
 		if (activeId === undefined) {
+			setRoute({ name: 'levels' })
+			return
+		}
+		// Broken Continue: missing production+legacy puzzle → go to Levels.
+		if (resolvePlayablePuzzleById(activeId) === null) {
 			setRoute({ name: 'levels' })
 			return
 		}
@@ -302,8 +310,24 @@ export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
 		return (
 			<GalleryScreen
 				onBack={goHome}
+				onOpenCollection={(collectionId) =>
+					setRoute({ name: 'galleryCollection', collectionId })
+				}
+			/>
+		)
+	}
+
+	if (route.name === 'galleryCollection') {
+		return (
+			<GalleryCollectionScreen
+				collectionId={route.collectionId}
+				onBack={() => setRoute({ name: 'gallery' })}
 				onOpenDetail={(puzzleId) =>
-					setRoute({ name: 'galleryDetail', puzzleId })
+					setRoute({
+						name: 'galleryDetail',
+						puzzleId,
+						collectionId: route.collectionId,
+					})
 				}
 			/>
 		)
@@ -313,7 +337,12 @@ export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
 		return (
 			<GalleryDetailScreen
 				puzzleId={route.puzzleId}
-				onBack={() => setRoute({ name: 'gallery' })}
+				onBack={() =>
+					setRoute({
+						name: 'galleryCollection',
+						collectionId: route.collectionId,
+					})
+				}
 				onReplay={handleGalleryReplay}
 			/>
 		)

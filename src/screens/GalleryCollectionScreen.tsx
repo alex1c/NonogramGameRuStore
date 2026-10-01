@@ -1,6 +1,5 @@
 /**
- * Gallery root — production collection cards (20).
- * Hierarchy: Gallery → Collection → Item detail.
+ * Gallery collection detail — virtualized items for one production collection.
  */
 
 import { useCallback, useEffect, useMemo } from 'react'
@@ -14,25 +13,31 @@ import {
 	type ListRenderItem,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SolutionPreview } from '../components/SolutionPreview'
 import {
-	buildGalleryScreenView,
-	type GalleryCollectionView,
+	buildGalleryCollectionDetailView,
+	type GalleryItemView,
 } from '../gallery'
 import { useProgress } from '../progress/ProgressProvider'
 import { colors, spacing, typography } from '../theme'
 
-interface GalleryScreenProps {
+interface GalleryCollectionScreenProps {
+	readonly collectionId: string
 	readonly onBack: () => void
-	readonly onOpenCollection: (collectionId: string) => void
+	readonly onOpenDetail: (puzzleId: string) => void
 }
 
-export function GalleryScreen({
+export function GalleryCollectionScreen({
+	collectionId,
 	onBack,
-	onOpenCollection,
-}: GalleryScreenProps) {
+	onOpenDetail,
+}: GalleryCollectionScreenProps) {
 	const insets = useSafeAreaInsets()
 	const { save } = useProgress()
-	const gallery = useMemo(() => buildGalleryScreenView(save), [save])
+	const collection = useMemo(
+		() => buildGalleryCollectionDetailView(collectionId, save),
+		[collectionId, save],
+	)
 
 	useEffect(() => {
 		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -42,33 +47,52 @@ export function GalleryScreen({
 		return () => sub.remove()
 	}, [onBack])
 
-	const renderItem: ListRenderItem<GalleryCollectionView> = useCallback(
+	const renderItem: ListRenderItem<GalleryItemView> = useCallback(
 		({ item }) => (
 			<Pressable
 				accessibilityRole="button"
-				accessibilityLabel={`${item.titleRu}. ${item.completed} из ${item.total}`}
-				onPress={() => onOpenCollection(item.collectionId)}
+				accessibilityLabel={item.accessibilityLabel}
+				disabled={item.access === 'LOCKED'}
+				onPress={() => {
+					if (item.access === 'UNLOCKED') {
+						onOpenDetail(item.puzzleId)
+					}
+				}}
 				style={({ pressed }) => [
 					styles.card,
-					{ opacity: pressed ? 0.88 : 1 },
+					item.access === 'LOCKED' ? styles.locked : null,
+					{ opacity: pressed && item.access === 'UNLOCKED' ? 0.88 : 1 },
 				]}
 			>
-				<View style={styles.cover}>
-					<Text style={styles.coverGlyph}>
-						{item.completed > 0 ? '▣' : '□'}
-					</Text>
+				<View style={styles.thumb}>
+					{item.access === 'UNLOCKED' && item.preview !== null ? (
+						<SolutionPreview bitmap={item.preview} maxSize={52} />
+					) : (
+						<View style={styles.placeholder} />
+					)}
 				</View>
 				<View style={styles.body}>
-					<Text style={styles.title}>{item.titleRu}</Text>
+					<Text style={styles.title}>{item.displayTitle}</Text>
 					<Text style={styles.meta}>
-						{item.completed} / {item.total}
-						{item.isComplete ? ' · собрано' : ''}
+						{item.sizeLabel} · {item.difficultyLabel}
+						{item.bestTimeLabel !== null ? ` · ${item.bestTimeLabel}` : ''}
 					</Text>
 				</View>
 			</Pressable>
 		),
-		[onOpenCollection],
+		[onOpenDetail],
 	)
+
+	if (collection === null) {
+		return (
+			<View style={[styles.root, { paddingTop: insets.top + spacing.sm }]}>
+				<Pressable onPress={onBack}>
+					<Text style={styles.backText}>← Назад</Text>
+				</Pressable>
+				<Text style={styles.headerTitle}>Коллекция не найдена</Text>
+			</View>
+		)
+	}
 
 	return (
 		<View
@@ -79,7 +103,7 @@ export function GalleryScreen({
 					paddingBottom: Math.max(insets.bottom, 8),
 				},
 			]}
-			testID="gallery-screen"
+			testID="gallery-collection-screen"
 		>
 			<View style={styles.header}>
 				<Pressable
@@ -92,20 +116,22 @@ export function GalleryScreen({
 					<Text style={styles.backText}>← Назад</Text>
 				</Pressable>
 				<Text style={styles.headerTitle} accessibilityRole="header">
-					Галерея
+					{collection.titleRu}
 				</Text>
 			</View>
-			<Text style={styles.progress}>{gallery.progressLabel}</Text>
-			{gallery.unlockedCount === 0 ? (
-				<Text style={styles.intro}>{gallery.introLabel}</Text>
-			) : null}
+			<Text style={styles.progress}>
+				{collection.completed} / {collection.total}
+			</Text>
 			<FlatList
-				data={gallery.collections}
-				keyExtractor={(item) => item.collectionId}
+				data={collection.items}
+				keyExtractor={(item) => item.puzzleId}
 				renderItem={renderItem}
 				contentContainerStyle={styles.list}
 				ItemSeparatorComponent={() => <View style={styles.sep} />}
 				initialNumToRender={12}
+				windowSize={7}
+				maxToRenderPerBatch={10}
+				removeClippedSubviews
 			/>
 		</View>
 	)
@@ -123,7 +149,7 @@ const styles = StyleSheet.create({
 	backText: { fontSize: 16, fontWeight: '700', color: colors.accent },
 	headerTitle: {
 		...typography.title,
-		fontSize: 22,
+		fontSize: 20,
 		color: colors.text,
 		flex: 1,
 		textAlign: 'center',
@@ -133,13 +159,6 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		color: colors.textMuted,
 		fontSize: 13,
-		marginBottom: 4,
-	},
-	intro: {
-		textAlign: 'center',
-		color: colors.textMuted,
-		fontSize: 13,
-		paddingHorizontal: spacing.md,
 		marginBottom: 8,
 	},
 	list: { paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
@@ -151,20 +170,27 @@ const styles = StyleSheet.create({
 		borderRadius: 12,
 		borderWidth: 1,
 		borderColor: colors.border,
-		padding: 12,
+		padding: 10,
 		minHeight: 72,
 		gap: 12,
 	},
-	cover: {
-		width: 48,
-		height: 48,
-		borderRadius: 8,
+	locked: { backgroundColor: colors.surface },
+	thumb: {
+		width: 56,
+		height: 56,
+		borderRadius: 6,
+		overflow: 'hidden',
 		backgroundColor: colors.surface,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
-	coverGlyph: { fontSize: 22, color: colors.textMuted },
+	placeholder: {
+		width: 40,
+		height: 40,
+		borderRadius: 4,
+		backgroundColor: colors.border,
+	},
 	body: { flex: 1 },
-	title: { fontSize: 16, fontWeight: '700', color: colors.text },
-	meta: { marginTop: 2, fontSize: 13, color: colors.textMuted },
+	title: { fontSize: 15, fontWeight: '700', color: colors.text },
+	meta: { marginTop: 2, fontSize: 12, color: colors.textMuted },
 })

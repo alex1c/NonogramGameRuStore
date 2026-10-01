@@ -15,11 +15,14 @@ import {
 	serializePlayerState,
 } from '../../domain/nonogram/playerState'
 import { getProductionPuzzleById } from '../../content/playable'
+import { CAMPAIGN_ENTRIES } from '../../campaign/definition'
 import {
 	recordHintApplied,
 	recordHintRequest,
 	recordTeachMeView,
 } from '../progressReducers'
+
+const PRODUCTION_CAMPAIGN_FIRST = CAMPAIGN_ENTRIES[0]!.puzzleId
 
 const phase6V2Fixture = {
 	schemaVersion: 2,
@@ -138,7 +141,7 @@ describe('schema v4 migration (via v3 hints)', () => {
 	})
 
 	it('restores valid v4 hint counters', () => {
-		const puzzle = getProductionPuzzleById('mini-beginner-bar')!
+		const puzzle = getProductionPuzzleById(PRODUCTION_CAMPAIGN_FIRST)!
 		const player = serializePlayerState(
 			createEmptyPlayerState(puzzle.width, puzzle.height),
 		)
@@ -189,7 +192,7 @@ describe('schema v4 migration (via v3 hints)', () => {
 
 	it('hint reducers bump counters atomically', () => {
 		let save = createDefaultSave()
-		const puzzle = getProductionPuzzleById('mini-beginner-bar')!
+		const puzzle = getProductionPuzzleById(PRODUCTION_CAMPAIGN_FIRST)!
 		save = {
 			...save,
 			activeGame: {

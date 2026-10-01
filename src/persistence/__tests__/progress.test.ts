@@ -23,6 +23,10 @@ import { createGameProgressService } from '../progressService'
 import { createSaveRepository } from '../repository'
 import { sanitizeSaveAgainstCatalog } from '../sanitize'
 import type { SaveRoot } from '../schema'
+import { CAMPAIGN_ENTRIES } from '../../campaign/definition'
+
+const PRODUCTION_CAMPAIGN_FIRST = CAMPAIGN_ENTRIES[0]!.puzzleId
+const PRODUCTION_CAMPAIGN_SECOND = CAMPAIGN_ENTRIES[1]!.puzzleId
 
 function requirePuzzle(id: string) {
 	const puzzle = getProductionPuzzleById(id)
@@ -34,7 +38,7 @@ function requirePuzzle(id: string) {
 
 describe('progress reducers', () => {
 	it('completion is atomic: completed + stats + cleared active', () => {
-		const puzzle = requirePuzzle('mini-beginner-bar')
+		const puzzle = requirePuzzle(PRODUCTION_CAMPAIGN_FIRST)
 		let save = createDefaultSave()
 		const player = createEmptyPlayerState(puzzle.width, puzzle.height)
 		const active = createActiveGameSave({
@@ -59,7 +63,7 @@ describe('progress reducers', () => {
 	})
 
 	it('replay increments totalCompletions but not unique IDs', () => {
-		const id = 'mini-beginner-bar'
+		const id = PRODUCTION_CAMPAIGN_FIRST
 		let save = completePuzzle(createDefaultSave(), {
 			puzzleId: id,
 			activeTimeMs: 9000,
@@ -71,7 +75,7 @@ describe('progress reducers', () => {
 	})
 
 	it('worse replay time does not replace best', () => {
-		const id = 'mini-beginner-full'
+		const id = PRODUCTION_CAMPAIGN_SECOND
 		let save = completePuzzle(createDefaultSave(), {
 			puzzleId: id,
 			activeTimeMs: 3000,
@@ -122,7 +126,7 @@ describe('sanitizeSaveAgainstCatalog', () => {
 	})
 
 	it('fingerprint mismatch clears active game', () => {
-		const puzzle = requirePuzzle('mini-beginner-bar')
+		const puzzle = requirePuzzle(PRODUCTION_CAMPAIGN_FIRST)
 		const save: SaveRoot = {
 			...createDefaultSave(),
 			activeGame: Object.freeze({
@@ -153,7 +157,7 @@ describe('sanitizeSaveAgainstCatalog', () => {
 	})
 
 	it('wrong cell count clears active game', () => {
-		const puzzle = requirePuzzle('mini-beginner-bar')
+		const puzzle = requirePuzzle(PRODUCTION_CAMPAIGN_FIRST)
 		const save: SaveRoot = {
 			...createDefaultSave(),
 			activeGame: Object.freeze({
@@ -199,7 +203,7 @@ describe('GameProgressService completion kill-before-done', () => {
 		const repo = createSaveRepository(storage)
 		const service = createGameProgressService(repo, clock)
 		await service.hydrate()
-		const puzzle = requirePuzzle('mini-beginner-full')
+		const puzzle = requirePuzzle(PRODUCTION_CAMPAIGN_SECOND)
 		await service.startPuzzle(puzzle.id)
 		const player = createEmptyPlayerState(puzzle.width, puzzle.height)
 		await service.persistGameState({
@@ -229,7 +233,7 @@ describe('GameProgressService completion kill-before-done', () => {
 			createFakeClock(0),
 		)
 		await service.hydrate()
-		const puzzle = requirePuzzle('mini-beginner-bar')
+		const puzzle = requirePuzzle(PRODUCTION_CAMPAIGN_FIRST)
 		await service.startPuzzle(puzzle.id)
 		const player = createEmptyPlayerState(puzzle.width, puzzle.height)
 		const p1 = service.persistGameState({
@@ -252,7 +256,7 @@ describe('GameProgressService completion kill-before-done', () => {
 
 describe('persistActivePlayerState', () => {
 	it('keeps startedAt from existing active game', () => {
-		const puzzle = requirePuzzle('mini-beginner-bar')
+		const puzzle = requirePuzzle(PRODUCTION_CAMPAIGN_FIRST)
 		let save = createDefaultSave()
 		const player = createEmptyPlayerState(puzzle.width, puzzle.height)
 		save = persistActivePlayerState(save, {

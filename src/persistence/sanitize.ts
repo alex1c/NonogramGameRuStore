@@ -4,7 +4,7 @@
  * Campaign and Daily branches are sanitized independently.
  */
 
-import { getProductionPuzzleById } from '../content/playable'
+import { resolvePlayablePuzzleById } from '../content/playable'
 import { localDayKey } from '../daily/dateUtils'
 import { buildPuzzleContentFingerprint } from './fingerprint'
 import type { SaveRoot } from './schema'
@@ -32,7 +32,8 @@ function sanitizeCampaignActive(save: SaveRoot): {
 	if (active === null) {
 		return { save, cleared: false }
 	}
-	const puzzle = getProductionPuzzleById(active.puzzleId)
+	// Production ∪ legacy — keep mid-run development parties when possible.
+	const puzzle = resolvePlayablePuzzleById(active.puzzleId)
 	if (puzzle === null) {
 		return {
 			save: clearActiveGame(save),
@@ -98,7 +99,8 @@ function sanitizeDailyActive(
 			reason: `Daily active overlaps completed day ${active.dayKey}`,
 		}
 	}
-	const puzzle = getProductionPuzzleById(active.puzzleId)
+	// daily-v1 active may reference legacy mini IDs — resolve via compatibility.
+	const puzzle = resolvePlayablePuzzleById(active.puzzleId)
 	if (puzzle === null) {
 		return {
 			save: clearActiveDailyGame(save),

@@ -4,6 +4,7 @@
     "strict": true,
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
+    "resolveJsonModule": true,
     "ignoreDeprecations": "6.0",
     "types": ["jest", "node"],
     "baseUrl": ".",

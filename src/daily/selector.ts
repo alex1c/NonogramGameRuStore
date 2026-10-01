@@ -1,11 +1,15 @@
 /**
  * Deterministic Daily puzzle selector (offline).
- * Bump DAILY_SELECTION_VERSION when pool order / rhythm / hash changes mapping.
+ * daily-v1 — frozen development pool (historical records / known vectors).
+ * daily-v2 — production B1000 eligible pool (new selections).
  */
 
 import type { DifficultyTier } from '../domain/difficulty/tiers'
-import { GALLERY_ITEMS } from '../gallery/definitions'
-import { getProductionPuzzleById } from '../content/playable'
+import {
+	getRuntimeDailyEligibleIds,
+	getRuntimePuzzleEntry,
+} from '../content/runtime'
+import { getLegacyPuzzleById } from '../content/legacyCatalog'
 import { analyzeDifficulty } from '../domain/difficulty/analyzer'
 import {
 	DAILY_EPOCH_DAY,
@@ -14,15 +18,17 @@ import {
 	type DayKey,
 } from './dateUtils'
 
-export const DAILY_SELECTION_VERSION = 'daily-v1' as const
+/** Current production selection version — new Daily uses this. */
+export const DAILY_SELECTION_VERSION = 'daily-v2' as const
+/** Frozen historical version — do not mutate pool/rhythm semantics. */
+export const DAILY_V1_SELECTION_VERSION = 'daily-v1' as const
 
-/** Frozen canonical pool order — Gallery item order (stable IDs). */
-export const DAILY_POOL_ORDER: readonly string[] = Object.freeze(
-	GALLERY_ITEMS.map((item) => item.puzzleId),
-)
+export type DailySelectionVersion =
+	| typeof DAILY_SELECTION_VERSION
+	| typeof DAILY_V1_SELECTION_VERSION
 
 /**
- * Weekly difficulty rhythm (Monday-first):
+ * Weekly difficulty rhythm (Monday-first) — shared by v1/v2:
  * Mon EASY, Tue MEDIUM, Wed EASY, Thu HARD, Fri MEDIUM, Sat HARD, Sun EXPERT
  */
 const WEEKDAY_TIER: readonly DifficultyTier[] = Object.freeze([
@@ -45,6 +51,34 @@ const FALLBACK_CHAIN: Readonly<
 	EXPERT: ['HARD', 'MEDIUM', 'EASY', 'BEGINNER'],
 })
 
+/** Frozen daily-v1 pool order (development Gallery order at freeze time). */
+export const DAILY_V1_POOL_ORDER: readonly string[] = Object.freeze([
+	'mini-beginner-bar',
+	'mini-beginner-full',
+	'mini-beginner-frame',
+	'mini-easy-block',
+	'mini-easy-stairs',
+	'mini-easy-plus',
+	'mini-medium-heart',
+	'mini-medium-letter-h',
+	'mini-medium-diamond',
+	'mini-medium-boat',
+	'mini-hard-tree',
+	'mini-hard-bridge',
+	'mini-hard-arrows',
+	'mini-hard-window',
+	'mini-easy-checker',
+	'mini-easy-weave',
+	'mini-medium-spiral',
+	'mini-hard-frame-cross',
+	'mini-medium-maze',
+	'mini-expert-scatter',
+	'mini-expert-lattice',
+])
+
+/** @deprecated Alias — prefer DAILY_V1_POOL_ORDER; kept for older imports. */
+export const DAILY_POOL_ORDER = DAILY_V1_POOL_ORDER
+
 export interface DailyPoolEntry {
 	readonly puzzleId: string
 	readonly tier: DifficultyTier
@@ -53,60 +87,22 @@ export interface DailyPoolEntry {
 }
 
 export interface DailyPoolIndex {
-	readonly version: typeof DAILY_SELECTION_VERSION
+	readonly version: DailySelectionVersion
 	readonly entries: readonly DailyPoolEntry[]
 	readonly byTier: ReadonlyMap<DifficultyTier, readonly string[]>
 }
 
-let cachedIndex: DailyPoolIndex | null = null
+let cachedV2: DailyPoolIndex | null = null
+let cachedV1: DailyPoolIndex | null = null
 
 /** Test helper — reset analyzer-backed cache between suites. */
 export function resetDailyPoolIndexCache(): void {
-	cachedIndex = null
+	cachedV2 = null
+	cachedV1 = null
 }
 
-export function getDailyPoolIndex(): DailyPoolIndex {
-	if (cachedIndex !== null) {
-		return cachedIndex
-	}
-	const entries: DailyPoolEntry[] = []
-	const byTier = new Map<DifficultyTier, string[]>()
-	for (const tier of [
-		'BEGINNER',
-		'EASY',
-		'MEDIUM',
-		'HARD',
-		'EXPERT',
-	] as const) {
-		byTier.set(tier, [])
-	}
-	for (const puzzleId of DAILY_POOL_ORDER) {
-		const puzzle = getProductionPuzzleById(puzzleId)
-		if (puzzle === null) {
-			continue
-		}
-		const analysis = analyzeDifficulty(puzzle)
-		if (analysis.tier === 'UNRATED') {
-			continue
-		}
-		entries.push({
-			puzzleId,
-			tier: analysis.tier,
-			width: puzzle.width,
-			height: puzzle.height,
-		})
-		byTier.get(analysis.tier)!.push(puzzleId)
-	}
-	cachedIndex = {
-		version: DAILY_SELECTION_VERSION,
-		entries: Object.freeze(entries),
-		byTier: byTier as ReadonlyMap<DifficultyTier, readonly string[]>,
-	}
-	return cachedIndex
-}
-
-/** Build an index from an artificial pool (tests / fallback audit). */
-export function buildDailyPoolIndex(
+function buildIndex(
+	version: DailySelectionVersion,
 	entries: readonly DailyPoolEntry[],
 ): DailyPoolIndex {
 	const byTier = new Map<DifficultyTier, string[]>()
@@ -123,10 +119,65 @@ export function buildDailyPoolIndex(
 		byTier.get(entry.tier)!.push(entry.puzzleId)
 	}
 	return {
-		version: DAILY_SELECTION_VERSION,
+		version,
 		entries: Object.freeze([...entries]),
 		byTier: byTier as ReadonlyMap<DifficultyTier, readonly string[]>,
 	}
+}
+
+export function getDailyV1PoolIndex(): DailyPoolIndex {
+	if (cachedV1 !== null) {
+		return cachedV1
+	}
+	const entries: DailyPoolEntry[] = []
+	for (const puzzleId of DAILY_V1_POOL_ORDER) {
+		const puzzle = getLegacyPuzzleById(puzzleId)
+		if (puzzle === null) {
+			continue
+		}
+		const analysis = analyzeDifficulty(puzzle)
+		if (analysis.tier === 'UNRATED') {
+			continue
+		}
+		entries.push({
+			puzzleId,
+			tier: analysis.tier,
+			width: puzzle.width,
+			height: puzzle.height,
+		})
+	}
+	cachedV1 = buildIndex(DAILY_V1_SELECTION_VERSION, entries)
+	return cachedV1
+}
+
+/** Production daily-v2 pool — precomputed tiers, no analyzer at index build. */
+export function getDailyPoolIndex(): DailyPoolIndex {
+	if (cachedV2 !== null) {
+		return cachedV2
+	}
+	const entries: DailyPoolEntry[] = []
+	for (const puzzleId of getRuntimeDailyEligibleIds()) {
+		const entry = getRuntimePuzzleEntry(puzzleId)
+		if (entry === null) {
+			continue
+		}
+		entries.push({
+			puzzleId,
+			tier: entry.tier,
+			width: entry.width,
+			height: entry.height,
+		})
+	}
+	cachedV2 = buildIndex(DAILY_SELECTION_VERSION, entries)
+	return cachedV2
+}
+
+/** Build an index from an artificial pool (tests / fallback audit). */
+export function buildDailyPoolIndex(
+	entries: readonly DailyPoolEntry[],
+	version: DailySelectionVersion = DAILY_SELECTION_VERSION,
+): DailyPoolIndex {
+	return buildIndex(version, entries)
 }
 
 /** FNV-1a 32-bit — stable across JS engines. */
@@ -152,7 +203,7 @@ export function desiredTierForDay(dayKey: DayKey): DifficultyTier {
 export interface DailySelection {
 	readonly dayKey: DayKey
 	readonly puzzleId: string
-	readonly selectionVersion: typeof DAILY_SELECTION_VERSION
+	readonly selectionVersion: DailySelectionVersion
 	readonly desiredTier: DifficultyTier
 	readonly actualTier: DifficultyTier
 }
@@ -178,9 +229,7 @@ function candidatesForTier(
 }
 
 /**
- * Select Daily puzzle for a day key.
- * Hard rule: avoid yesterday's puzzle when the candidate pool has >1 id.
- * Soft rule: prefer avoiding last 7 days when alternatives remain.
+ * Select Daily puzzle for a day key against the given index/version.
  */
 export function selectDailyPuzzle(
 	dayKey: DayKey,
@@ -235,12 +284,12 @@ export function selectDailyPuzzle(
 	}
 
 	const hash = stableHash32(
-		`${DAILY_SELECTION_VERSION}|${dayKey}|${actual}|${pool.join(',')}`,
+		`${index.version}|${dayKey}|${actual}|${pool.join(',')}`,
 	)
 	const result: DailySelection = {
 		dayKey,
 		puzzleId: pool[hash % pool.length]!,
-		selectionVersion: DAILY_SELECTION_VERSION,
+		selectionVersion: index.version,
 		desiredTier: desired,
 		actualTier: actual,
 	}
@@ -248,16 +297,25 @@ export function selectDailyPuzzle(
 	return result
 }
 
+/** Locked daily-v1 vectors — never change. */
+export const DAILY_V1_KNOWN_VECTORS: readonly {
+	readonly dayKey: DayKey
+	readonly puzzleId: string
+}[] = Object.freeze([
+	{ dayKey: '2026-09-28', puzzleId: 'mini-easy-block' },
+	{ dayKey: '2026-09-29', puzzleId: 'mini-medium-diamond' },
+	{ dayKey: '2026-10-04', puzzleId: 'mini-expert-lattice' },
+])
+
 /**
- * Known-vector fixtures for audit — filled after first selector lock.
- * Updated by scripts/audit-daily.ts when regenerating baselines intentionally.
+ * Locked daily-v2 vectors — filled after first production lock.
+ * Regenerated intentionally via audit:daily when mapping must change.
  */
 export const DAILY_KNOWN_VECTORS: readonly {
 	readonly dayKey: DayKey
 	readonly puzzleId: string
 }[] = Object.freeze([
-	// Locked daily-v1 vectors — bump version if these must change.
-	{ dayKey: '2026-09-28', puzzleId: 'mini-easy-block' },
-	{ dayKey: '2026-09-29', puzzleId: 'mini-medium-diamond' },
-	{ dayKey: '2026-10-04', puzzleId: 'mini-expert-lattice' },
+	{ dayKey: '2026-09-28', puzzleId: 's8c-b-truffle-fungus' },
+	{ dayKey: '2026-09-29', puzzleId: 's8c-b-sneakers-side' },
+	{ dayKey: '2026-10-04', puzzleId: 's8c-hdtram-119' },
 ])

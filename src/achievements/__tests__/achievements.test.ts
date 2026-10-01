@@ -11,6 +11,29 @@ import {
 	evaluateAchievements,
 	getNewlyUnlockedAchievements,
 } from '../evaluate'
+import { CAMPAIGN_ENTRIES } from '../../campaign/definition'
+import { GALLERY_ITEMS } from '../../gallery/definitions'
+import { getProductionPuzzleById } from '../../content/playable'
+import { getRuntimePuzzleEntry } from '../../content/runtime'
+import type { DifficultyTier } from '../../domain/difficulty/tiers'
+
+/** Stable production ID with a known runtime tier (for difficulty achievements). */
+function galleryIdWithTier(tier: DifficultyTier): string {
+	for (const item of GALLERY_ITEMS) {
+		const entry = getRuntimePuzzleEntry(item.puzzleId)
+		if (
+			entry?.tier === tier &&
+			getProductionPuzzleById(item.puzzleId) !== null
+		) {
+			return item.puzzleId
+		}
+	}
+	throw new Error(`No production gallery puzzle for tier ${tier}`)
+}
+
+const WEATHER_COLLECTION_IDS = GALLERY_ITEMS.filter(
+	(item) => item.collectionId === 'weather',
+).map((item) => item.puzzleId)
 
 describe('achievement audit', () => {
 	it('all Phase 5 achievements are reachable', () => {
@@ -32,7 +55,7 @@ describe('achievement evaluator', () => {
 		let save = createDefaultSave()
 		const before = evaluateAchievements(contextFromSave(save))
 		save = completePuzzle(save, {
-			puzzleId: 'mini-beginner-bar',
+			puzzleId: CAMPAIGN_ENTRIES[0]!.puzzleId,
 			activeTimeMs: 100,
 		})
 		const after = evaluateAchievements(contextFromSave(save))
@@ -43,13 +66,7 @@ describe('achievement evaluator', () => {
 
 	it('unique milestones and replay semantics', () => {
 		let save = createDefaultSave()
-		const ids = [
-			'mini-beginner-bar',
-			'mini-beginner-full',
-			'mini-beginner-frame',
-			'mini-easy-block',
-			'mini-easy-stairs',
-		]
+		const ids = CAMPAIGN_ENTRIES.slice(0, 5).map((entry) => entry.puzzleId)
 		for (const id of ids) {
 			save = completePuzzle(save, { puzzleId: id, activeTimeMs: 100 })
 		}
@@ -61,7 +78,7 @@ describe('achievement evaluator', () => {
 
 		// replay does not increase unique
 		save = completePuzzle(save, {
-			puzzleId: 'mini-beginner-bar',
+			puzzleId: CAMPAIGN_ENTRIES[0]!.puzzleId,
 			activeTimeMs: 90,
 		})
 		states = evaluateAchievements(contextFromSave(save))
@@ -70,17 +87,26 @@ describe('achievement evaluator', () => {
 	})
 
 	it('difficulty and large grid achievements', () => {
+		const hardId = galleryIdWithTier('HARD')
+		const expertId = galleryIdWithTier('EXPERT')
+		const largeGridId = GALLERY_ITEMS.find((item) => {
+			const puzzle = getProductionPuzzleById(item.puzzleId)
+			return (
+				puzzle !== null &&
+				(puzzle.width >= 15 || puzzle.height >= 15)
+			)
+		})!.puzzleId
 		let save = createDefaultSave()
 		save = completePuzzle(save, {
-			puzzleId: 'mini-hard-tree',
+			puzzleId: hardId,
 			activeTimeMs: 1000,
 		})
 		save = completePuzzle(save, {
-			puzzleId: 'mini-expert-scatter',
+			puzzleId: expertId,
 			activeTimeMs: 2000,
 		})
 		save = completePuzzle(save, {
-			puzzleId: 'mini-hard-frame-cross',
+			puzzleId: largeGridId,
 			activeTimeMs: 3000,
 		})
 		const states = evaluateAchievements(contextFromSave(save))
@@ -93,13 +119,7 @@ describe('achievement evaluator', () => {
 
 	it('collection complete unlocks first_collection', () => {
 		let save = createDefaultSave()
-		const objectIds = [
-			'mini-medium-boat',
-			'mini-hard-tree',
-			'mini-hard-bridge',
-			'mini-hard-arrows',
-			'mini-hard-window',
-		]
+		const objectIds = WEATHER_COLLECTION_IDS
 		const before = evaluateAchievements(contextFromSave(save))
 		for (const id of objectIds) {
 			save = completePuzzle(save, { puzzleId: id, activeTimeMs: 100 })
@@ -113,7 +133,7 @@ describe('achievement evaluator', () => {
 		const before = evaluateAchievements(contextFromSave(createDefaultSave()))
 		let save = createDefaultSave()
 		save = completePuzzle(save, {
-			puzzleId: 'mini-beginner-bar',
+			puzzleId: CAMPAIGN_ENTRIES[0]!.puzzleId,
 			activeTimeMs: 1,
 		})
 		expect(
@@ -124,11 +144,11 @@ describe('achievement evaluator', () => {
 		).toContain('first_picture')
 		const mid = evaluateAchievements(contextFromSave(save))
 		save = completePuzzle(save, {
-			puzzleId: 'mini-beginner-full',
+			puzzleId: CAMPAIGN_ENTRIES[1]!.puzzleId,
 			activeTimeMs: 1,
 		})
 		save = completePuzzle(save, {
-			puzzleId: 'mini-beginner-frame',
+			puzzleId: CAMPAIGN_ENTRIES[2]!.puzzleId,
 			activeTimeMs: 1,
 		})
 		const after = evaluateAchievements(contextFromSave(save))
@@ -142,7 +162,7 @@ describe('achievement evaluator', () => {
 	it('evaluator is deterministic for same context', () => {
 		let save = createDefaultSave()
 		save = completePuzzle(save, {
-			puzzleId: 'mini-easy-plus',
+			puzzleId: CAMPAIGN_ENTRIES[3]!.puzzleId,
 			activeTimeMs: 10,
 		})
 		const a = evaluateAchievements(contextFromSave(save))

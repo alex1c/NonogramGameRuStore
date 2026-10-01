@@ -1,17 +1,21 @@
 /**
- * Campaign unlock policy (Phase 4 v1).
+ * Campaign unlock policy (Phase 8D).
  *
- * - Orders 1–INITIAL_UNLOCKED_COUNT open immediately
- * - Order N unlocks when order N−1 is completed
- * - Completed and in-progress puzzles stay accessible
- * - Replay of completed is always allowed
+ * - Set 1 unlocked immediately
+ * - Set N+1 unlocks when Set N has ≥ SET_UNLOCK_AFTER_COMPLETIONS completions
+ * - Within an unlocked set: first slot open; subsequent unlock when previous
+ *   in-set slot is completed (Set 1 also opens first INITIAL_UNLOCKED_COUNT)
+ * - Active / completed puzzles stay accessible
  * - Unknown completed IDs do not break calculation
  */
 
 import {
+	CAMPAIGN_ENTRIES,
+	CAMPAIGN_SETS,
 	INITIAL_UNLOCKED_COUNT,
-	PHASE4_CAMPAIGN_ENTRIES,
+	SET_UNLOCK_AFTER_COMPLETIONS,
 	type CampaignEntry,
+	type CampaignSetDef,
 } from './definition'
 
 export type LevelAccessState =
@@ -35,6 +39,35 @@ export function buildUnlockContext(
 	}
 }
 
+export function countCompletedInSet(
+	set: CampaignSetDef,
+	ctx: UnlockContext,
+): number {
+	let n = 0
+	for (const id of set.puzzleIds) {
+		if (ctx.completedPuzzleIds.has(id)) {
+			n += 1
+		}
+	}
+	return n
+}
+
+export function isSetUnlocked(
+	setDisplayOrder: number,
+	ctx: UnlockContext,
+): boolean {
+	if (setDisplayOrder <= 1) {
+		return true
+	}
+	const previous = CAMPAIGN_SETS.find(
+		(s) => s.displayOrder === setDisplayOrder - 1,
+	)
+	if (previous === undefined) {
+		return false
+	}
+	return countCompletedInSet(previous, ctx) >= SET_UNLOCK_AFTER_COMPLETIONS
+}
+
 function isOrderCompleted(
 	entry: CampaignEntry,
 	ctx: UnlockContext,
@@ -43,14 +76,13 @@ function isOrderCompleted(
 }
 
 /**
- * Whether the player may open this campaign order.
- * Continue for an active game is never blocked by unlock drift.
+ * Whether the player may open this campaign display order.
  */
 export function isLevelUnlocked(
 	order: number,
 	ctx: UnlockContext,
 ): boolean {
-	const entry = PHASE4_CAMPAIGN_ENTRIES.find((item) => item.order === order)
+	const entry = CAMPAIGN_ENTRIES.find((item) => item.order === order)
 	if (entry === undefined) {
 		return false
 	}
@@ -60,23 +92,35 @@ export function isLevelUnlocked(
 	if (ctx.activePuzzleId === entry.puzzleId) {
 		return true
 	}
-	if (order <= INITIAL_UNLOCKED_COUNT) {
-		return true
-	}
-	const previous = PHASE4_CAMPAIGN_ENTRIES.find(
-		(item) => item.order === order - 1,
-	)
-	if (previous === undefined) {
+	if (!isSetUnlocked(entry.setDisplayOrder, ctx)) {
 		return false
 	}
-	return isOrderCompleted(previous, ctx)
+	// Soft onboarding: first N of Set 1.
+	if (
+		entry.setDisplayOrder === 1 &&
+		entry.setSlot <= INITIAL_UNLOCKED_COUNT
+	) {
+		return true
+	}
+	// First slot of any unlocked set.
+	if (entry.setSlot === 1) {
+		return true
+	}
+	const previousInSet = CAMPAIGN_ENTRIES.find(
+		(item) =>
+			item.setId === entry.setId && item.setSlot === entry.setSlot - 1,
+	)
+	if (previousInSet === undefined) {
+		return false
+	}
+	return isOrderCompleted(previousInSet, ctx)
 }
 
 export function getLevelAccessState(
 	order: number,
 	ctx: UnlockContext,
 ): LevelAccessState {
-	const entry = PHASE4_CAMPAIGN_ENTRIES.find((item) => item.order === order)
+	const entry = CAMPAIGN_ENTRIES.find((item) => item.order === order)
 	if (entry === undefined) {
 		return 'LOCKED'
 	}

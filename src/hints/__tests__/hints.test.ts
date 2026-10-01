@@ -3,7 +3,7 @@
  */
 
 import { createEmptyPlayerState } from '../../domain/nonogram/playerState'
-import { PlayerCell, type PlayerState } from '../../domain/nonogram/types'
+import { PlayerCell, type PlayerState, type PuzzleSpec } from '../../domain/nonogram/types'
 import {
 	applyHintStep,
 	explainTeachMe,
@@ -11,12 +11,18 @@ import {
 	normalizeLogicalStep,
 } from '../index'
 import { puzzleToSpec } from '../../solver/completeSolver'
+import {
+	generateColumnClues,
+	generateRowClues,
+} from '../../domain/nonogram/clues'
+import type { CatalogPuzzle } from '../../content/types'
 import { solveLogically } from '../../solver/logicalSolver'
 import {
 	FIXTURE_A_SIMPLE_5X5,
 	FIXTURE_I_STALLED_UNIQUE,
 } from '../../tests/fixtures/nonogramFixtures'
 import { getProductionPuzzleById } from '../../content/playable'
+import { CAMPAIGN_ENTRIES } from '../../campaign/definition'
 import {
 	applyHintToSession,
 	createGameSession,
@@ -26,6 +32,30 @@ import {
 	undo,
 } from '../../gameplay/session'
 import { PaintTool } from '../../gameplay/tools'
+
+/** B1000 runtime stores clues lazily — derive from solution for hint oracle tests. */
+function specForHintEngine(puzzle: CatalogPuzzle): PuzzleSpec {
+	if (
+		puzzle.rowClues.length === puzzle.height &&
+		puzzle.columnClues.length === puzzle.width
+	) {
+		return puzzleToSpec(puzzle)
+	}
+	return {
+		width: puzzle.width,
+		height: puzzle.height,
+		rowClues: generateRowClues(
+			puzzle.solution,
+			puzzle.width,
+			puzzle.height,
+		),
+		columnClues: generateColumnClues(
+			puzzle.solution,
+			puzzle.width,
+			puzzle.height,
+		),
+	}
+}
 
 function filledPartial(
 	width: number,
@@ -218,14 +248,14 @@ describe('hint explanation layer', () => {
 
 describe('hint chain soundness (oracle)', () => {
 	it('solves a production puzzle via Hint → Apply chain', () => {
-		const puzzle = getProductionPuzzleById('mini-beginner-bar')
+		const puzzle = getProductionPuzzleById(CAMPAIGN_ENTRIES[0]!.puzzleId)
 		expect(puzzle).not.toBeNull()
 		if (puzzle === null) {
 			return
 		}
 		let player = createEmptyPlayerState(puzzle.width, puzzle.height)
 		let revision = 0
-		const spec = puzzleToSpec(puzzle)
+		const spec = specForHintEngine(puzzle)
 		let guard = 0
 		while (guard < 200) {
 			guard += 1

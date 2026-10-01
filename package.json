@@ -45,6 +45,8 @@
     "audit:daily": "tsx scripts/audit-daily.ts",
     "audit:hints": "tsx scripts/audit-hints.ts",
     "audit:production-content": "tsx scripts/audit-production-content.ts",
+    "audit:runtime-content": "tsx scripts/audit-runtime-content.ts",
+    "content:export-runtime": "tsx scripts/content/exportRuntimeCatalog.ts",
     "content:generate-pilot": "tsx scripts/content/generatePilot.ts",
     "content:generate-b250": "tsx scripts/content/generatePilot.ts",
     "content:generate-b250-r2": "tsx scripts/content/generateB250R2.ts",

@@ -1,10 +1,10 @@
 /**
  * Achievement audit — fail-closed for unreachable / invalid definitions.
+ * Uses precomputed runtime tiers (no catalog-wide analyzer).
  */
 
-import { analyzeDifficulty } from '../domain/difficulty/analyzer'
-import { PHASE4_CAMPAIGN_ENTRIES } from '../campaign/definition'
-import { getProductionPuzzleById } from '../content/playable'
+import { CAMPAIGN_ENTRIES } from '../campaign/definition'
+import { getRuntimePuzzleEntry } from '../content/runtime'
 import { GALLERY_ITEMS } from '../gallery/definitions'
 import {
 	ACHIEVEMENT_DEFINITIONS,
@@ -37,16 +37,13 @@ function campaignCapacity(): {
 		EXPERT: 0,
 	}
 	let largeGrid = 0
-	for (const entry of PHASE4_CAMPAIGN_ENTRIES) {
-		const puzzle = getProductionPuzzleById(entry.puzzleId)
-		if (puzzle === null) {
+	for (const entry of CAMPAIGN_ENTRIES) {
+		const meta = getRuntimePuzzleEntry(entry.puzzleId)
+		if (meta === null) {
 			continue
 		}
-		const tier = analyzeDifficulty(puzzle).tier
-		if (tier !== 'UNRATED') {
-			byTier[tier] = (byTier[tier] ?? 0) + 1
-		}
-		if (puzzle.width >= 15 || puzzle.height >= 15) {
+		byTier[meta.tier] = (byTier[meta.tier] ?? 0) + 1
+		if (meta.width >= 15 || meta.height >= 15) {
 			largeGrid += 1
 		}
 	}
@@ -64,7 +61,7 @@ function campaignCapacity(): {
 		}
 	}
 	return {
-		unique: PHASE4_CAMPAIGN_ENTRIES.length,
+		unique: CAMPAIGN_ENTRIES.length,
 		byTier,
 		largeGrid,
 		maxCollectionSize,
@@ -88,12 +85,10 @@ function isReachable(
 		case 'collection_complete_any':
 			return cap.collectionCount >= condition.target && cap.maxCollectionSize > 0
 		case 'total_completions':
-			// Reachable via replay even if target > unique count.
 			return condition.target > 0
 		case 'large_grid':
 			return cap.largeGrid >= condition.target
 		case 'daily_completions':
-			// Offline Daily — reachable over calendar time with any pool size > 0.
 			return condition.target > 0 && cap.unique > 0
 		case 'daily_streak':
 			return condition.target > 0 && cap.unique > 0

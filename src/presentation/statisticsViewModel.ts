@@ -1,9 +1,13 @@
 /**
  * Statistics screen selectors (pure).
+ * Production unique counts use current Campaign IDs only.
+ * Historical totalCompletions remain from save.statistics.
  */
 
-import { PHASE4_CAMPAIGN_ENTRIES, resolveCampaignPuzzle } from '../campaign'
-import { analyzeDifficulty } from '../domain/difficulty/analyzer'
+import {
+	CAMPAIGN_ENTRIES,
+	getCampaignPuzzleTier,
+} from '../campaign'
 import {
 	DIFFICULTY_TIERS,
 	type DifficultyTier,
@@ -37,16 +41,12 @@ function campaignIdsByTier(): Map<DifficultyTier, string[]> {
 	for (const tier of DIFFICULTY_TIERS) {
 		map.set(tier, [])
 	}
-	for (const entry of PHASE4_CAMPAIGN_ENTRIES) {
-		const puzzle = resolveCampaignPuzzle(entry.puzzleId)
-		if (puzzle === null) {
-			continue
-		}
-		const tier = analyzeDifficulty(puzzle).tier
+	for (const entry of CAMPAIGN_ENTRIES) {
+		const tier = getCampaignPuzzleTier(entry.puzzleId)
 		if (tier === 'UNRATED') {
 			continue
 		}
-		map.get(tier)?.push(puzzle.id)
+		map.get(tier)?.push(entry.puzzleId)
 	}
 	return map
 }
@@ -61,9 +61,7 @@ function getByTier(): Map<DifficultyTier, string[]> {
 }
 
 export function buildStatisticsViewModel(save: SaveRoot): StatisticsViewModel {
-	const campaignIdSet = new Set(
-		PHASE4_CAMPAIGN_ENTRIES.map((entry) => entry.puzzleId),
-	)
+	const campaignIdSet = new Set(CAMPAIGN_ENTRIES.map((entry) => entry.puzzleId))
 	let completedUnique = 0
 	for (const id of save.completedPuzzleIds) {
 		if (campaignIdSet.has(id)) {
@@ -94,7 +92,7 @@ export function buildStatisticsViewModel(save: SaveRoot): StatisticsViewModel {
 
 	return {
 		completedUnique,
-		campaignTotal: PHASE4_CAMPAIGN_ENTRIES.length,
+		campaignTotal: CAMPAIGN_ENTRIES.length,
 		startedUnique: startedInCampaign,
 		totalCompletions: save.statistics.totalCompletions,
 		totalActiveTimeLabel: formatTotalActiveTime(

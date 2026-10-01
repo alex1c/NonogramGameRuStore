@@ -17,6 +17,7 @@ import {
 	formatTotalActiveTime,
 } from '../timeFormat'
 import { difficultyLabelRu } from '../difficultyLabels'
+import { CAMPAIGN_ENTRIES } from '../../campaign/definition'
 
 describe('progress percent', () => {
 	it('counts FILLED + CROSSED only', () => {
@@ -65,18 +66,19 @@ describe('home / statistics view models', () => {
 	})
 
 	it('statistics unique completed from campaign IDs', () => {
+		const campaignId = CAMPAIGN_ENTRIES[0]!.puzzleId
 		let save = createDefaultSave()
 		save = completePuzzle(save, {
-			puzzleId: 'mini-beginner-bar',
+			puzzleId: campaignId,
 			activeTimeMs: 1000,
 		})
 		save = completePuzzle(save, {
-			puzzleId: 'mini-beginner-bar',
+			puzzleId: campaignId,
 			activeTimeMs: 900,
 		})
 		const stats = buildStatisticsViewModel(save)
 		expect(stats.completedUnique).toBe(1)
 		expect(stats.totalCompletions).toBe(2)
-		expect(stats.campaignTotal).toBe(21)
+		expect(stats.campaignTotal).toBe(1000)
 	})
 })

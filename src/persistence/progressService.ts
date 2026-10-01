@@ -8,7 +8,7 @@ import {
 	deserializePlayerState,
 } from '../domain/nonogram/playerState'
 import type { PlayerState, Puzzle } from '../domain/nonogram/types'
-import { getProductionPuzzleById } from '../content/playable'
+import { getProductionPuzzleById, resolvePlayablePuzzleById } from '../content/playable'
 import { PaintTool } from '../gameplay/tools'
 import {
 	DAILY_EPOCH_DAY,
@@ -291,7 +291,7 @@ export function createGameProgressService(
 			if (active === null) {
 				return null
 			}
-			const puzzle = getProductionPuzzleById(active.puzzleId)
+			const puzzle = resolvePlayablePuzzleById(active.puzzleId)
 			if (puzzle === null) {
 				return null
 			}
@@ -536,7 +536,7 @@ export function createGameProgressService(
 			if (active === null) {
 				return null
 			}
-			const puzzle = getProductionPuzzleById(active.puzzleId)
+			const puzzle = resolvePlayablePuzzleById(active.puzzleId)
 			if (puzzle === null) {
 				return null
 			}

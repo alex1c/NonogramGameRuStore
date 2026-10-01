@@ -4,7 +4,7 @@
  * Authored solution is audit oracle only (never passed to getHint).
  */
 
-import { getProductionCatalog } from '../src/content/playable'
+import { MINI_PRODUCTION_CATALOG } from '../src/content/miniCatalog'
 import { createEmptyPlayerState } from '../src/domain/nonogram/playerState'
 import { PlayerCell, type PlayerState } from '../src/domain/nonogram/types'
 import { applyHintStep, getHint } from '../src/hints'
@@ -194,7 +194,7 @@ function auditPuzzle(puzzle: {
 }
 
 function run(): void {
-	const catalog = getProductionCatalog()
+	const catalog = MINI_PRODUCTION_CATALOG
 	const totalStart = performance.now()
 	const rows: PuzzleAuditRow[] = []
 	const totalReasons = emptyReasons()

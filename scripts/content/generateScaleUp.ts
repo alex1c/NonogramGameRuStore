@@ -150,8 +150,8 @@ function buildManifestPuzzle(row: CandidateAuditRecord): PilotManifestPuzzle {
 		reviewStatus: 'candidate',
 		seed: row.seed,
 		warnings: row.warnings,
-		rowClues: generateRowClues(grid),
-		columnClues: generateColumnClues(grid),
+		rowClues: generateRowClues(grid, row.width, row.height),
+		columnClues: generateColumnClues(grid, row.width, row.height),
 	}
 }
 

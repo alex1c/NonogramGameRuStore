@@ -20,7 +20,12 @@ import {
 } from '../progressReducers'
 import { createEmptyPlayerState } from '../../domain/nonogram/playerState'
 import { getProductionPuzzleById } from '../../content/playable'
-import { buildGalleryScreenView } from '../../gallery/viewModel'
+import { CAMPAIGN_ENTRIES } from '../../campaign/definition'
+import { GALLERY_ITEMS } from '../../gallery/definitions'
+import {
+	buildGalleryCollectionDetailView,
+	buildGalleryScreenView,
+} from '../../gallery/viewModel'
 import { createFakeClock } from '../clock'
 import { createMemoryStorage } from '../../storage'
 import { createSaveRepository } from '../repository'
@@ -78,7 +83,8 @@ describe('schema v2→v3 migration', () => {
 	it('Gallery survives through solvedPuzzleIds migration', () => {
 		const migrated = migrateSave(phase5Fixture)
 		const gallery = buildGalleryScreenView(migrated.save)
-		expect(gallery.unlockedCount).toBe(2)
+		// Legacy mini IDs in fixture do not unlock B1000 gallery membership.
+		expect(gallery.unlockedCount).toBe(0)
 	})
 
 	it('does not set dailyStartedDay on hydration', async () => {
@@ -113,8 +119,11 @@ describe('schema v2→v3 migration', () => {
 })
 
 describe('dual active Campaign + Daily', () => {
-	const campaignPuzzle = getProductionPuzzleById('mini-beginner-bar')!
-	const dailyPuzzle = getProductionPuzzleById('mini-easy-block')!
+	const campaignPuzzle = getProductionPuzzleById(
+		CAMPAIGN_ENTRIES[0]!.puzzleId,
+	)!
+	const dailyGalleryItem = GALLERY_ITEMS[0]!
+	const dailyPuzzle = getProductionPuzzleById(dailyGalleryItem.puzzleId)!
 
 	it('Campaign and Daily active coexist without overwrite', () => {
 		let save = createDefaultSave()
@@ -152,8 +161,8 @@ describe('dual active Campaign + Daily', () => {
 				restartCountThisRun: 0,
 			}),
 		)
-		expect(save.activeGame?.puzzleId).toBe('mini-beginner-bar')
-		expect(save.activeDailyGame?.puzzleId).toBe('mini-easy-block')
+		expect(save.activeGame?.puzzleId).toBe(campaignPuzzle.id)
+		expect(save.activeDailyGame?.puzzleId).toBe(dailyPuzzle.id)
 
 		save = persistActiveDailyPlayerState(save, {
 			dayKey: '2026-09-28',
@@ -181,41 +190,44 @@ describe('dual active Campaign + Daily', () => {
 	})
 
 	it('Daily completion does not alter Campaign', () => {
+		const dailyItem = GALLERY_ITEMS[0]!
 		let save = createDefaultSave()
 		save = completeDaily(save, {
 			dayKey: '2026-09-28',
-			puzzleId: 'mini-easy-block',
+			puzzleId: dailyItem.puzzleId,
 			selectionVersion: 'daily-v1',
 			activeTimeMs: 8000,
 		})
-		expect(save.solvedPuzzleIds).toContain('mini-easy-block')
-		expect(save.completedPuzzleIds).not.toContain('mini-easy-block')
+		expect(save.solvedPuzzleIds).toContain(dailyItem.puzzleId)
+		expect(save.completedPuzzleIds).not.toContain(dailyItem.puzzleId)
 		expect(save.bestTimes).toEqual([])
 		expect(save.statistics.totalCompletions).toBe(1)
 		expect(save.activeDailyGame).toBeNull()
 
-		const gallery = buildGalleryScreenView(save)
+		const detail = buildGalleryCollectionDetailView(
+			dailyItem.collectionId,
+			save,
+		)
 		expect(
-			gallery.collections
-				.flatMap((c) => c.items)
-				.some(
-					(i) =>
-						i.puzzleId === 'mini-easy-block' && i.access === 'UNLOCKED',
-				),
+			detail?.items.some(
+				(i) =>
+					i.puzzleId === dailyItem.puzzleId && i.access === 'UNLOCKED',
+			),
 		).toBe(true)
 	})
 
 	it('idempotent Daily completion', () => {
+		const dailyId = GALLERY_ITEMS[0]!.puzzleId
 		let save = createDefaultSave()
 		save = completeDaily(save, {
 			dayKey: '2026-09-28',
-			puzzleId: 'mini-easy-block',
+			puzzleId: dailyId,
 			selectionVersion: 'daily-v1',
 			activeTimeMs: 1000,
 		})
 		save = completeDaily(save, {
 			dayKey: '2026-09-28',
-			puzzleId: 'mini-easy-block',
+			puzzleId: dailyId,
 			selectionVersion: 'daily-v1',
 			activeTimeMs: 9999,
 		})
@@ -224,19 +236,20 @@ describe('dual active Campaign + Daily', () => {
 	})
 
 	it('Campaign after Daily adds campaign completion without duplicate gallery unlock semantics', () => {
+		const campaignId = CAMPAIGN_ENTRIES[0]!.puzzleId
 		let save = createDefaultSave()
 		save = completeDaily(save, {
 			dayKey: '2026-09-28',
-			puzzleId: 'mini-beginner-bar',
+			puzzleId: campaignId,
 			selectionVersion: 'daily-v1',
 			activeTimeMs: 1000,
 		})
 		const solvedBefore = save.solvedPuzzleIds.length
 		save = completePuzzle(save, {
-			puzzleId: 'mini-beginner-bar',
+			puzzleId: campaignId,
 			activeTimeMs: 2000,
 		})
-		expect(save.completedPuzzleIds).toContain('mini-beginner-bar')
+		expect(save.completedPuzzleIds).toContain(campaignId)
 		expect(save.solvedPuzzleIds).toHaveLength(solvedBefore)
 		expect(save.statistics.totalCompletions).toBe(2)
 		expect(save.bestTimes[0]?.bestActiveTimeMs).toBe(2000)

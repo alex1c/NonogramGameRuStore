@@ -1,8 +1,8 @@
 /**
- * Campaign presentation projection — immutable view models for UI.
+ * Campaign presentation projection — Sets + level cards.
+ * Uses precomputed runtime tiers — no analyzer on list render.
  */
 
-import { analyzeDifficulty } from '../domain/difficulty/analyzer'
 import type { DifficultyRating } from '../domain/difficulty/tiers'
 import type { SaveRoot } from '../persistence/schema'
 import { difficultyLabelRu } from '../presentation/difficultyLabels'
@@ -12,13 +12,20 @@ import {
 } from '../presentation/progressPercent'
 import { formatBestTime } from '../presentation/timeFormat'
 import {
+	CAMPAIGN_ENTRIES,
+	CAMPAIGN_SETS,
+	getCampaignPuzzleSize,
+	getCampaignPuzzleTier,
+	getCampaignSetById,
 	getCampaignTotal,
-	PHASE4_CAMPAIGN_ENTRIES,
-	resolveCampaignPuzzle,
+	SET_UNLOCK_AFTER_COMPLETIONS,
+	type CampaignSetDef,
 } from './definition'
 import {
 	buildUnlockContext,
+	countCompletedInSet,
 	getLevelAccessState,
+	isSetUnlocked,
 	type LevelAccessState,
 } from './unlock'
 
@@ -38,6 +45,19 @@ export interface LevelCardViewModel {
 	readonly locked: boolean
 }
 
+export interface CampaignSetCardViewModel {
+	readonly setId: string
+	readonly titleRu: string
+	readonly displayOrder: number
+	readonly completed: number
+	readonly total: number
+	readonly progressLabel: string
+	readonly unlocked: boolean
+	readonly locked: boolean
+	readonly difficultyRangeLabel: string
+	readonly unlockHint: string | null
+}
+
 const ACCESS_LABEL_RU: Readonly<Record<LevelAccessState, string>> =
 	Object.freeze({
 		LOCKED: 'Закрыт',
@@ -46,29 +66,16 @@ const ACCESS_LABEL_RU: Readonly<Record<LevelAccessState, string>> =
 		COMPLETED: 'Пройден',
 	})
 
-/** Cache difficulty analysis — avoid re-running solvers on every render. */
-const difficultyCache = new Map<string, DifficultyRating>()
-
-function cachedDifficulty(puzzleId: string, analyze: () => DifficultyRating): DifficultyRating {
-	const hit = difficultyCache.get(puzzleId)
-	if (hit !== undefined) {
-		return hit
-	}
-	const tier = analyze()
-	difficultyCache.set(puzzleId, tier)
-	return tier
-}
-
 export function buildLevelCardViewModel(
 	order: number,
 	save: SaveRoot,
 ): LevelCardViewModel | null {
-	const entry = PHASE4_CAMPAIGN_ENTRIES.find((item) => item.order === order)
+	const entry = CAMPAIGN_ENTRIES.find((item) => item.order === order)
 	if (entry === undefined) {
 		return null
 	}
-	const puzzle = resolveCampaignPuzzle(entry.puzzleId)
-	if (puzzle === null) {
+	const size = getCampaignPuzzleSize(entry.puzzleId)
+	if (size === null) {
 		return null
 	}
 
@@ -77,20 +84,20 @@ export function buildLevelCardViewModel(
 		save.activeGame?.puzzleId ?? null,
 	)
 	const access = getLevelAccessState(order, ctx)
-	const tier = cachedDifficulty(puzzle.id, () => analyzeDifficulty(puzzle).tier)
+	const tier = getCampaignPuzzleTier(entry.puzzleId)
 
 	let markedPercent: number | null = null
 	let markedLabel: string | null = null
 	if (
 		access === 'IN_PROGRESS' &&
 		save.activeGame !== null &&
-		save.activeGame.puzzleId === puzzle.id
+		save.activeGame.puzzleId === entry.puzzleId
 	) {
 		markedPercent = determinedProgressPercent(save.activeGame.player.cells)
 		markedLabel = formatMarkedPercent(markedPercent)
 	}
 
-	const best = save.bestTimes.find((item) => item.puzzleId === puzzle.id)
+	const best = save.bestTimes.find((item) => item.puzzleId === entry.puzzleId)
 	const bestTimeLabel =
 		access === 'COMPLETED' && best !== undefined
 			? formatBestTime(best.bestActiveTimeMs)
@@ -98,10 +105,10 @@ export function buildLevelCardViewModel(
 
 	return {
 		order,
-		puzzleId: puzzle.id,
-		width: puzzle.width,
-		height: puzzle.height,
-		sizeLabel: `${puzzle.width}×${puzzle.height}`,
+		puzzleId: entry.puzzleId,
+		width: size.width,
+		height: size.height,
+		sizeLabel: `${size.width}×${size.height}`,
 		difficultyTier: tier,
 		difficultyLabel: difficultyLabelRu(tier),
 		access,
@@ -115,9 +122,14 @@ export function buildLevelCardViewModel(
 
 export function buildCampaignLevelCards(
 	save: SaveRoot,
+	setId?: string,
 ): readonly LevelCardViewModel[] {
 	const cards: LevelCardViewModel[] = []
-	for (const entry of PHASE4_CAMPAIGN_ENTRIES) {
+	const entries =
+		setId === undefined
+			? CAMPAIGN_ENTRIES
+			: CAMPAIGN_ENTRIES.filter((e) => e.setId === setId)
+	for (const entry of entries) {
 		const card = buildLevelCardViewModel(entry.order, save)
 		if (card !== null) {
 			cards.push(card)
@@ -126,10 +138,54 @@ export function buildCampaignLevelCards(
 	return cards
 }
 
-export function countCompletedInCampaign(save: SaveRoot): number {
-	const campaignIds = new Set(
-		PHASE4_CAMPAIGN_ENTRIES.map((entry) => entry.puzzleId),
+export function buildCampaignSetCards(
+	save: SaveRoot,
+): readonly CampaignSetCardViewModel[] {
+	const ctx = buildUnlockContext(
+		save.completedPuzzleIds,
+		save.activeGame?.puzzleId ?? null,
 	)
+	return CAMPAIGN_SETS.map((set) => {
+		const completed = countCompletedInSet(set, ctx)
+		const unlocked = isSetUnlocked(set.displayOrder, ctx)
+		const tiers = set.puzzleIds.map((id) => getCampaignPuzzleTier(id))
+		const ranked = ['BEGINNER', 'EASY', 'MEDIUM', 'HARD', 'EXPERT'] as const
+		let minI = ranked.length - 1
+		let maxI = 0
+		for (const t of tiers) {
+			const i = ranked.indexOf(t as (typeof ranked)[number])
+			if (i >= 0) {
+				minI = Math.min(minI, i)
+				maxI = Math.max(maxI, i)
+			}
+		}
+		const difficultyRangeLabel =
+			minI <= maxI
+				? minI === maxI
+					? difficultyLabelRu(ranked[minI]!)
+					: `${difficultyLabelRu(ranked[minI]!)}–${difficultyLabelRu(ranked[maxI]!)}`
+				: '—'
+		const unlockHint =
+			!unlocked && set.displayOrder > 1
+				? `Откроется после ${SET_UNLOCK_AFTER_COMPLETIONS} из 50 в «${CAMPAIGN_SETS.find((s) => s.displayOrder === set.displayOrder - 1)?.titleRu ?? 'предыдущем'}»`
+				: null
+		return {
+			setId: set.setId,
+			titleRu: set.titleRu,
+			displayOrder: set.displayOrder,
+			completed,
+			total: set.puzzleIds.length,
+			progressLabel: `${completed} / ${set.puzzleIds.length}`,
+			unlocked,
+			locked: !unlocked,
+			difficultyRangeLabel,
+			unlockHint,
+		}
+	})
+}
+
+export function countCompletedInCampaign(save: SaveRoot): number {
+	const campaignIds = new Set(CAMPAIGN_ENTRIES.map((entry) => entry.puzzleId))
 	let count = 0
 	for (const id of save.completedPuzzleIds) {
 		if (campaignIds.has(id)) {
@@ -150,5 +206,30 @@ export function getCampaignProgressSummary(save: SaveRoot): {
 		completed,
 		total,
 		label: `Пройдено ${completed} из ${total}`,
+	}
+}
+
+export function getSetProgressSummary(
+	save: SaveRoot,
+	setId: string,
+): {
+	readonly set: CampaignSetDef
+	readonly completed: number
+	readonly total: number
+	readonly unlocked: boolean
+} | null {
+	const set = getCampaignSetById(setId)
+	if (set === null) {
+		return null
+	}
+	const ctx = buildUnlockContext(
+		save.completedPuzzleIds,
+		save.activeGame?.puzzleId ?? null,
+	)
+	return {
+		set,
+		completed: countCompletedInSet(set, ctx),
+		total: set.puzzleIds.length,
+		unlocked: isSetUnlocked(set.displayOrder, ctx),
 	}
 }

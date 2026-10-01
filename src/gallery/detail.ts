@@ -3,11 +3,11 @@
  */
 
 import { getProductionPuzzleById } from '../content/playable'
+import { getRuntimePuzzleEntry } from '../content/runtime'
 import type { SaveRoot } from '../persistence/schema'
 import { cropSolutionBitmap, type CroppedBitmap } from './crop'
 import { getGalleryCollectionDef, getGalleryItemDef } from './definitions'
 import { difficultyLabelRu } from '../presentation/difficultyLabels'
-import { analyzeDifficulty } from '../domain/difficulty/analyzer'
 import { formatBestTime } from '../presentation/timeFormat'
 
 export type GalleryDetailResult =
@@ -70,13 +70,14 @@ export function buildGalleryDetail(
 
 	const collection = getGalleryCollectionDef(def.collectionId)
 	const best = save.bestTimes.find((item) => item.puzzleId === puzzleId)
+	const tier = getRuntimePuzzleEntry(puzzleId)?.tier ?? 'UNRATED'
 	return {
 		kind: 'unlocked',
 		puzzleId,
 		titleRu: def.titleRu,
 		collectionTitleRu: collection?.titleRu ?? '',
 		sizeLabel: `${puzzle.width}×${puzzle.height}`,
-		difficultyLabel: difficultyLabelRu(analyzeDifficulty(puzzle).tier),
+		difficultyLabel: difficultyLabelRu(tier),
 		bestTimeLabel:
 			best !== undefined ? formatBestTime(best.bestActiveTimeMs) : null,
 		preview: cropSolutionBitmap(puzzle.width, puzzle.height, puzzle.solution),

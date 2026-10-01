@@ -2,24 +2,12 @@
  * Gallery audit CLI — npm run audit:gallery
  */
 
-import { auditGallery } from '../src/gallery/audit'
+import { auditGallery, formatGalleryAudit } from '../src/gallery/audit'
 import { GALLERY_EXCLUDED } from '../src/gallery/definitions'
 
 const summary = auditGallery()
 
-console.log(
-	[
-		`collections=${summary.collections}`,
-		`items=${summary.items}`,
-		`included=${summary.included}`,
-		`excluded=${summary.excluded}`,
-		`duplicateIds=${summary.duplicateIds}`,
-		`duplicateOrders=${summary.duplicateOrders}`,
-		`missingPuzzles=${summary.missingPuzzles}`,
-		`notProductionReady=${summary.notProductionReady}`,
-		`untitledUnlockedItems=${summary.untitledUnlockedItems}`,
-	].join('\n'),
-)
+console.log(formatGalleryAudit(summary))
 
 if (GALLERY_EXCLUDED.length > 0) {
 	console.log('excludedDetails:')
@@ -28,16 +16,15 @@ if (GALLERY_EXCLUDED.length > 0) {
 	}
 }
 
-if (summary.orphanCampaign.length > 0) {
-	console.log(`orphanCampaign=${summary.orphanCampaign.join(',')}`)
-}
+const ok =
+	summary.collections === 20 &&
+	summary.items === 1000 &&
+	summary.duplicateIds === 0 &&
+	summary.duplicateOrders === 0 &&
+	summary.missingPuzzles === 0 &&
+	summary.campaignCoverageMissing === 0 &&
+	summary.untitledUnlockedItems === 0
 
-if (summary.issues.length > 0) {
-	for (const issue of summary.issues) {
-		console.error(`- ${issue}`)
-	}
-}
-
-if (!summary.ok) {
+if (!ok) {
 	process.exitCode = 1
 }

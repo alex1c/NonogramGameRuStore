@@ -14,16 +14,16 @@ console.log(
 		`duplicateIds=${summary.duplicateIds}`,
 		`duplicateOrders=${summary.duplicateOrders}`,
 		`missing=${summary.missing}`,
-		`notProductionReady=${summary.notProductionReady}`,
+		`sets=${summary.setCount}`,
+		`unlockAfter=${summary.unlockAfter}`,
 	].join('\n'),
 )
 
-if (summary.issues.length > 0) {
-	for (const issue of summary.issues) {
-		console.error(`- ${issue.code}: ${issue.message}`)
-	}
-}
-
-if (summary.fail > 0 || summary.pass !== summary.total) {
+if (
+	summary.fail > 0 ||
+	summary.pass !== summary.total ||
+	summary.setCount !== 20 ||
+	summary.total !== 1000
+) {
 	process.exitCode = 1
 }

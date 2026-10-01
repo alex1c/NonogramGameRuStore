@@ -188,12 +188,25 @@ describe('Phase 8B sticky achievements / schema v4', () => {
 		expect(ids).toEqual(['first_picture', 'five_pictures'])
 	})
 
-	it('legacy gallery snapshot matches live Phase-8A membership', () => {
-		expect(LEGACY_V3_GALLERY_ITEMS.length).toBe(GALLERY_ITEMS.length)
+	it('legacy v3 gallery snapshot stays frozen after B1000 taxonomy swap', () => {
+		// Live Gallery is production B1000; legacy snapshot is migration-only.
+		expect(LEGACY_V3_GALLERY_ITEMS.length).toBe(21)
+		expect(GALLERY_ITEMS.length).toBe(1000)
 		for (const item of LEGACY_V3_GALLERY_ITEMS) {
-			const live = GALLERY_ITEMS.find((g) => g.puzzleId === item.puzzleId)
-			expect(live?.collectionId).toBe(item.collectionId)
+			expect(item.puzzleId.startsWith('mini-')).toBe(true)
 		}
+	})
+
+	it('sticky first_collection survives Gallery taxonomy swap to B1000', () => {
+		const save = freezeSave({
+			...createDefaultSave(),
+			unlockedAchievementIds: Object.freeze(['first_collection']),
+			solvedPuzzleIds: Object.freeze([]),
+		})
+		const evaluated = evaluateAchievements(contextFromSave(save))
+		const firstCollection = evaluated.find((a) => a.id === 'first_collection')
+		expect(firstCollection?.access).toBe('UNLOCKED')
+		expect(firstCollection?.stickyOnly).toBe(true)
 	})
 
 	it('listDerivedUnlockedIds ignores sticky-only history', () => {

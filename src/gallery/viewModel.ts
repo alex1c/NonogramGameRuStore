@@ -7,10 +7,10 @@
  * - secret accessibility labels
  */
 
-import { analyzeDifficulty } from '../domain/difficulty/analyzer'
 import type { DifficultyRating } from '../domain/difficulty/tiers'
 import type { SolutionGrid } from '../domain/nonogram/types'
 import { getProductionPuzzleById } from '../content/playable'
+import { getRuntimePuzzleEntry } from '../content/runtime'
 import type { SaveRoot } from '../persistence/schema'
 import { difficultyLabelRu } from '../presentation/difficultyLabels'
 import { formatBestTime } from '../presentation/timeFormat'
@@ -20,6 +20,7 @@ import {
 	GALLERY_ITEMS,
 	getGalleryCollectionDef,
 	getGalleryItemDef,
+	getGalleryItemsForCollection,
 	getGalleryTotalCount,
 	type GalleryItemDef,
 } from './definitions'
@@ -78,24 +79,10 @@ export interface GalleryScreenView {
 	readonly introLabel: string
 }
 
-const difficultyCache = new Map<string, DifficultyRating>()
-
-function cachedTier(
-	puzzleId: string,
-	width: number,
-	height: number,
-): DifficultyRating {
-	const hit = difficultyCache.get(puzzleId)
-	if (hit !== undefined) {
-		return hit
-	}
-	const puzzle = getProductionPuzzleById(puzzleId)
-	const tier =
-		puzzle === null ? 'UNRATED' : analyzeDifficulty(puzzle).tier
-	difficultyCache.set(puzzleId, tier)
-	void width
-	void height
-	return tier
+/** Prefer precomputed runtime tier — avoid analyzer on Gallery list. */
+function catalogTier(puzzleId: string): DifficultyRating {
+	const entry = getRuntimePuzzleEntry(puzzleId)
+	return entry?.tier ?? 'UNRATED'
 }
 
 function lockedTitle(order: number): string {
@@ -106,14 +93,16 @@ export function buildGalleryItemView(
 	def: GalleryItemDef,
 	completedIds: ReadonlySet<string>,
 	bestTimes: SaveRoot['bestTimes'],
+	/** When false, skip solution decode for locked-only list cards. */
+	options: { readonly decodeSolution?: boolean } = {},
 ): GalleryItemView | null {
-	const puzzle = getProductionPuzzleById(def.puzzleId)
-	if (puzzle === null) {
+	const meta = getRuntimePuzzleEntry(def.puzzleId)
+	if (meta === null) {
 		return null
 	}
 	const unlocked = completedIds.has(def.puzzleId)
-	const tier = cachedTier(def.puzzleId, puzzle.width, puzzle.height)
-	const sizeLabel = `${puzzle.width}×${puzzle.height}`
+	const tier = catalogTier(def.puzzleId)
+	const sizeLabel = `${meta.width}×${meta.height}`
 	const difficultyLabel = difficultyLabelRu(tier)
 
 	if (!unlocked) {
@@ -122,8 +111,8 @@ export function buildGalleryItemView(
 			puzzleId: def.puzzleId,
 			collectionId: def.collectionId,
 			galleryOrder: def.galleryOrder,
-			width: puzzle.width,
-			height: puzzle.height,
+			width: meta.width,
+			height: meta.height,
 			sizeLabel,
 			difficultyTier: tier,
 			difficultyLabel,
@@ -136,6 +125,11 @@ export function buildGalleryItemView(
 		}
 	}
 
+	const puzzle = getProductionPuzzleById(def.puzzleId)
+	if (puzzle === null) {
+		// Unlocked but missing production entry — treat as unavailable.
+		return null
+	}
 	const best = bestTimes.find((item) => item.puzzleId === def.puzzleId)
 	const preview = cropSolutionBitmap(
 		puzzle.width,
@@ -146,8 +140,8 @@ export function buildGalleryItemView(
 		puzzleId: def.puzzleId,
 		collectionId: def.collectionId,
 		galleryOrder: def.galleryOrder,
-		width: puzzle.width,
-		height: puzzle.height,
+		width: meta.width,
+		height: meta.height,
 		sizeLabel,
 		difficultyTier: tier,
 		difficultyLabel,
@@ -172,19 +166,10 @@ export function buildGalleryScreenView(save: SaveRoot): GalleryScreenView {
 	)
 
 	for (const collection of sortedCollections) {
-		const defs = GALLERY_ITEMS.filter(
-			(item) => item.collectionId === collection.collectionId,
-		).sort((a, b) => a.galleryOrder - b.galleryOrder)
-
-		const items: GalleryItemView[] = []
+		const defs = getGalleryItemsForCollection(collection.collectionId)
 		let completedInCollection = 0
 		for (const def of defs) {
-			const view = buildGalleryItemView(def, completed, save.bestTimes)
-			if (view === null) {
-				continue
-			}
-			items.push(view)
-			if (view.access === 'UNLOCKED') {
+			if (completed.has(def.puzzleId)) {
 				completedInCollection += 1
 				unlockedCount += 1
 			}
@@ -196,9 +181,10 @@ export function buildGalleryScreenView(save: SaveRoot): GalleryScreenView {
 			descriptionRu: collection.descriptionRu,
 			displayOrder: collection.displayOrder,
 			completed: completedInCollection,
-			total: items.length,
-			isComplete: items.length > 0 && completedInCollection === items.length,
-			items,
+			total: defs.length,
+			isComplete: defs.length > 0 && completedInCollection === defs.length,
+			// Root Gallery lists collections only — items load in collection detail.
+			items: [],
 		})
 	}
 
@@ -209,6 +195,43 @@ export function buildGalleryScreenView(save: SaveRoot): GalleryScreenView {
 		totalCount,
 		progressLabel: `Открыто ${unlockedCount} из ${totalCount}`,
 		introLabel: 'Решайте кроссворды — картинки появятся здесь.',
+	}
+}
+
+/** Virtualized collection detail — decode solutions only for unlocked cards. */
+export function buildGalleryCollectionDetailView(
+	collectionId: string,
+	save: SaveRoot,
+): GalleryCollectionView | null {
+	const collection = getGalleryCollectionDef(collectionId)
+	if (collection === null) {
+		return null
+	}
+	const completed = new Set(save.solvedPuzzleIds)
+	const defs = getGalleryItemsForCollection(collectionId)
+	const items: GalleryItemView[] = []
+	let completedInCollection = 0
+	for (const def of defs) {
+		const view = buildGalleryItemView(def, completed, save.bestTimes, {
+			decodeSolution: completed.has(def.puzzleId),
+		})
+		if (view === null) {
+			continue
+		}
+		items.push(view)
+		if (view.access === 'UNLOCKED') {
+			completedInCollection += 1
+		}
+	}
+	return {
+		collectionId: collection.collectionId,
+		titleRu: collection.titleRu,
+		descriptionRu: collection.descriptionRu,
+		displayOrder: collection.displayOrder,
+		completed: completedInCollection,
+		total: items.length,
+		isComplete: items.length > 0 && completedInCollection === items.length,
+		items,
 	}
 }
 

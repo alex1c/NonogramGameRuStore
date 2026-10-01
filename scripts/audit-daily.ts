@@ -15,7 +15,8 @@ import {
 } from '../src/daily/selector'
 
 const AUDIT_START: DayKey = DAILY_EPOCH_DAY
-const AUDIT_DAYS = 365
+/** Phase 8D: multi-year audit (≈3 years). */
+const AUDIT_DAYS = 1096
 
 function run(): void {
 	const index = getDailyPoolIndex()

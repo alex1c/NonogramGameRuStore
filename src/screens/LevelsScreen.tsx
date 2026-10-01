@@ -1,5 +1,5 @@
 /**
- * Levels — virtualized campaign list (scales toward 1000 entries).
+ * Levels — Sets list → Set detail (50 puzzles). Virtualized for B1000.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -16,6 +16,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
 	buildCampaignLevelCards,
+	buildCampaignSetCards,
+	type CampaignSetCardViewModel,
 	type LevelCardViewModel,
 } from '../campaign'
 import { useProgress } from '../progress/ProgressProvider'
@@ -34,30 +36,58 @@ interface LevelsScreenProps {
 export function LevelsScreen({ onBack, onOpenLevel }: LevelsScreenProps) {
 	const insets = useSafeAreaInsets()
 	const { save } = useProgress()
-	const cards = useMemo(() => buildCampaignLevelCards(save), [save])
+	const setCards = useMemo(() => buildCampaignSetCards(save), [save])
+	const [selectedSetId, setSelectedSetId] = useState<string | null>(null)
 	const [lockedHint, setLockedHint] = useState<string | null>(null)
 	const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+	const levelCards = useMemo(
+		() =>
+			selectedSetId === null
+				? []
+				: buildCampaignLevelCards(save, selectedSetId),
+		[save, selectedSetId],
+	)
+
+	const selectedSet = setCards.find((s) => s.setId === selectedSetId) ?? null
+
 	useEffect(() => {
 		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+			if (selectedSetId !== null) {
+				setSelectedSetId(null)
+				return true
+			}
 			onBack()
 			return true
 		})
 		return () => sub.remove()
-	}, [onBack])
+	}, [onBack, selectedSetId])
 
-	const showLockedFeedback = useCallback(() => {
-		setLockedHint('Пройдите предыдущий уровень')
+	const showLockedFeedback = useCallback((message: string) => {
+		setLockedHint(message)
 		if (hintTimer.current !== null) {
 			clearTimeout(hintTimer.current)
 		}
 		hintTimer.current = setTimeout(() => setLockedHint(null), 1800)
 	}, [])
 
-	const handlePress = useCallback(
+	const handleSetPress = useCallback(
+		(card: CampaignSetCardViewModel) => {
+			if (card.locked) {
+				showLockedFeedback(
+					card.unlockHint ?? 'Пройдите больше уровней в предыдущем наборе',
+				)
+				return
+			}
+			setSelectedSetId(card.setId)
+		},
+		[showLockedFeedback],
+	)
+
+	const handleLevelPress = useCallback(
 		(card: LevelCardViewModel) => {
 			if (card.access === 'LOCKED') {
-				showLockedFeedback()
+				showLockedFeedback('Пройдите предыдущий уровень')
 				return
 			}
 			if (card.access === 'IN_PROGRESS') {
@@ -80,12 +110,29 @@ export function LevelsScreen({ onBack, onOpenLevel }: LevelsScreenProps) {
 		[onOpenLevel, showLockedFeedback],
 	)
 
-	const renderItem: ListRenderItem<LevelCardViewModel> = useCallback(
+	const renderSet: ListRenderItem<CampaignSetCardViewModel> = useCallback(
 		({ item }) => (
-			<LevelCard card={item} onPress={() => handlePress(item)} />
+			<SetCard card={item} onPress={() => handleSetPress(item)} />
 		),
-		[handlePress],
+		[handleSetPress],
 	)
+
+	const renderLevel: ListRenderItem<LevelCardViewModel> = useCallback(
+		({ item }) => (
+			<LevelCard card={item} onPress={() => handleLevelPress(item)} />
+		),
+		[handleLevelPress],
+	)
+
+	const title =
+		selectedSet !== null ? selectedSet.titleRu : 'Уровни'
+	const handleHeaderBack = () => {
+		if (selectedSetId !== null) {
+			setSelectedSetId(null)
+			return
+		}
+		onBack()
+	}
 
 	return (
 		<View
@@ -102,16 +149,22 @@ export function LevelsScreen({ onBack, onOpenLevel }: LevelsScreenProps) {
 				<Pressable
 					accessibilityRole="button"
 					accessibilityLabel="Назад"
-					onPress={onBack}
+					onPress={handleHeaderBack}
 					style={styles.backButton}
 					hitSlop={12}
 				>
 					<Text style={styles.backText}>← Назад</Text>
 				</Pressable>
 				<Text style={styles.title} accessibilityRole="header">
-					Уровни
+					{title}
 				</Text>
 			</View>
+
+			{selectedSet !== null ? (
+				<Text style={styles.subMeta}>
+					{selectedSet.progressLabel} · {selectedSet.difficultyRangeLabel}
+				</Text>
+			) : null}
 
 			{lockedHint !== null ? (
 				<Text style={styles.hint} accessibilityLiveRegion="polite">
@@ -121,23 +174,80 @@ export function LevelsScreen({ onBack, onOpenLevel }: LevelsScreenProps) {
 				<View style={styles.hintPlaceholder} />
 			)}
 
-			<FlatList
-				data={cards}
-				keyExtractor={(item) => item.puzzleId}
-				renderItem={renderItem}
-				initialNumToRender={12}
-				windowSize={7}
-				maxToRenderPerBatch={10}
-				removeClippedSubviews
-				contentContainerStyle={styles.listContent}
-				ItemSeparatorComponent={Separator}
-			/>
+			{selectedSetId === null ? (
+				<FlatList
+					data={setCards}
+					keyExtractor={(item) => item.setId}
+					renderItem={renderSet}
+					initialNumToRender={12}
+					windowSize={7}
+					contentContainerStyle={styles.listContent}
+					ItemSeparatorComponent={Separator}
+				/>
+			) : (
+				<FlatList
+					data={levelCards}
+					keyExtractor={(item) => item.puzzleId}
+					renderItem={renderLevel}
+					initialNumToRender={12}
+					windowSize={7}
+					maxToRenderPerBatch={10}
+					removeClippedSubviews
+					contentContainerStyle={styles.listContent}
+					ItemSeparatorComponent={Separator}
+				/>
+			)}
 		</View>
 	)
 }
 
 function Separator() {
 	return <View style={styles.separator} />
+}
+
+function SetCard({
+	card,
+	onPress,
+}: {
+	card: CampaignSetCardViewModel
+	onPress: () => void
+}) {
+	const dimmed = card.locked
+	return (
+		<Pressable
+			accessibilityRole="button"
+			accessibilityState={{ disabled: card.locked }}
+			accessibilityLabel={`${card.titleRu}. ${card.progressLabel}. ${card.locked ? 'Закрыт' : 'Открыт'}`}
+			onPress={onPress}
+			style={({ pressed }) => [
+				styles.card,
+				dimmed ? styles.cardLocked : null,
+				{ opacity: pressed && !dimmed ? 0.88 : 1 },
+			]}
+		>
+			<View style={styles.cardLeft}>
+				<Text style={[styles.order, dimmed ? styles.textDim : null]}>
+					{card.displayOrder}
+				</Text>
+				{card.locked ? (
+					<View style={styles.lockGlyph} accessibilityLabel="Закрыт">
+						<View style={styles.lockShackle} />
+						<View style={styles.lockBody} />
+					</View>
+				) : (
+					<Text style={[styles.glyph, styles.glyphNew]}>▷</Text>
+				)}
+			</View>
+			<View style={styles.cardBody}>
+				<Text style={[styles.cardTitle, dimmed ? styles.textDim : null]}>
+					{card.titleRu}
+				</Text>
+				<Text style={[styles.cardMeta, dimmed ? styles.textDim : null]}>
+					{card.progressLabel} · {card.difficultyRangeLabel}
+				</Text>
+			</View>
+		</Pressable>
+	)
 }
 
 function LevelCard({
@@ -183,13 +293,9 @@ function LevelCard({
 }
 
 function StatusGlyph({ access }: { access: LevelCardViewModel['access'] }) {
-	// Non-emoji markers — distinguishable without relying on color alone.
 	if (access === 'LOCKED') {
 		return (
-			<View
-				style={styles.lockGlyph}
-				accessibilityLabel="Закрыт"
-			>
+			<View style={styles.lockGlyph} accessibilityLabel="Закрыт">
 				<View style={styles.lockShackle} />
 				<View style={styles.lockBody} />
 			</View>
@@ -233,6 +339,12 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		marginRight: 72,
 	},
+	subMeta: {
+		textAlign: 'center',
+		color: colors.textMuted,
+		fontSize: 13,
+		marginBottom: 2,
+	},
 	hint: {
 		textAlign: 'center',
 		color: colors.accent,
@@ -240,6 +352,7 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 		minHeight: 20,
 		marginBottom: 4,
+		paddingHorizontal: spacing.md,
 	},
 	hintPlaceholder: {
 		minHeight: 20,

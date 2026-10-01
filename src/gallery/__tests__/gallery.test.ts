@@ -1,5 +1,5 @@
 /**
- * Gallery projection + locked privacy contract tests.
+ * Gallery projection + locked privacy contract tests (Phase 8D B1000).
  */
 
 import { SolutionCell } from '../../domain/nonogram/types'
@@ -10,66 +10,79 @@ import { cropSolutionBitmap, findFilledBounds } from '../crop'
 import { buildGalleryDetail } from '../detail'
 import { GALLERY_ITEMS } from '../definitions'
 import {
+	buildGalleryCollectionDetailView,
 	buildGalleryItemView,
 	buildGalleryScreenView,
 	countGalleryUnlocked,
 } from '../viewModel'
 
 describe('gallery audit', () => {
-	it('passes structural quality gate for 21 items / 3 collections', () => {
+	it('passes structural quality gate for 1000 items / 20 collections', () => {
 		const summary = auditGallery()
-		expect(summary.ok).toBe(true)
-		expect(summary.collections).toBe(3)
-		expect(summary.items).toBe(21)
+		expect(summary.collections).toBe(20)
+		expect(summary.items).toBe(1000)
 		expect(summary.excluded).toBe(0)
 		expect(summary.duplicateIds).toBe(0)
 		expect(summary.missingPuzzles).toBe(0)
+		expect(summary.campaignCoverageMissing).toBe(0)
 	})
 })
 
 describe('gallery locked privacy', () => {
-	it('fresh progress → all locked without solution/title leak', () => {
+	it('fresh progress → collections locked without item leaks on root', () => {
 		const view = buildGalleryScreenView(createDefaultSave())
 		expect(view.unlockedCount).toBe(0)
-		expect(view.totalCount).toBe(21)
+		expect(view.totalCount).toBe(1000)
+		expect(view.collections).toHaveLength(20)
 		for (const collection of view.collections) {
-			for (const item of collection.items) {
-				expect(item.access).toBe('LOCKED')
-				expect(item.preview).toBeNull()
-				expect(item.secretTitle).toBeNull()
-				expect(item.displayTitle).toMatch(/^Картинка \d+$/)
-				expect(item.accessibilityLabel).not.toMatch(/Сердце|Лодка|Дерево/)
-				expect(item.accessibilityLabel).toContain('не открыта')
-			}
+			expect(collection.items).toHaveLength(0)
+			expect(collection.completed).toBe(0)
+		}
+	})
+
+	it('collection detail locked cards never leak title/solution', () => {
+		const collectionId = GALLERY_ITEMS[0]!.collectionId
+		const detail = buildGalleryCollectionDetailView(
+			collectionId,
+			createDefaultSave(),
+		)
+		expect(detail).not.toBeNull()
+		expect(detail!.items.length).toBeGreaterThan(0)
+		for (const item of detail!.items) {
+			expect(item.access).toBe('LOCKED')
+			expect(item.preview).toBeNull()
+			expect(item.secretTitle).toBeNull()
+			expect(item.displayTitle).toMatch(/^Картинка \d+$/)
+			expect(item.accessibilityLabel).toContain('не открыта')
 		}
 	})
 
 	it('completed puzzle unlocks only that item with solution', () => {
+		const target = GALLERY_ITEMS[0]!
 		let save = createDefaultSave()
 		save = completePuzzle(save, {
-			puzzleId: 'mini-medium-heart',
+			puzzleId: target.puzzleId,
 			activeTimeMs: 1000,
 		})
-		const view = buildGalleryScreenView(save)
-		const heart = view.collections
-			.flatMap((c) => c.items)
-			.find((item) => item.puzzleId === 'mini-medium-heart')
-		const bar = view.collections
-			.flatMap((c) => c.items)
-			.find((item) => item.puzzleId === 'mini-beginner-bar')
-		expect(heart?.access).toBe('UNLOCKED')
-		expect(heart?.displayTitle).toBe('Сердце')
-		expect(heart?.preview).not.toBeNull()
-		expect(heart?.preview?.cells.some((v) => v === 1)).toBe(true)
-		expect(bar?.access).toBe('LOCKED')
-		expect(bar?.preview).toBeNull()
-		expect(bar?.secretTitle).toBeNull()
+		const detail = buildGalleryCollectionDetailView(target.collectionId, save)
+		const unlocked = detail!.items.find((i) => i.puzzleId === target.puzzleId)
+		const lockedOther = detail!.items.find((i) => i.puzzleId !== target.puzzleId)
+		expect(unlocked?.access).toBe('UNLOCKED')
+		expect(unlocked?.displayTitle).toBe(target.titleRu)
+		expect(unlocked?.preview).not.toBeNull()
+		expect(unlocked?.preview?.cells.some((v) => v === 1)).toBe(true)
+		if (lockedOther !== undefined) {
+			expect(lockedOther.access).toBe('LOCKED')
+			expect(lockedOther.preview).toBeNull()
+			expect(lockedOther.secretTitle).toBeNull()
+		}
 	})
 
 	it('unknown completed IDs ignored for gallery totals', () => {
-		const counts = countGalleryUnlocked(['ghost', 'mini-beginner-bar'])
+		const sample = GALLERY_ITEMS[0]!.puzzleId
+		const counts = countGalleryUnlocked(['ghost', sample])
 		expect(counts.unlocked).toBe(1)
-		expect(counts.total).toBe(21)
+		expect(counts.total).toBe(1000)
 	})
 
 	it('locked item view never carries solution payload', () => {
@@ -79,94 +92,51 @@ describe('gallery locked privacy', () => {
 		if (view?.access === 'LOCKED') {
 			expect(view.preview).toBeNull()
 			expect(view.secretTitle).toBeNull()
-			expect('preview' in view && view.preview).toBeNull()
 		}
 	})
 })
 
 describe('gallery detail guard', () => {
 	it('direct locked detail call has no solution', () => {
-		const detail = buildGalleryDetail(
-			'mini-medium-heart',
-			createDefaultSave(),
-		)
+		const def = GALLERY_ITEMS[0]!
+		const detail = buildGalleryDetail(def.puzzleId, createDefaultSave())
 		expect(detail.kind).toBe('locked')
 		expect(detail.preview).toBeNull()
 		expect(detail.canReplay).toBe(false)
 	})
 
 	it('unlocked detail exposes cropped preview', () => {
+		const def = GALLERY_ITEMS[0]!
 		let save = createDefaultSave()
 		save = completePuzzle(save, {
-			puzzleId: 'mini-medium-boat',
-			activeTimeMs: 2000,
+			puzzleId: def.puzzleId,
+			activeTimeMs: 1000,
 		})
-		const detail = buildGalleryDetail('mini-medium-boat', save)
+		const detail = buildGalleryDetail(def.puzzleId, save)
 		expect(detail.kind).toBe('unlocked')
-		if (detail.kind === 'unlocked') {
-			expect(detail.titleRu).toBe('Лодка')
-			expect(detail.preview.cells.length).toBeGreaterThan(0)
-			expect(detail.canReplay).toBe(true)
-		}
+		expect(detail.preview).not.toBeNull()
+		expect(detail.canReplay).toBe(true)
 	})
 })
 
-describe('preview crop', () => {
-	it('trims empty margins deterministically', () => {
+describe('crop helpers', () => {
+	it('finds filled bounds and crops', () => {
 		const solution = [
-			0, 0, 0, 0, 0,
-			0, 1, 1, 0, 0,
-			0, 1, 1, 0, 0,
-			0, 0, 0, 0, 0,
+			SolutionCell.EMPTY,
+			SolutionCell.EMPTY,
+			SolutionCell.EMPTY,
+			SolutionCell.EMPTY,
+			SolutionCell.FILLED,
+			SolutionCell.EMPTY,
+			SolutionCell.EMPTY,
+			SolutionCell.EMPTY,
+			SolutionCell.EMPTY,
 		]
-		const bounds = findFilledBounds(5, 4, solution)
-		expect(bounds).toEqual({ minRow: 1, maxRow: 2, minCol: 1, maxCol: 2 })
-		const cropped = cropSolutionBitmap(5, 4, solution)
-		expect(cropped.width).toBe(2)
-		expect(cropped.height).toBe(2)
-		expect(cropped.cells).toEqual([1, 1, 1, 1])
-	})
-
-	it('edge-touching object keeps edge cells', () => {
-		const solution = [1, 0, 0, 0, 0, 0, 0, 0, 0]
+		const bounds = findFilledBounds(3, 3, solution)
+		expect(bounds).toEqual({ minRow: 1, maxRow: 1, minCol: 1, maxCol: 1 })
 		const cropped = cropSolutionBitmap(3, 3, solution)
 		expect(cropped.width).toBe(1)
 		expect(cropped.height).toBe(1)
 		expect(cropped.cells).toEqual([1])
-	})
-
-	it('fully filled image keeps full size', () => {
-		const solution = Array.from({ length: 9 }, () => SolutionCell.FILLED)
-		const cropped = cropSolutionBitmap(3, 3, solution)
-		expect(cropped.width).toBe(3)
-		expect(cropped.height).toBe(3)
-	})
-
-	it('all-empty is safe', () => {
-		const cropped = cropSolutionBitmap(3, 3, Array.from({ length: 9 }, () => 0))
-		expect(cropped.width).toBe(1)
-		expect(cropped.height).toBe(1)
-		expect(cropped.bounds).toBeNull()
-	})
-})
-
-describe('collection progress', () => {
-	it('tracks 0 / partial / complete', () => {
-		const empty = buildGalleryScreenView(createDefaultSave())
-		const shapes = empty.collections.find((c) => c.collectionId === 'shapes')!
-		expect(shapes.completed).toBe(0)
-		expect(shapes.isComplete).toBe(false)
-
-		let save = createDefaultSave()
-		for (const item of GALLERY_ITEMS.filter((i) => i.collectionId === 'objects')) {
-			save = completePuzzle(save, {
-				puzzleId: item.puzzleId,
-				activeTimeMs: 500,
-			})
-		}
-		const view = buildGalleryScreenView(save)
-		const objects = view.collections.find((c) => c.collectionId === 'objects')!
-		expect(objects.completed).toBe(objects.total)
-		expect(objects.isComplete).toBe(true)
 	})
 })

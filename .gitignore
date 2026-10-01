@@ -55,3 +55,8 @@ tmp/
 
 # Phase 8 content review artifacts (contact sheets, local reports)
 review-artifacts/
+
+# Scratch generator helpers (not part of runtime)
+scripts/content/_gen/
+scripts/_tmp_*.ts
+

@@ -15,6 +15,10 @@ import { CURRENT_SAVE_SCHEMA_VERSION } from '../schema'
 import { migrateSave } from '../migrate'
 import { buildGalleryScreenView } from '../../gallery/viewModel'
 import { evaluateAchievements, contextFromSave } from '../../achievements/evaluate'
+import { CAMPAIGN_ENTRIES } from '../../campaign/definition'
+
+const PRODUCTION_CAMPAIGN_FIRST = CAMPAIGN_ENTRIES[0]!.puzzleId
+const PRODUCTION_CAMPAIGN_SECOND = CAMPAIGN_ENTRIES[1]!.puzzleId
 
 function requirePuzzle(id: string) {
 	const puzzle = getProductionPuzzleById(id)
@@ -31,7 +35,7 @@ describe('completion event result', () => {
 			createFakeClock(0),
 		)
 		await service.hydrate()
-		const puzzle = requirePuzzle('mini-beginner-bar')
+		const puzzle = requirePuzzle(PRODUCTION_CAMPAIGN_FIRST)
 		await service.startPuzzle(puzzle.id)
 		const first = await service.completePuzzle({
 			puzzleId: puzzle.id,
@@ -41,7 +45,7 @@ describe('completion event result', () => {
 		expect(first.event.galleryIncluded).toBe(true)
 		expect(first.event.bestTimeImproved).toBe(true)
 		expect(first.event.newlyUnlockedAchievements.length).toBeGreaterThan(0)
-		expect(first.event.nextCampaignPuzzleId).toBe('mini-beginner-full')
+		expect(first.event.nextCampaignPuzzleId).toBe(PRODUCTION_CAMPAIGN_SECOND)
 
 		await service.startPuzzle(puzzle.id)
 		const replay = await service.completePuzzle({
@@ -59,7 +63,7 @@ describe('completion event result', () => {
 			createFakeClock(0),
 		)
 		await service.hydrate()
-		const puzzle = requirePuzzle('mini-beginner-full')
+		const puzzle = requirePuzzle(PRODUCTION_CAMPAIGN_SECOND)
 		await service.completePuzzle({
 			puzzleId: puzzle.id,
 			activeTimeMs: 900,
@@ -75,7 +79,7 @@ describe('completion event result', () => {
 
 describe('Phase 4/5 save compatibility', () => {
 	it('loads Phase 5 schema v1 fixture without data loss (migrates to v2)', async () => {
-		const puzzle = requirePuzzle('mini-easy-stairs')
+		const puzzle = requirePuzzle(CAMPAIGN_ENTRIES[2]!.puzzleId)
 		const player = createEmptyPlayerState(puzzle.width, puzzle.height)
 		const phase4Save = {
 			schemaVersion: 1,
@@ -139,7 +143,8 @@ describe('Phase 4/5 save compatibility', () => {
 		const hydrated = await service.hydrate()
 		expect(hydrated.save.activeGame?.puzzleId).toBe(puzzle.id)
 		const gallery = buildGalleryScreenView(hydrated.save)
-		expect(gallery.unlockedCount).toBe(2)
+		// Legacy mini IDs remain in save but do not unlock B1000 gallery items.
+		expect(gallery.unlockedCount).toBe(0)
 		const achievements = evaluateAchievements(contextFromSave(hydrated.save))
 		expect(
 			achievements.find((item) => item.id === 'collection_start')?.access,
@@ -152,7 +157,7 @@ describe('Phase 4/5 save compatibility', () => {
 
 describe('fingerprint metadata invariance', () => {
 	it('title/collection metadata changes do not alter fingerprint', () => {
-		const puzzle = requirePuzzle('mini-medium-heart')
+		const puzzle = requirePuzzle(CAMPAIGN_ENTRIES[10]!.puzzleId)
 		const base = buildPuzzleContentFingerprint(puzzle)
 		const retitled = {
 			...puzzle,
@@ -166,7 +171,7 @@ describe('fingerprint metadata invariance', () => {
 	})
 
 	it('clue/dimension changes alter fingerprint', () => {
-		const puzzle = requirePuzzle('mini-medium-heart')
+		const puzzle = requirePuzzle(CAMPAIGN_ENTRIES[10]!.puzzleId)
 		const base = buildPuzzleContentFingerprint(puzzle)
 		const taller = {
 			...puzzle,

@@ -1,14 +1,16 @@
-# Content pipeline (Phase 8A → 8C)
+# Content pipeline (Phase 8A → 8D)
 
 Offline deterministic tooling for **production candidate** nonogram packs.
-Does **not** replace the runtime mini catalog (21 puzzles) until a later
-approved integration phase.
+Phase 8D integrates the accepted B1000 catalog into runtime.
 
-## Active versions (Phase 8C)
+## Active versions (Phase 8D runtime)
 
 - `CONTENT_GENERATOR_VERSION` = `prod-v2.2`
-- `CONTENT_CATALOG_VERSION` = `2026.1-b1000-r1`
-- Status: **candidate** (not production-approved)
+- Runtime catalog = `2026.1-b1000-r1`
+- Checksum = `154959457649ba0db245ae230102c1e40f27198120e86cf756893c59c8b8d0c9`
+- Runtime artifact: `src/content/runtime/b1000Catalog.json`
+- Export: `npm run content:export-runtime`
+- Integrity: `npm run audit:runtime-content`
 
 ## Ancestry chain
 
@@ -19,41 +21,20 @@ approved integration phase.
 | B750 | 750 | `2026.1-b750-r1` | B500 |
 | B1000 | 1000 | `2026.1-b1000-r1` | B750 |
 
-Additive only: each checkpoint preserves all parent puzzle IDs.
+## Runtime notes (8D)
 
-## Scale-up commands
-
-```bash
-npm run content:generate-b500
-npm run content:generate-b750
-npm run content:generate-b1000
-npm run content:generate-scale   # all three in order
-npm run audit:production-content
-```
-
-## Final tier target (B1000)
-
-| Tier | Count |
-| --- | ---: |
-| BEGINNER | 100 |
-| EASY | 250 |
-| MEDIUM | 300 |
-| HARD | 250 |
-| EXPERT | 100 |
-
-## Quality (frozen from 8B.1)
-
-Structural `analyzeRewardQuality` remains title-independent.
-Selected production: hard primitive flags = 0.
-Human recognizability is **not** automatic — sample Worst 30 + Random 50.
+- Campaign: 20×50, unlock next set after 35/50
+- Gallery: 20 production collections
+- Daily: `daily-v2` (753 eligible); `daily-v1` history retained
+- Legacy mini-21 kept for active-game / Daily-v1 resolution only
+- No catalog-wide solver audit at app startup (lazy decode)
+- Runtime derives clues from ascii at export (Phase 8C manifest stored empty clue arrays; content checksum unchanged)
 
 ## Human review (B1000)
 
 1. `review-artifacts/production-content/b1000-r1/contact-sheet.html`
-2. Worst 30 (blind) → Random 50 → Near pairs → Expert → Collections
-3. **STOP** — no runtime Campaign/Gallery/Daily swap
+2. Accepted for v1 → Phase 8D runtime integration
 
-## Runtime isolation
+## Schema
 
-Campaign / Gallery 21, Daily unchanged, schema v4 sticky achievements unchanged,
-B1000 candidate not imported.
+Schema remains v4 (sticky achievements). No ads/AppMetrica in 8D.

@@ -2,11 +2,9 @@
  * Home screen view-model selectors (pure).
  */
 
-import {
-	getCampaignProgressSummary,
-	resolveCampaignPuzzle,
-} from '../campaign'
-import { analyzeDifficulty } from '../domain/difficulty/analyzer'
+import { getCampaignProgressSummary } from '../campaign'
+import { resolvePlayablePuzzleById } from '../content/playable'
+import { getRuntimePuzzleEntry } from '../content/runtime'
 import type { SaveRoot } from '../persistence/schema'
 import { difficultyLabelRu } from './difficultyLabels'
 import {
@@ -44,15 +42,21 @@ export function buildHomeViewModel(save: SaveRoot): HomeViewModel {
 		}
 	}
 
-	const puzzle = resolveCampaignPuzzle(active.puzzleId)
-	const sizeLabel =
-		puzzle !== null
-			? `${puzzle.width}×${puzzle.height}`
-			: `${active.player.width}×${active.player.height}`
-	const difficultyLabel =
-		puzzle !== null
-			? difficultyLabelRu(analyzeDifficulty(puzzle).tier)
-			: '—'
+	const puzzle = resolvePlayablePuzzleById(active.puzzleId)
+	if (puzzle === null) {
+		return {
+			hasActiveGame: false,
+			primaryCta: 'play',
+			primaryLabel: 'Играть',
+			progressLabel: progress.label,
+			continueCard: null,
+		}
+	}
+	const runtime = getRuntimePuzzleEntry(active.puzzleId)
+	const sizeLabel = `${puzzle.width}×${puzzle.height}`
+	const difficultyLabel = difficultyLabelRu(
+		runtime?.tier ?? puzzle.assignedDifficulty ?? 'UNRATED',
+	)
 	const marked = determinedProgressPercent(active.player.cells)
 
 	return {

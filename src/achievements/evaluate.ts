@@ -8,6 +8,7 @@
 import { analyzeDifficulty } from '../domain/difficulty/analyzer'
 import type { DifficultyTier } from '../domain/difficulty/tiers'
 import { getProductionPuzzleById } from '../content/playable'
+import { getRuntimePuzzleEntry } from '../content/runtime'
 import { GALLERY_ITEMS } from '../gallery/definitions'
 import type { SaveRoot } from '../persistence/schema'
 import {
@@ -79,8 +80,12 @@ function tierFor(puzzleId: string): DifficultyTier | 'UNRATED' {
 	if (hit !== undefined) {
 		return hit
 	}
-	const puzzle = getProductionPuzzleById(puzzleId)
-	const tier = puzzle === null ? 'UNRATED' : analyzeDifficulty(puzzle).tier
+	const entry = getRuntimePuzzleEntry(puzzleId)
+	let tier: DifficultyTier | 'UNRATED' = entry?.tier ?? 'UNRATED'
+	if (tier === 'UNRATED') {
+		const puzzle = getProductionPuzzleById(puzzleId)
+		tier = puzzle === null ? 'UNRATED' : analyzeDifficulty(puzzle).tier
+	}
 	tierCache.set(puzzleId, tier)
 	return tier
 }
