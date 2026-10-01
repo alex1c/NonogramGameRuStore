@@ -1,6 +1,7 @@
 /**
- * Minimal navigation: Home ↔ Levels / Gallery / Achievements / Statistics / Daily / Game.
- * BannerSlot on non-Game routes.
+ * Minimal navigation: Home ↔ Levels / Gallery / Achievements / Statistics /
+ * Daily / Game / Tutorial / Settings / About.
+ * Banner placement reported to App shell (Game/Tutorial host their own / none).
  */
 
 import { useCallback, useEffect, useState } from 'react'
@@ -14,10 +15,20 @@ import { GalleryDetailScreen } from '../screens/GalleryDetailScreen'
 import { AchievementsScreen } from '../screens/AchievementsScreen'
 import { DailyScreen } from '../screens/DailyScreen'
 import { GameScreen } from '../screens/GameScreen'
+import { TutorialScreen } from '../screens/TutorialScreen'
+import { SettingsScreen } from '../screens/SettingsScreen'
+import { AboutScreen } from '../screens/AboutScreen'
 import { useProgress } from '../progress/ProgressProvider'
 import { isGalleryPuzzleUnlocked } from '../gallery'
 import { resolvePlayablePuzzleById } from '../content/playable'
 import type { DayKey } from '../daily/dateUtils'
+import type { BannerPlacement } from '../ads'
+import { maybeShowInterstitialAfterCompletion } from '../ads'
+import { trackEvent } from '../analytics'
+import {
+	CURRENT_TUTORIAL_VERSION,
+	shouldFirstRunOfferTutorial,
+} from '../tutorial/definition'
 
 /** Explicit game session mode — never overlapping booleans. */
 export type GameSessionDescriptor =
@@ -41,6 +52,8 @@ export type GameSessionDescriptor =
 /** @deprecated Prefer GameSessionDescriptor — kept for internal GameScreen props. */
 export type GameLaunchMode = 'resume' | 'fresh' | 'replay' | 'daily'
 
+type TutorialSource = 'first_run' | 'settings' | 'home_offer'
+
 type Route =
 	| { readonly name: 'home' }
 	| { readonly name: 'levels' }
@@ -51,20 +64,58 @@ type Route =
 	| { readonly name: 'achievements' }
 	| { readonly name: 'daily'; readonly focusDayKey?: DayKey }
 	| { readonly name: 'game'; readonly session: GameSessionDescriptor }
+	| { readonly name: 'tutorial'; readonly source: TutorialSource }
+	| { readonly name: 'settings' }
+	| { readonly name: 'about' }
 
 interface RootNavigationProps {
-	readonly onBannerHostChange?: (showBanner: boolean) => void
+	readonly onBannerPlacementChange?: (placement: BannerPlacement | null) => void
 }
 
-export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
-	const [route, setRoute] = useState<Route>({ name: 'home' })
-	const [darkMode, setDarkMode] = useState(false)
-	const { save, service, refresh } = useProgress()
+function placementForRoute(route: Route): BannerPlacement | null {
+	switch (route.name) {
+		case 'tutorial':
+			return null
+		case 'game':
+			// Game hosts its own BannerSlot (game placement).
+			return null
+		case 'home':
+		case 'levels':
+			return 'home_levels'
+		case 'gallery':
+		case 'galleryCollection':
+		case 'galleryDetail':
+		case 'achievements':
+		case 'statistics':
+		case 'settings':
+		case 'about':
+		case 'daily':
+			return 'information'
+		default:
+			return 'home_levels'
+	}
+}
 
-	const showBanner = route.name !== 'game'
+export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps) {
+	const { save, service, refresh } = useProgress()
+	const [route, setRoute] = useState<Route>(() =>
+		shouldFirstRunOfferTutorial(save)
+			? { name: 'tutorial', source: 'first_run' }
+			: { name: 'home' },
+	)
+	const [darkMode, setDarkMode] = useState(false)
+
 	useEffect(() => {
-		onBannerHostChange?.(showBanner)
-	}, [onBannerHostChange, showBanner])
+		onBannerPlacementChange?.(placementForRoute(route))
+	}, [onBannerPlacementChange, route])
+
+	useEffect(() => {
+		if (route.name === 'tutorial' && route.source === 'first_run') {
+			trackEvent('tutorial_start', { source: 'first_run' })
+		}
+		// Fire once for initial first-run entry.
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only
+	}, [])
 
 	// Midnight / focus refresh: discard stale Daily + refresh Home card.
 	useEffect(() => {
@@ -95,13 +146,21 @@ export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
 		setRoute({ name: 'game', session })
 	}, [])
 
+	const runPostCompletionInterstitial = useCallback(async () => {
+		const shown = await maybeShowInterstitialAfterCompletion({
+			isTutorial: false,
+		})
+		if (shown) {
+			trackEvent('interstitial_shown')
+		}
+	}, [])
+
 	const handleContinue = useCallback(() => {
 		const activeId = save.activeGame?.puzzleId
 		if (activeId === undefined) {
 			setRoute({ name: 'levels' })
 			return
 		}
-		// Broken Continue: missing production+legacy puzzle → go to Levels.
 		if (resolvePlayablePuzzleById(activeId) === null) {
 			setRoute({ name: 'levels' })
 			return
@@ -236,30 +295,86 @@ export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
 
 	const handleCompletionNext = useCallback(
 		(puzzleId: string) => {
-			void service.replaceActivePuzzle(puzzleId).then(() => {
+			void (async () => {
+				await runPostCompletionInterstitial()
+				await service.replaceActivePuzzle(puzzleId)
 				refresh()
 				openSession({
 					mode: 'CAMPAIGN',
 					puzzleId,
 					launch: 'fresh',
 				})
-			})
+			})()
 		},
-		[openSession, refresh, service],
+		[openSession, refresh, runPostCompletionInterstitial, service],
 	)
+
+	const handleGameExit = useCallback(
+		(session: GameSessionDescriptor, fromCompletion: boolean) => {
+			void (async () => {
+				if (fromCompletion) {
+					await runPostCompletionInterstitial()
+				}
+				if (session.mode === 'DAILY') {
+					goDaily(session.dayKey)
+				} else {
+					goHome()
+				}
+			})()
+		},
+		[goDaily, goHome, runPostCompletionInterstitial],
+	)
+
+	if (route.name === 'tutorial') {
+		return (
+			<TutorialScreen
+				source={route.source}
+				onFinished={goHome}
+				onExitEarly={goHome}
+				onPersistComplete={async () => {
+					await service.markTutorialCompleted(CURRENT_TUTORIAL_VERSION)
+					refresh()
+				}}
+			/>
+		)
+	}
+
+	if (route.name === 'settings') {
+		return (
+			<SettingsScreen
+				onBack={goHome}
+				onOpenAbout={() => setRoute({ name: 'about' })}
+				onReplayTutorial={() => {
+					trackEvent('tutorial_replay', { source: 'settings' })
+					trackEvent('tutorial_start', { source: 'settings' })
+					setRoute({ name: 'tutorial', source: 'settings' })
+				}}
+				onResetTutorialDev={
+					__DEV__
+						? () => {
+								void service.resetTutorialProgressDevOnly().then(() => {
+									refresh()
+								})
+							}
+						: undefined
+				}
+			/>
+		)
+	}
+
+	if (route.name === 'about') {
+		return (
+			<AboutScreen onBack={() => setRoute({ name: 'settings' })} />
+		)
+	}
 
 	if (route.name === 'game') {
 		const session = route.session
 		return (
 			<GameScreen
 				session={session}
-				onExit={() => {
-					if (session.mode === 'DAILY') {
-						goDaily(session.dayKey)
-					} else {
-						goHome()
-					}
-				}}
+				onExit={() => handleGameExit(session, false)}
+				onExitAfterCompletion={() => handleGameExit(session, true)}
 				onOpenGallery={() => {
 					refresh()
 					setRoute({ name: 'gallery' })
@@ -361,6 +476,14 @@ export function RootNavigation({ onBannerHostChange }: RootNavigationProps) {
 			onOpenGallery={() => setRoute({ name: 'gallery' })}
 			onOpenAchievements={() => setRoute({ name: 'achievements' })}
 			onOpenStatistics={() => setRoute({ name: 'statistics' })}
+			onOpenSettings={() => setRoute({ name: 'settings' })}
+			onStartTutorial={() => {
+				trackEvent('tutorial_start', { source: 'home_offer' })
+				setRoute({ name: 'tutorial', source: 'home_offer' })
+			}}
+			onDismissTutorialOffer={() => {
+				void service.dismissTutorialOffer().then(() => refresh())
+			}}
 			darkMode={darkMode}
 			onToggleDarkMode={() => setDarkMode((value) => !value)}
 		/>

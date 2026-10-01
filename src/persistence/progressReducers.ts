@@ -479,3 +479,35 @@ export function recordHintAssistanceUsed(
 export function resetProgress(): SaveRoot {
 	return createDefaultSave()
 }
+
+/** Persist tutorial completion for the current curriculum version. */
+export function markTutorialCompleted(
+	save: SaveRoot,
+	tutorialVersion: number,
+): SaveRoot {
+	return freezeSave({
+		...save,
+		tutorialVersionCompleted: tutorialVersion,
+		tutorialOfferDismissed: true,
+	})
+}
+
+/** Soft-dismiss Home tutorial offer («Позже»). */
+export function dismissTutorialOffer(save: SaveRoot): SaveRoot {
+	return freezeSave({
+		...save,
+		tutorialOfferDismissed: true,
+	})
+}
+
+/**
+ * DEV-only: clear tutorial completion so first-run / soft offer can be retested
+ * without wiping Campaign / Gallery / Daily progress.
+ */
+export function resetTutorialProgressDevOnly(save: SaveRoot): SaveRoot {
+	return freezeSave({
+		...save,
+		tutorialVersionCompleted: null,
+		tutorialOfferDismissed: false,
+	})
+}

@@ -13,7 +13,7 @@
  * - Undo history is NOT persisted across relaunch
  * - Completion is persisted at solve time (not when overlay is dismissed)
  *
- * No BannerSlot on Game (product decision).
+ * Game hosts a bottom BannerSlot (Banner 1). Tutorial never mounts Game.
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -46,6 +46,7 @@ import {
 	LIGHT_BOARD_PALETTE,
 	type BoardPalette,
 } from '../board/palette'
+import { BannerSlot } from '../components/BannerSlot'
 import { CompletionOverlay } from '../components/CompletionOverlay'
 import { GameControls } from '../components/GameControls'
 import {
@@ -103,6 +104,8 @@ import { formatDayPlural } from '../presentation/russianPlural'
 export interface GameScreenProps {
 	readonly session: GameSessionDescriptor
 	readonly onExit: () => void
+	/** Called when leaving after completion (Home / Calendar) — interstitial gate. */
+	readonly onExitAfterCompletion?: () => void
 	readonly onOpenGallery: () => void
 	readonly onOpenDailyCalendar: (dayKey: string) => void
 	readonly onNextPuzzle: (puzzleId: string) => void
@@ -134,6 +137,7 @@ const liveGame = {
 export function GameScreen({
 	session: routeSession,
 	onExit,
+	onExitAfterCompletion,
 	onOpenGallery,
 	onOpenDailyCalendar,
 	onNextPuzzle,
@@ -1049,14 +1053,22 @@ export function GameScreen({
 				}
 				onHome={() => {
 					refresh()
-					onExit()
+					if (onExitAfterCompletion !== undefined) {
+						onExitAfterCompletion()
+					} else {
+						onExit()
+					}
 				}}
 				onGallery={onOpenGallery}
 				onCalendar={
 					isDaily && dailyDayKey !== null
 						? () => {
 								refresh()
-								onOpenDailyCalendar(dailyDayKey)
+								if (onExitAfterCompletion !== undefined) {
+									onExitAfterCompletion()
+								} else {
+									onOpenDailyCalendar(dailyDayKey)
+								}
 							}
 						: null
 				}
@@ -1073,6 +1085,9 @@ export function GameScreen({
 				}
 			/>
 			) : null}
+			{/* Stable session banner — not remounted on cell/tool/hint updates. */}
+			<BannerSlot placement="game" />
+			<View style={{ height: Math.max(insets.bottom, 0) }} />
 		</View>
 	)
 }

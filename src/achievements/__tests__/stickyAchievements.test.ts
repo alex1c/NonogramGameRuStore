@@ -55,11 +55,11 @@ function v3FixtureWithShapesComplete() {
 	})
 }
 
-describe('Phase 8B sticky achievements / schema v4', () => {
-	it('defaults to schema v4 with empty sticky ids', () => {
+describe('Phase 8B sticky achievements / schema v4→v5', () => {
+	it('defaults to schema v5 with empty sticky ids', () => {
 		const save = createDefaultSave()
-		expect(save.schemaVersion).toBe(4)
-		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(4)
+		expect(save.schemaVersion).toBe(5)
+		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(5)
 		expect(save.unlockedAchievementIds).toEqual([])
 	})
 
@@ -84,7 +84,7 @@ describe('Phase 8B sticky achievements / schema v4', () => {
 		expect(a.unlockedAchievementIds).toEqual(b.unlockedAchievementIds)
 	})
 
-	it('full migrateSave chain v1→v4 succeeds', () => {
+	it('full migrateSave chain v1→v5 succeeds', () => {
 		const v1 = {
 			schemaVersion: 1,
 			activeGame: null,
@@ -104,18 +104,22 @@ describe('Phase 8B sticky achievements / schema v4', () => {
 		if (result.kind !== 'ok') {
 			return
 		}
-		expect(result.save.schemaVersion).toBe(4)
+		expect(result.save.schemaVersion).toBe(5)
 		expect(result.save.unlockedAchievementIds).toContain('first_picture')
 	})
 
 	it('sticky keeps first_collection after taxonomy change', () => {
 		const v3 = v3FixtureWithShapesComplete()
-		const v4 = migrateV3DocumentToV4(v3, '2026-09-28')
-		expect(v4.unlockedAchievementIds).toContain('first_collection')
+		const migrated = migrateSave(v3)
+		expect(migrated.kind).toBe('ok')
+		if (migrated.kind !== 'ok') {
+			return
+		}
+		expect(migrated.save.unlockedAchievementIds).toContain('first_collection')
 
 		// Simulate incomplete new taxonomy (no complete collection).
 		const afterSwap = freezeSave({
-			...v4,
+			...migrated.save,
 			solvedPuzzleIds: Object.freeze(['mini-beginner-bar']),
 		})
 		const states = evaluateAchievements(contextFromSave(afterSwap))

@@ -1,29 +1,28 @@
 {
   "expo": {
-    "name": "Японские кроссворды",
+    "name": "Японские кроссворды — Нонограммы",
     "slug": "nonogram-game",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon_gpt.png",
     "userInterfaceStyle": "automatic",
     "scheme": "nonogram",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.calculatorplatform.nonogram"
+      "bundleIdentifier": "com.calculatorplatform.nonogram",
+      "icon": "./assets/icon_gpt.png"
     },
     "android": {
       "package": "com.calculatorplatform.nonogram",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E7EEE4",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/icon_gpt.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon_gpt.png"
     },
     "plugins": [
       "expo-dev-client"

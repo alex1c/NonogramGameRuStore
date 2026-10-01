@@ -15,6 +15,8 @@ import { buildHomeViewModel } from '../presentation/homeViewModel'
 import { buildHomeDualActiveView } from '../presentation/homeDailyViewModel'
 import { useProgress } from '../progress/ProgressProvider'
 import { colors, spacing, typography } from '../theme'
+import { APP_SHORT_NAME } from '../about/config'
+import { shouldSoftOfferTutorial } from '../tutorial/definition'
 
 interface HomeScreenProps {
 	readonly onContinue: () => void
@@ -24,6 +26,9 @@ interface HomeScreenProps {
 	readonly onOpenGallery: () => void
 	readonly onOpenAchievements: () => void
 	readonly onOpenStatistics: () => void
+	readonly onOpenSettings: () => void
+	readonly onStartTutorial: () => void
+	readonly onDismissTutorialOffer: () => void
 	readonly darkMode: boolean
 	readonly onToggleDarkMode: () => void
 }
@@ -36,6 +41,9 @@ export function HomeScreen({
 	onOpenGallery,
 	onOpenAchievements,
 	onOpenStatistics,
+	onOpenSettings,
+	onStartTutorial,
+	onDismissTutorialOffer,
 	darkMode,
 	onToggleDarkMode,
 }: HomeScreenProps) {
@@ -52,15 +60,27 @@ export function HomeScreen({
 	const unlockedAchievements = achievements.filter(
 		(item) => item.access === 'UNLOCKED',
 	).length
+	const softTutorial = shouldSoftOfferTutorial(save)
 
 	return (
 		<View
 			style={[styles.root, { paddingTop: insets.top + spacing.md }]}
 			testID="home-screen"
 		>
-			<Text style={styles.title} accessibilityRole="header">
-				Японские кроссворды
-			</Text>
+			<View style={styles.titleRow}>
+				<Text style={styles.title} accessibilityRole="header">
+					{APP_SHORT_NAME}
+				</Text>
+				<Pressable
+					accessibilityRole="button"
+					accessibilityLabel="Настройки"
+					onPress={onOpenSettings}
+					hitSlop={8}
+					testID="home-settings"
+				>
+					<Text style={styles.gear}>⚙</Text>
+				</Pressable>
+			</View>
 
 			<Text style={styles.progress} accessibilityLabel={progress.label}>
 				{progress.label}
@@ -86,6 +106,31 @@ export function HomeScreen({
 				Галерея {gallery.unlocked}/{gallery.total} · Достижения{' '}
 				{unlockedAchievements}/{achievements.length}
 			</Text>
+
+			{softTutorial ? (
+				<View style={styles.tutorialCard} testID="home-tutorial-offer">
+					<Text style={styles.tutorialTitle}>Хотите пройти обучение?</Text>
+					<Text style={styles.tutorialBody}>
+						Коротко объясним правила японских кроссвордов.
+					</Text>
+					<View style={styles.tutorialActions}>
+						<Pressable
+							onPress={onStartTutorial}
+							style={styles.tutorialPrimary}
+							accessibilityRole="button"
+						>
+							<Text style={styles.tutorialPrimaryText}>Пройти</Text>
+						</Pressable>
+						<Pressable
+							onPress={onDismissTutorialOffer}
+							style={styles.tutorialSecondary}
+							accessibilityRole="button"
+						>
+							<Text style={styles.tutorialSecondaryText}>Позже</Text>
+						</Pressable>
+					</View>
+				</View>
+			) : null}
 
 			{home.continueCard !== null ? (
 				<Pressable
@@ -245,11 +290,66 @@ const styles = StyleSheet.create({
 		backgroundColor: colors.background,
 		gap: spacing.sm,
 	},
+	titleRow: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		marginBottom: spacing.sm,
+		gap: spacing.sm,
+	},
 	title: {
 		...typography.title,
 		color: colors.text,
 		textAlign: 'center',
-		marginBottom: spacing.sm,
+		flexShrink: 1,
+	},
+	gear: {
+		fontSize: 22,
+		color: colors.accent,
+		paddingHorizontal: 4,
+	},
+	tutorialCard: {
+		backgroundColor: '#FFFFFF',
+		borderRadius: 14,
+		borderWidth: 1,
+		borderColor: colors.border,
+		padding: spacing.md,
+		gap: 6,
+	},
+	tutorialTitle: {
+		fontSize: 16,
+		fontWeight: '700',
+		color: colors.text,
+	},
+	tutorialBody: {
+		fontSize: 13,
+		color: colors.textMuted,
+	},
+	tutorialActions: {
+		flexDirection: 'row',
+		gap: 10,
+		marginTop: 6,
+	},
+	tutorialPrimary: {
+		backgroundColor: colors.accent,
+		borderRadius: 10,
+		paddingHorizontal: 14,
+		paddingVertical: 8,
+	},
+	tutorialPrimaryText: {
+		color: '#fff',
+		fontWeight: '700',
+	},
+	tutorialSecondary: {
+		borderRadius: 10,
+		paddingHorizontal: 14,
+		paddingVertical: 8,
+		borderWidth: 1,
+		borderColor: colors.border,
+	},
+	tutorialSecondaryText: {
+		color: colors.textMuted,
+		fontWeight: '600',
 	},
 	progress: {
 		...typography.subtitle,

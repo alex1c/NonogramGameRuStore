@@ -57,6 +57,9 @@ import {
 	restoreDailyDay,
 	setActiveDailyGame,
 	setActiveGame,
+	markTutorialCompleted as markTutorialCompletedReducer,
+	dismissTutorialOffer as dismissTutorialOfferReducer,
+	resetTutorialProgressDevOnly as resetTutorialProgressDevOnlyReducer,
 } from './progressReducers'
 import {
 	contextFromSave,
@@ -173,6 +176,9 @@ export interface GameProgressService {
 	): Promise<SaveRoot>
 	flush(): Promise<void>
 	resetProgressDevOnly(): Promise<SaveRoot>
+	markTutorialCompleted(tutorialVersion: number): Promise<SaveRoot>
+	dismissTutorialOffer(): Promise<SaveRoot>
+	resetTutorialProgressDevOnly(): Promise<SaveRoot>
 
 	/** Mark user Daily participation start (first Daily screen open). */
 	openDailyScreen(): Promise<SaveRoot>
@@ -431,6 +437,21 @@ export function createGameProgressService(
 		async resetProgressDevOnly() {
 			ensureHydrated(hydrated)
 			return commit(resetProgress())
+		},
+
+		async markTutorialCompleted(tutorialVersion) {
+			ensureHydrated(hydrated)
+			return commit(markTutorialCompletedReducer(current, tutorialVersion))
+		},
+
+		async dismissTutorialOffer() {
+			ensureHydrated(hydrated)
+			return commit(dismissTutorialOfferReducer(current))
+		},
+
+		async resetTutorialProgressDevOnly() {
+			ensureHydrated(hydrated)
+			return commit(resetTutorialProgressDevOnlyReducer(current))
 		},
 
 		async openDailyScreen() {

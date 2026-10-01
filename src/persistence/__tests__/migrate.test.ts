@@ -9,7 +9,7 @@ import { CURRENT_SAVE_SCHEMA_VERSION } from '../schema'
 import { parseAndValidateSave } from '../validate'
 
 describe('createDefaultSave', () => {
-	it('returns deterministic empty schema v4', () => {
+	it('returns deterministic empty schema v5', () => {
 		const a = createDefaultSave()
 		const b = createDefaultSave()
 		expect(a).toEqual(b)
@@ -31,14 +31,14 @@ describe('migrateSave', () => {
 		expect(result.save.activeGame).toBeNull()
 	})
 
-	it('valid v4 save → restore', () => {
+	it('valid v5 save → restore', () => {
 		const save = createDefaultSave()
 		const result = migrateSave(save)
 		expect(result.kind).toBe('ok')
 		expect(result.save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
 	})
 
-	it('valid v1 save → migrate to v4', () => {
+	it('valid v1 save → migrate to v5', () => {
 		const result = migrateSave({
 			schemaVersion: 1,
 			activeGame: null,
@@ -61,7 +61,7 @@ describe('migrateSave', () => {
 		expect(Array.isArray(result.save.unlockedAchievementIds)).toBe(true)
 	})
 
-	it('valid v2 save → migrate to v4', () => {
+	it('valid v2 save → migrate to v5', () => {
 		const result = migrateSave({
 			schemaVersion: 2,
 			activeGame: null,
@@ -82,12 +82,12 @@ describe('migrateSave', () => {
 			dailyStartedDay: null,
 		})
 		expect(result.kind).toBe('ok')
-		expect(result.save.schemaVersion).toBe(4)
+		expect(result.save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
 		expect(result.save.statistics.hintRequests).toBe(0)
 		expect(result.save.unlockedAchievementIds).toContain('first_picture')
 	})
 
-	it('valid v3 save → migrate to v4 with sticky seed', () => {
+	it('valid v3 save → migrate to v5 with sticky seed', () => {
 		const result = migrateSave({
 			schemaVersion: 3,
 			activeGame: null,
@@ -111,8 +111,29 @@ describe('migrateSave', () => {
 			dailyStartedDay: null,
 		})
 		expect(result.kind).toBe('ok')
-		expect(result.save.schemaVersion).toBe(4)
+		expect(result.save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
 		expect(result.save.unlockedAchievementIds).toContain('first_picture')
+		expect(result.save.tutorialVersionCompleted).toBeNull()
+	})
+
+	it('valid v4 save → migrate to v5', () => {
+		const result = migrateSave({
+			schemaVersion: 4,
+			activeGame: null,
+			activeDailyGame: null,
+			completedPuzzleIds: [],
+			solvedPuzzleIds: [],
+			startedPuzzleIds: [],
+			bestTimes: [],
+			statistics: createDefaultSave().statistics,
+			dailyCompletionRecords: [],
+			restoredDailyDays: [],
+			dailyStartedDay: null,
+			unlockedAchievementIds: [],
+		})
+		expect(result.kind).toBe('ok')
+		expect(result.save.schemaVersion).toBe(5)
+		expect(result.save.tutorialOfferDismissed).toBe(false)
 	})
 
 	it('malformed JSON → recover', () => {
@@ -129,7 +150,7 @@ describe('migrateSave', () => {
 
 	it('invalid cell enum → recover', () => {
 		const result = migrateSave({
-			schemaVersion: 4,
+			schemaVersion: 5,
 			activeGame: {
 				puzzleId: 'mini-beginner-bar',
 				contentFingerprint: 'x',
@@ -156,13 +177,15 @@ describe('migrateSave', () => {
 			restoredDailyDays: [],
 			dailyStartedDay: null,
 			unlockedAchievementIds: [],
+			tutorialVersionCompleted: null,
+			tutorialOfferDismissed: false,
 		})
 		expect(result.kind).toBe('recovered')
 	})
 
 	it('duplicate completed IDs normalized on parse', () => {
 		const result = parseAndValidateSave({
-			schemaVersion: 4,
+			schemaVersion: 5,
 			activeGame: null,
 			activeDailyGame: null,
 			completedPuzzleIds: ['a', 'a', 'b'],
@@ -174,6 +197,8 @@ describe('migrateSave', () => {
 			restoredDailyDays: [],
 			dailyStartedDay: null,
 			unlockedAchievementIds: ['first_picture', 'first_picture'],
+			tutorialVersionCompleted: null,
+			tutorialOfferDismissed: false,
 		})
 		expect(result.ok).toBe(true)
 		if (result.ok) {

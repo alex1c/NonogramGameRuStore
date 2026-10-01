@@ -1,7 +1,8 @@
 /**
  * Save migration entry point.
  * Phase 6: v1 → v2 (Daily). Phase 7: v2 → v3 (Hints).
- * Phase 8B: v3 → v4 (sticky achievements). Chain v1 → v4 supported.
+ * Phase 8B: v3 → v4 (sticky achievements).
+ * Phase 9: v4 → v5 (tutorial). Chain v1 → v5 supported.
  */
 
 import { createDefaultSave } from './createDefaultSave'
@@ -10,10 +11,12 @@ import {
 	migrateV1DocumentToV2,
 	migrateV2DocumentToV3,
 	migrateV3DocumentToV4,
+	migrateV4DocumentToV5,
 	parseAndValidateSave,
 	parseAndValidateSaveV1,
 	parseAndValidateSaveV2,
 	parseAndValidateSaveV3,
+	parseAndValidateSaveV4,
 	type SaveParseOutcome,
 } from './validate'
 
@@ -28,7 +31,7 @@ export type MigrateSaveResult =
 	  }
 
 /**
- * Migrate raw storage payload into a validated SaveRoot (always schema v4).
+ * Migrate raw storage payload into a validated SaveRoot (always schema v5).
  */
 export function migrateSave(raw: unknown): MigrateSaveResult {
 	if (raw === null || raw === undefined) {
@@ -78,7 +81,9 @@ export function migrateSave(raw: unknown): MigrateSaveResult {
 			}
 			return {
 				kind: 'ok',
-				save: migrateV3DocumentToV4(migrateV2DocumentToV3(v2.save)),
+				save: migrateV4DocumentToV5(
+					migrateV3DocumentToV4(migrateV2DocumentToV3(v2.save)),
+				),
 			}
 		}
 
@@ -91,7 +96,22 @@ export function migrateSave(raw: unknown): MigrateSaveResult {
 					reason: v3.reason,
 				}
 			}
-			return { kind: 'ok', save: migrateV3DocumentToV4(v3.save) }
+			return {
+				kind: 'ok',
+				save: migrateV4DocumentToV5(migrateV3DocumentToV4(v3.save)),
+			}
+		}
+
+		if (record.schemaVersion === 4) {
+			const v4 = parseAndValidateSaveV4(raw)
+			if (!v4.ok) {
+				return {
+					kind: 'recovered',
+					save: createDefaultSave(),
+					reason: v4.reason,
+				}
+			}
+			return { kind: 'ok', save: migrateV4DocumentToV5(v4.save) }
 		}
 	}
 

@@ -465,31 +465,33 @@ function withHintDefaultsOnDaily(
 }
 
 /**
- * Migrate a validated v1 document to v4 (via v2 Daily defaults + v3 hints + v4 sticky).
+ * Migrate a validated v1 document to current (via v2→v3→v4→v5).
  * solvedPuzzleIds = completedPuzzleIds; dailyStartedDay = null; hint counters = 0.
  */
 export function migrateV1DocumentToV2(v1: SaveRootV1): SaveRoot {
-	return migrateV3DocumentToV4(
-		migrateV2DocumentToV3({
-			schemaVersion: 2,
-			activeGame: withHintDefaultsOnActive(v1.activeGame),
-			activeDailyGame: null,
-			completedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
-			solvedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
-			startedPuzzleIds: Object.freeze([...v1.startedPuzzleIds]),
-			bestTimes: v1.bestTimes,
-			statistics: Object.freeze({
-				...v1.statistics,
-				hintRequests: 0,
-				hintsApplied: 0,
-				teachMeViews: 0,
+	return migrateV4DocumentToV5(
+		migrateV3DocumentToV4(
+			migrateV2DocumentToV3({
+				schemaVersion: 2,
+				activeGame: withHintDefaultsOnActive(v1.activeGame),
+				activeDailyGame: null,
+				completedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
+				solvedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
+				startedPuzzleIds: Object.freeze([...v1.startedPuzzleIds]),
+				bestTimes: v1.bestTimes,
+				statistics: Object.freeze({
+					...v1.statistics,
+					hintRequests: 0,
+					hintsApplied: 0,
+					teachMeViews: 0,
+				}),
+				dailyCompletionRecords: Object.freeze(
+					[] as DailyCompletionRecordSave[],
+				),
+				restoredDailyDays: Object.freeze([] as DayKey[]),
+				dailyStartedDay: null,
 			}),
-			dailyCompletionRecords: Object.freeze(
-				[] as DailyCompletionRecordSave[],
-			),
-			restoredDailyDays: Object.freeze([] as DayKey[]),
-			dailyStartedDay: null,
-		}),
+		),
 	)
 }
 
@@ -647,6 +649,26 @@ export function migrateV2DocumentToV3(v2: SaveRootV2): SaveRootV3 {
 	})
 }
 
+/** Intermediate v4 shape used only during migration to v5. */
+export interface SaveRootV4 {
+	readonly schemaVersion: 4
+	readonly activeGame: ActiveGameSave | null
+	readonly activeDailyGame: ActiveDailyGameSave | null
+	readonly completedPuzzleIds: readonly string[]
+	readonly solvedPuzzleIds: readonly string[]
+	readonly startedPuzzleIds: readonly string[]
+	readonly bestTimes: SaveRoot['bestTimes']
+	readonly statistics: SaveRoot['statistics']
+	readonly dailyCompletionRecords: readonly DailyCompletionRecordSave[]
+	readonly restoredDailyDays: readonly DayKey[]
+	readonly dailyStartedDay: DayKey | null
+	readonly unlockedAchievementIds: readonly string[]
+}
+
+export type SaveParseOutcomeV4 =
+	| { readonly ok: true; readonly save: SaveRootV4 }
+	| { readonly ok: false; readonly reason: string }
+
 /**
  * Migrate validated v3 → v4: seed sticky unlockedAchievementIds from legacy
  * Gallery membership. Does not celebrate; does not alter counters.
@@ -654,13 +676,13 @@ export function migrateV2DocumentToV3(v2: SaveRootV2): SaveRootV3 {
 export function migrateV3DocumentToV4(
 	v3: SaveRootV3,
 	today: DayKey | null = null,
-): SaveRoot {
+): SaveRootV4 {
 	const sticky = seedStickyAchievementIdsFromLegacyV3(
 		v3,
 		today ?? '2026-09-28',
 	)
 	return Object.freeze({
-		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+		schemaVersion: 4 as const,
 		activeGame: v3.activeGame,
 		activeDailyGame: v3.activeDailyGame,
 		completedPuzzleIds: Object.freeze([...v3.completedPuzzleIds]),
@@ -673,6 +695,70 @@ export function migrateV3DocumentToV4(
 		dailyStartedDay: v3.dailyStartedDay,
 		unlockedAchievementIds: sticky,
 	})
+}
+
+/**
+ * Migrate validated v4 → v5: add tutorial fields.
+ * Existing users are NOT force-blocked into tutorial (null + offer not dismissed).
+ */
+export function migrateV4DocumentToV5(v4: SaveRootV4): SaveRoot {
+	return Object.freeze({
+		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+		activeGame: v4.activeGame,
+		activeDailyGame: v4.activeDailyGame,
+		completedPuzzleIds: Object.freeze([...v4.completedPuzzleIds]),
+		solvedPuzzleIds: Object.freeze([...v4.solvedPuzzleIds]),
+		startedPuzzleIds: Object.freeze([...v4.startedPuzzleIds]),
+		bestTimes: v4.bestTimes,
+		statistics: v4.statistics,
+		dailyCompletionRecords: v4.dailyCompletionRecords,
+		restoredDailyDays: Object.freeze([...v4.restoredDailyDays]),
+		dailyStartedDay: v4.dailyStartedDay,
+		unlockedAchievementIds: Object.freeze([...v4.unlockedAchievementIds]),
+		tutorialVersionCompleted: null,
+		tutorialOfferDismissed: false,
+	})
+}
+
+/** Validate Phase 8B / schema v4 document (migration source). */
+export function parseAndValidateSaveV4(raw: unknown): SaveParseOutcomeV4 {
+	if (raw === null || typeof raw !== 'object') {
+		return { ok: false, reason: 'Save root must be an object' }
+	}
+	const record = raw as Record<string, unknown>
+	if (record.schemaVersion !== 4) {
+		return {
+			ok: false,
+			reason: `Expected schemaVersion 4, got ${String(record.schemaVersion)}`,
+		}
+	}
+	// Parse as current shape but force version 4 field set (no tutorial keys).
+	const asCurrent = parseAndValidateSave({
+		...record,
+		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+		tutorialVersionCompleted: null,
+		tutorialOfferDismissed: false,
+	})
+	if (!asCurrent.ok) {
+		return asCurrent
+	}
+	return {
+		ok: true,
+		save: Object.freeze({
+			schemaVersion: 4 as const,
+			activeGame: asCurrent.save.activeGame,
+			activeDailyGame: asCurrent.save.activeDailyGame,
+			completedPuzzleIds: asCurrent.save.completedPuzzleIds,
+			solvedPuzzleIds: asCurrent.save.solvedPuzzleIds,
+			startedPuzzleIds: asCurrent.save.startedPuzzleIds,
+			bestTimes: asCurrent.save.bestTimes,
+			statistics: asCurrent.save.statistics,
+			dailyCompletionRecords: asCurrent.save.dailyCompletionRecords,
+			restoredDailyDays: asCurrent.save.restoredDailyDays,
+			dailyStartedDay: asCurrent.save.dailyStartedDay,
+			unlockedAchievementIds: asCurrent.save.unlockedAchievementIds,
+		}),
+	}
 }
 
 /** Validate Phase 7 / schema v3 document (migration source). */
@@ -787,6 +873,32 @@ export function parseAndValidateSave(
 		record.unlockedAchievementIds,
 	)
 
+	// Tutorial fields (v5): accept missing → null/false for forward-compat parses.
+	let tutorialVersionCompleted: number | null = null
+	if (
+		record.tutorialVersionCompleted !== undefined &&
+		record.tutorialVersionCompleted !== null
+	) {
+		if (
+			typeof record.tutorialVersionCompleted !== 'number' ||
+			!Number.isInteger(record.tutorialVersionCompleted) ||
+			record.tutorialVersionCompleted < 1
+		) {
+			return { ok: false, reason: 'Invalid tutorialVersionCompleted' }
+		}
+		tutorialVersionCompleted = record.tutorialVersionCompleted
+	}
+	const tutorialOfferDismissed =
+		record.tutorialOfferDismissed === undefined
+			? false
+			: record.tutorialOfferDismissed === true
+	if (
+		record.tutorialOfferDismissed !== undefined &&
+		typeof record.tutorialOfferDismissed !== 'boolean'
+	) {
+		return { ok: false, reason: 'Invalid tutorialOfferDismissed' }
+	}
+
 	// Stale activeDaily that matches a completed day → clear
 	let normalizedDaily = activeDailyGame
 	if (
@@ -819,6 +931,8 @@ export function parseAndValidateSave(
 			restoredDailyDays,
 			dailyStartedDay,
 			unlockedAchievementIds,
+			tutorialVersionCompleted,
+			tutorialOfferDismissed,
 		}),
 	}
 }
@@ -849,6 +963,11 @@ export function freezeSave(save: SaveRoot): SaveRoot {
 		),
 		restoredDailyDays: Object.freeze([...save.restoredDailyDays]),
 		dailyStartedDay: save.dailyStartedDay,
+		unlockedAchievementIds: Object.freeze([
+			...save.unlockedAchievementIds,
+		]),
+		tutorialVersionCompleted: save.tutorialVersionCompleted,
+		tutorialOfferDismissed: save.tutorialOfferDismissed,
 	})
 }
 

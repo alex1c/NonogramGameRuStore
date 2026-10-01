@@ -2,6 +2,7 @@
  * Versioned save schema.
  * Phase 4–5: v1. Phase 6: v2 (Daily). Phase 7: v3 (Hints).
  * Phase 8B: v4 (sticky unlockedAchievementIds).
+ * Phase 9: v5 (tutorial completion version).
  * Persist IDs + player progress — never solution/clues/catalog blobs.
  *
  * Storage key remains `nonogram.save.v1` (historical suffix); schemaVersion
@@ -13,9 +14,12 @@ import type { PaintTool } from '../gameplay/tools'
 import type { DayKey } from '../daily/dateUtils'
 
 /** Single source of truth for the current save schema version. */
-export const CURRENT_SAVE_SCHEMA_VERSION = 4 as const
+export const CURRENT_SAVE_SCHEMA_VERSION = 5 as const
 
 export type SaveSchemaVersion = typeof CURRENT_SAVE_SCHEMA_VERSION
+
+/** Current shipped tutorial content version (persist when completed). */
+export const CURRENT_TUTORIAL_VERSION = 1 as const
 
 /** Persisted unfinished party — no Skia / gesture / undo history. */
 export interface ActiveGameSave {
@@ -80,7 +84,7 @@ export interface DailyCompletionRecordSave {
 }
 
 /**
- * Root persisted document (schema v4).
+ * Root persisted document (schema v5).
  *
  * Semantics:
  * - completedPuzzleIds = Campaign completions only
@@ -92,6 +96,8 @@ export interface DailyCompletionRecordSave {
  * - activeDailyGame = Daily unfinished party (+ hintsUsedThisRun)
  * - statistics.hintRequests / hintsApplied / teachMeViews = global help counters
  * - unlockedAchievementIds = sticky unlocked achievement history (never shrinks)
+ * - tutorialVersionCompleted = last fully completed tutorial version (null = never)
+ * - tutorialOfferDismissed = user chose «Позже» on soft Home offer
  */
 export interface SaveRoot {
 	readonly schemaVersion: SaveSchemaVersion
@@ -107,6 +113,13 @@ export interface SaveRoot {
 	readonly dailyStartedDay: DayKey | null
 	/** Authoritative sticky achievement unlock history. */
 	readonly unlockedAchievementIds: readonly string[]
+	/**
+	 * Tutorial version last completed (e.g. 1). Null means not completed.
+	 * Replay does not clear this; completing again updates to current version.
+	 */
+	readonly tutorialVersionCompleted: number | null
+	/** Soft Home offer dismissed («Позже») — does not block Settings replay. */
+	readonly tutorialOfferDismissed: boolean
 }
 
 export type HydrationStatus =
