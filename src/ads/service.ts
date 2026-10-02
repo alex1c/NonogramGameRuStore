@@ -2,7 +2,8 @@
  * Yandex Mobile Ads service wrapper.
  * Screens never import SDK types — only this module and BannerSlot.
  *
- * Fullscreen show() is lifecycle-event driven (see fullscreenLifecycle.ts).
+ * Fullscreen show is lifecycle-event driven (see fullscreenLifecycle.ts).
+ * At most one fullscreen operation may be active (interstitial OR rewarded).
  * Completions for interstitial eligibility are recorded separately from show.
  */
 
@@ -15,6 +16,7 @@ import {
 } from 'yandex-mobile-ads'
 import { AD_UNIT_IDS } from './config'
 import {
+	isFullscreenBusy,
 	runInterstitialLifecycle,
 	runRewardedLifecycle,
 	type InterstitialOutcome,
@@ -33,10 +35,9 @@ import { trackEvent } from '../analytics'
 let adsInitialized = false
 let interstitialLoader: InterstitialAdLoader | null = null
 let loadedInterstitial: InterstitialAd | null = null
-let interstitialLoading = false
-let interstitialShowing = false
+/** Cache load only — never counts as the active fullscreen show operation. */
+let interstitialPreloading = false
 let interstitialPolicy: InterstitialPolicyState = createInterstitialPolicyState()
-let rewardedLoading = false
 
 /** Track completion runIds already counted toward interstitial eligibility. */
 const countedCompletionRunIds = new Set<string>()
@@ -58,10 +59,10 @@ export function initializeAds(): void {
 }
 
 export async function preloadInterstitial(): Promise<void> {
-	if (interstitialLoading || loadedInterstitial !== null) {
+	if (interstitialPreloading || loadedInterstitial !== null) {
 		return
 	}
-	interstitialLoading = true
+	interstitialPreloading = true
 	try {
 		interstitialLoader ??= await InterstitialAdLoader.create()
 		loadedInterstitial = await interstitialLoader.loadAd({
@@ -70,7 +71,7 @@ export async function preloadInterstitial(): Promise<void> {
 	} catch {
 		loadedInterstitial = null
 	} finally {
-		interstitialLoading = false
+		interstitialPreloading = false
 	}
 }
 
@@ -95,6 +96,7 @@ export function recordCompletionForAdPolicy(options: {
 /**
  * Optionally show a cached interstitial at a natural post-completion boundary.
  * Always settles — navigation must never hang on show().
+ * Returns busy/not_available when another fullscreen op owns the screen.
  */
 export async function maybeShowInterstitial(options: {
 	readonly isTutorial: boolean
@@ -102,14 +104,17 @@ export async function maybeShowInterstitial(options: {
 }): Promise<InterstitialOutcome> {
 	const now = options.now ?? Date.now()
 
+	if (isFullscreenBusy()) {
+		return 'busy'
+	}
+
 	if (
 		!canShowInterstitial(interstitialPolicy, {
 			isTutorial: options.isTutorial,
 			naturalBoundary: true,
 			now,
 		}) ||
-		loadedInterstitial === null ||
-		interstitialShowing
+		loadedInterstitial === null
 	) {
 		void preloadInterstitial()
 		return 'not_available'
@@ -117,7 +122,6 @@ export async function maybeShowInterstitial(options: {
 
 	const ad = loadedInterstitial
 	loadedInterstitial = null
-	interstitialShowing = true
 	try {
 		const outcome = await runInterstitialLifecycle(ad)
 		if (outcome === 'shown_and_dismissed') {
@@ -126,7 +130,6 @@ export async function maybeShowInterstitial(options: {
 		}
 		return outcome
 	} finally {
-		interstitialShowing = false
 		void preloadInterstitial()
 	}
 }
@@ -156,30 +159,35 @@ export async function maybeShowInterstitialAfterCompletion(options: {
 /**
  * Show rewarded ad. Entitlement persistence belongs in onRewardConfirmed
  * (SDK onRewarded), not after await show().
+ * Returns busy when an interstitial (or another rewarded) is already active.
  */
 export async function showRewarded(
 	onRewardConfirmed: () => void | Promise<void>,
 ): Promise<RewardedOutcome> {
-	if (rewardedLoading) {
-		return 'not_available'
+	if (isFullscreenBusy()) {
+		return 'busy'
 	}
-	rewardedLoading = true
+
 	try {
 		const loader = await RewardedAdLoader.create()
+		// Another fullscreen may have started while we were loading.
+		if (isFullscreenBusy()) {
+			return 'busy'
+		}
 		const ad: RewardedAd = await loader.loadAd({
 			adUnitId: AD_UNIT_IDS.rewarded,
 		})
+		if (isFullscreenBusy()) {
+			return 'busy'
+		}
 		const guard = createRewardGrantGuard(() => {
 			void Promise.resolve(onRewardConfirmed())
 		})
-		const outcome = await runRewardedLifecycle(ad, () => {
+		return await runRewardedLifecycle(ad, () => {
 			guard.onVerifiedReward()
 		})
-		return outcome
 	} catch {
 		return 'not_available'
-	} finally {
-		rewardedLoading = false
 	}
 }
 

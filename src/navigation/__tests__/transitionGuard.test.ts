@@ -11,7 +11,7 @@ describe('createTransitionGuard', () => {
 		const gate = new Promise<void>((resolve) => {
 			release = resolve
 		})
-		const operation = jest.fn(() => gate)
+		const operation = jest.fn((_isCurrent: () => boolean) => gate)
 
 		const first = guard.run(operation)
 		const second = guard.run(operation)
@@ -43,5 +43,22 @@ describe('createTransitionGuard', () => {
 		).rejects.toThrow('interstitial failed')
 		expect(guard.isInFlight()).toBe(false)
 		await expect(guard.run(async () => undefined)).resolves.toBe(true)
+	})
+
+	it('cancel invalidates an in-flight token after await', async () => {
+		const guard = createTransitionGuard()
+		let release: () => void = () => undefined
+		const gate = new Promise<void>((resolve) => {
+			release = resolve
+		})
+		let sawCurrentAfterCancel = true
+		const run = guard.run(async (isCurrent) => {
+			await gate
+			sawCurrentAfterCancel = isCurrent()
+		})
+		guard.cancel()
+		release()
+		await run
+		expect(sawCurrentAfterCancel).toBe(false)
 	})
 })

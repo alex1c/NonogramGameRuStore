@@ -1,41 +1,75 @@
 /**
- * In-flight transition guard.
+ * Route / completion transition tokens (Phase 9D / H6).
  *
- * Post-completion CTAs (Next / Home / Calendar) run an interstitial and then
- * navigate. Rapid repeated taps must not stack several interstitial +
- * navigation operations, so only the first call runs until it settles.
+ * A delayed interstitial completion must not navigate if the user has already
+ * moved to another route or started another transition.
  */
 
 export interface TransitionGuard {
 	/**
-	 * Runs `operation` unless another guarded operation is still in flight.
-	 * Resolves true when the operation ran, false when it was dropped.
-	 * The guard is always released, even when the operation throws.
+	 * Begins a guarded transition. Returns a token, or null when another
+	 * transition is already in flight (mutual exclusion).
 	 */
-	run(operation: () => Promise<void>): Promise<boolean>
-	/** True while a guarded operation has not settled yet. */
+	begin(): number | null
+	/** True while the given token is still the active in-flight transition. */
+	isCurrent(token: number): boolean
+	/** Ends the transition if `token` is still current. */
+	end(token: number): void
+	/**
+	 * Invalidates any in-flight transition (e.g. user navigated elsewhere).
+	 * Subsequent `isCurrent` checks for the old token return false.
+	 */
+	cancel(): void
 	isInFlight(): boolean
+	/**
+	 * Convenience: begin → run → end. Drops the call when busy.
+	 * The operation receives `isCurrent` so it can abort after awaits.
+	 */
+	run(
+		operation: (isCurrent: () => boolean) => Promise<void>,
+	): Promise<boolean>
 }
 
 /** Creates an independent guard instance (one per navigator). */
 export function createTransitionGuard(): TransitionGuard {
-	let inFlight = false
+	let generation = 0
+	let inFlightToken: number | null = null
+
 	return {
-		async run(operation) {
-			if (inFlight) {
-				return false
+		begin() {
+			if (inFlightToken !== null) {
+				return null
 			}
-			// Set synchronously so a second tap in the same tick is dropped.
-			inFlight = true
-			try {
-				await operation()
-				return true
-			} finally {
-				inFlight = false
+			generation += 1
+			inFlightToken = generation
+			return inFlightToken
+		},
+		isCurrent(token) {
+			return inFlightToken === token
+		},
+		end(token) {
+			if (inFlightToken === token) {
+				inFlightToken = null
 			}
 		},
+		cancel() {
+			inFlightToken = null
+			generation += 1
+		},
 		isInFlight() {
-			return inFlight
+			return inFlightToken !== null
+		},
+		async run(operation) {
+			const token = this.begin()
+			if (token === null) {
+				return false
+			}
+			try {
+				await operation(() => this.isCurrent(token))
+				return true
+			} finally {
+				this.end(token)
+			}
 		},
 	}
 }

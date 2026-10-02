@@ -204,9 +204,11 @@ describe('hydrate fault injection — read failures', () => {
 		expect(faulty.setCalls).toEqual([])
 		expect(await faulty.peek(SAVE_STORAGE_KEY)).toBe(json)
 
-		// Session mutations stay in memory only while writes are blocked.
-		await service.markTutorialFirstRunSkipped()
-		await service.flush()
+		// Session mutations must REJECT while writes are blocked (N1).
+		await expect(service.markTutorialFirstRunSkipped()).rejects.toThrow(
+			/Persistence blocked/,
+		)
+		await expect(service.flush()).rejects.toThrow(/Persistence blocked/)
 		expect(faulty.setCalls).toEqual([])
 		expect(await faulty.peek(SAVE_STORAGE_KEY)).toBe(json)
 
@@ -226,8 +228,10 @@ describe('hydrate fault injection — read failures', () => {
 		for (let attempt = 0; attempt < 5; attempt += 1) {
 			const result = await service.hydrate()
 			expect(result.status).toBe('ERROR_IO_READ')
-			await service.markTutorialFirstRunSkipped()
-			await service.flush()
+			await expect(service.markTutorialFirstRunSkipped()).rejects.toThrow(
+				/Persistence blocked/,
+			)
+			await expect(service.flush()).rejects.toThrow(/Persistence blocked/)
 		}
 
 		expect(faulty.setCalls).toEqual([])
@@ -271,8 +275,10 @@ describe('hydrate fault injection — corrupt payloads', () => {
 		expect(await faulty.peek(SAVE_STORAGE_KEY)).toBe(raw)
 		expect(faulty.setCalls).not.toContain(SAVE_STORAGE_KEY)
 
-		// Later mutations are in-memory only as well.
-		await service.markTutorialFirstRunSkipped()
+		// Later mutations must REJECT — never fake durable success (N1).
+		await expect(service.markTutorialFirstRunSkipped()).rejects.toThrow(
+			/Persistence blocked/,
+		)
 		expect(await faulty.peek(SAVE_STORAGE_KEY)).toBe(raw)
 	})
 })
@@ -291,8 +297,10 @@ describe('hydrate fault injection — unsupported future schema', () => {
 		expect(faulty.removeCalls()).toBe(0)
 		expect(await faulty.peek(SAVE_STORAGE_KEY)).toBe(raw)
 
-		await service.markTutorialFirstRunSkipped()
-		await service.flush()
+		await expect(service.markTutorialFirstRunSkipped()).rejects.toThrow(
+			/Persistence blocked/,
+		)
+		await expect(service.flush()).rejects.toThrow(/Persistence blocked/)
 		expect(faulty.setCalls).toEqual([])
 		expect(await faulty.peek(SAVE_STORAGE_KEY)).toBe(raw)
 	})

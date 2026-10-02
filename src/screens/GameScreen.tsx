@@ -129,7 +129,6 @@ import {
 	freeTeachMeRemaining,
 	rollHelpAllowanceToDay,
 	willConsumeFreeHint,
-	willConsumeFreeTeachMe,
 	type HelpAllowanceState,
 } from '../help'
 
@@ -223,12 +222,22 @@ const liveGame = {
 	completionInFlight: false,
 	/** H6: identity of the current run — stale async callbacks compare to it. */
 	runId: '',
-	/** Elapsed solve time captured once at detection (reused by retries). */
-	completionElapsedMs: 0,
+	/**
+	 * Completion transaction (H6): elapsed frozen once; retries reuse it.
+	 * status tracks idle → persisting → persisted | failed.
+	 */
+	completionTxn: null as null | {
+		readonly runId: string
+		readonly completionId: string
+		readonly elapsedMs: number
+		status: 'persisting' | 'persisted' | 'failed'
+	},
 	helpOpen: false,
 	replayHintsUsedThisRun: 0,
 	/** True while a rewarded ad is showing — keeps active solve timer paused. */
 	rewardedAdOpen: false,
+	/** Run that opened the current rewarded ad (M1) — dismiss must match. */
+	rewardedOriginRunId: '',
 	/** Run id whose puzzle_complete analytics already fired ('' = none). */
 	completionTrackedRunId: '',
 	/** True once the Daily session was invalidated by a day rollover. */
@@ -370,9 +379,11 @@ export function GameScreen({
 	// H6: a new run starts with no completion persist in flight.
 	useEffect(() => {
 		liveGame.completionInFlight = false
-		liveGame.completionElapsedMs = 0
-		// M2: a new run (bind) starts with a valid Daily session.
+		liveGame.completionTxn = null
+		liveGame.completionTrackedRunId = ''
 		liveGame.dailyExpired = false
+		liveGame.rewardedAdOpen = false
+		liveGame.rewardedOriginRunId = ''
 	}, [runId])
 
 	// Bootstrap / restore session when route identity changes.
@@ -578,10 +589,10 @@ export function GameScreen({
 	 * Persist one confirmed completion for `completionRunId` (H6).
 	 *
 	 * - `completionInFlight` is raised synchronously before the first await.
-	 * - A stale run (liveGame.runId changed) never touches liveGame / UI state;
-	 *   the real solve is still counted for the ad policy (global, idempotent).
-	 * - On failure the flag is released and `completionPersisted` stays false
-	 *   so the user can retry from the Alert.
+	 * - Elapsed time comes from the frozen completion transaction (never
+	 *   recomputed on retry).
+	 * - A stale run (liveGame.runId changed) never touches liveGame / UI state.
+	 * - Analytics fire only after durable success, exactly once per run (M4).
 	 *
 	 * Resolves true only when the result was durably saved.
 	 */
@@ -589,17 +600,30 @@ export function GameScreen({
 		async (
 			completedSession: GameSession,
 			completionRunId: string,
-			elapsedMs: number,
 		): Promise<boolean> => {
+			const txn = liveGame.completionTxn
+			if (txn === null) {
+				return false
+			}
+			const elapsedMs = txn.elapsedMs
 			if (
-				liveGame.runId !== completionRunId ||
 				liveGame.completionPersisted ||
-				liveGame.completionInFlight
+				txn.status === 'persisted'
+			) {
+				return true
+			}
+			if (liveGame.completionInFlight && txn.status === 'persisting') {
+				return false
+			}
+			if (
+				txn.runId !== completionRunId ||
+				liveGame.runId !== completionRunId
 			) {
 				return false
 			}
 			// Raise the guard BEFORE awaiting so concurrent detections no-op.
 			liveGame.completionInFlight = true
+			txn.status = 'persisting'
 			// M4: hint count must be read BEFORE completion clears active saves.
 			const hintsUsedBefore = isReplay
 				? liveGame.replayHintsUsedThisRun
@@ -629,8 +653,7 @@ export function GameScreen({
 					runId: completionRunId,
 					isTutorial: false,
 				})
-				// M4: analytics exactly once per run, only after the confirmed
-				// persist (never on hydrate, never on a failed attempt).
+				// M4: analytics exactly once per run, only after confirmed persist.
 				if (
 					analyticsContext !== null &&
 					liveGame.completionTrackedRunId !== completionRunId
@@ -648,8 +671,9 @@ export function GameScreen({
 						}),
 					)
 				}
+				txn.status = 'persisted'
 				if (liveGame.runId !== completionRunId) {
-					// Stale run: persisted correctly, but the screen moved on.
+					liveGame.completionInFlight = false
 					return true
 				}
 				liveGame.completionPersisted = true
@@ -659,9 +683,9 @@ export function GameScreen({
 				refresh()
 				return true
 			} catch (err) {
+				txn.status = 'failed'
 				if (liveGame.runId === completionRunId) {
 					liveGame.completionInFlight = false
-					// M2: a Daily solved after midnight must not be credited.
 					if (isDailyRolloverError(err)) {
 						handleDailyExpired()
 					}
@@ -683,13 +707,12 @@ export function GameScreen({
 
 	/**
 	 * Run completion persistence and surface a retryable Alert on failure.
-	 * Safe to call repeatedly: persistCompletion is guarded by runId + flags.
+	 * Retries reuse the same frozen elapsedMs from completionTxn (H6).
 	 */
 	const runCompletionPersist = useCallback(
 		async (
 			completedSession: GameSession,
 			completionRunId: string,
-			elapsedMs: number,
 		): Promise<boolean> => {
 			const alreadyDone =
 				liveGame.runId === completionRunId && liveGame.completionPersisted
@@ -697,7 +720,7 @@ export function GameScreen({
 				return true
 			}
 			const attempt = async (): Promise<boolean> =>
-				persistCompletion(completedSession, completionRunId, elapsedMs)
+				persistCompletion(completedSession, completionRunId)
 
 			const ok = await attempt()
 			if (
@@ -736,70 +759,66 @@ export function GameScreen({
 
 	/**
 	 * Called OUTSIDE the setState updater when a transition into `completed`
-	 * was detected. Freezes the solve timer once and starts persistence.
+	 * was detected. Freezes the solve timer / elapsed once and starts persist.
 	 */
 	const handleCompletionDetected = useCallback(
 		(completedSession: GameSession, detectedRunId: string) => {
 			if (
 				liveGame.runId !== detectedRunId ||
 				liveGame.completionPersisted ||
-				liveGame.completionInFlight
+				liveGame.completionInFlight ||
+				liveGame.completionTxn !== null
 			) {
 				return
 			}
 			const now = Date.now()
 			const paused = pauseTimer(liveGame.timer, now)
 			liveGame.timer = paused
-			liveGame.completionElapsedMs = readActiveElapsedMs(paused, now)
+			const elapsedMs = readActiveElapsedMs(paused, now)
+			liveGame.completionTxn = {
+				runId: detectedRunId,
+				completionId: `${detectedRunId}:complete`,
+				elapsedMs,
+				status: 'persisting',
+			}
 			// Stop the clock immediately; success re-pins the exact elapsed value.
 			setTimer(paused)
-			void runCompletionPersist(
-				completedSession,
-				detectedRunId,
-				liveGame.completionElapsedMs,
-			)
+			void runCompletionPersist(completedSession, detectedRunId)
 		},
 		[runCompletionPersist],
 	)
 
+	/**
+	 * Apply a session transition. The React state update is a pure value write —
+	 * persistence / completion orchestration happen outside any updater (H6).
+	 */
 	const applySessionUpdate = useCallback(
 		(
 			updater: (current: GameSession) => GameSession,
 			options?: { readonly recordUndo?: boolean; readonly recordRedo?: boolean },
 		) => {
-			// H6: capture the run identity at call time; deferred side effects
-			// compare against it so they never act for a newer run.
+			const current = liveGame.session
+			if (current === null) {
+				return
+			}
 			const callRunId = liveGame.runId
-			setSession((current) => {
-				if (current === null) {
-					return current
-				}
-				const previousCompleted = current.completed
-				const next = updater(current)
-				const gestureEnded =
-					current.activeGesture !== null && next.activeGesture === null
-				const historyChanged =
-					next.history !== current.history && next.activeGesture === null
-				const shouldPersist =
-					!next.completed && (gestureEnded || historyChanged)
+			const next = updater(current)
+			const previousCompleted = current.completed
+			const gestureEnded =
+				current.activeGesture !== null && next.activeGesture === null
+			const historyChanged =
+				next.history !== current.history && next.activeGesture === null
+			const shouldPersist =
+				!next.completed && (gestureEnded || historyChanged)
 
-				// The updater must stay pure (StrictMode may invoke it twice):
-				// only DETECT here and defer the side effect to a microtask.
-				// Duplicate detections are idempotent via completionInFlight.
-				if (!previousCompleted && next.completed) {
-					queueMicrotask(() => {
-						handleCompletionDetected(next, callRunId)
-					})
-				} else if (shouldPersist) {
-					queueMicrotask(() => {
-						if (liveGame.runId === callRunId) {
-							void persistSnapshot(next, liveGame.timer)
-						}
-					})
-				}
+			liveGame.session = next
+			setSession(next)
 
-				return next
-			})
+			if (!previousCompleted && next.completed) {
+				handleCompletionDetected(next, callRunId)
+			} else if (shouldPersist && liveGame.runId === callRunId) {
+				void persistSnapshot(next, liveGame.timer)
+			}
 
 			if (options?.recordUndo) {
 				void service.recordUndo().then(() => refresh())
@@ -893,11 +912,16 @@ export function GameScreen({
 				return
 			}
 			const exitRunId = liveGame.runId
-			void runCompletionPersist(
-				currentSession,
-				exitRunId,
-				liveGame.completionElapsedMs,
-			).then((ok) => {
+			const frozenElapsed = liveGame.completionTxn?.elapsedMs ?? 0
+			if (liveGame.completionTxn === null) {
+				liveGame.completionTxn = {
+					runId: exitRunId,
+					completionId: `${exitRunId}:complete`,
+					elapsedMs: frozenElapsed || readActiveElapsedMs(paused, now),
+					status: 'failed',
+				}
+			}
+			void runCompletionPersist(currentSession, exitRunId).then((ok) => {
 				if (ok && liveGame.runId === exitRunId) {
 					refresh()
 					onExit()
@@ -1133,6 +1157,8 @@ export function GameScreen({
 		[puzzle],
 	)
 
+	/* RNGH worklets: react-hooks/refs false-positives on runOnJS(cb) in builders. */
+	/* eslint-disable react-hooks/refs */
 	const composed = useMemo(
 		() =>
 			Gesture.Simultaneous(
@@ -1186,6 +1212,7 @@ export function GameScreen({
 			onPaintStart,
 		],
 	)
+	/* eslint-enable react-hooks/refs */
 
 	const closeHelp = useCallback(() => {
 		setHelpOpen(false)
@@ -1195,7 +1222,17 @@ export function GameScreen({
 		setApplyingHint(false)
 	}, [])
 
+	/**
+	 * Filled after `requestRewardedHelp` is defined — avoids a circular
+	 * useCallback dependency from the Teach Me acquire path (H3).
+	 */
+	const requestRewardedHelpRef = useRef<
+		(mode: 'HINT' | 'TEACH', afterReward?: 'compute' | 'keep') => void
+	>(() => undefined)
+
 	const pauseForRewarded = useCallback(() => {
+		// M1: capture the run that opened the ad; dismiss must not resume another.
+		liveGame.rewardedOriginRunId = liveGame.runId
 		liveGame.rewardedAdOpen = true
 		const now = Date.now()
 		setTimer((current) => {
@@ -1206,9 +1243,14 @@ export function GameScreen({
 	}, [])
 
 	const resumeAfterRewarded = useCallback(() => {
+		const originRunId = liveGame.rewardedOriginRunId
 		liveGame.rewardedAdOpen = false
-		// M1: dismissing an ad must not resume while backgrounded / completed.
-		if (isSolveClockRunnable(appStateRef.current, liveGame.runId)) {
+		liveGame.rewardedOriginRunId = ''
+		// Only the originating run may resume from this ad's dismiss/failure.
+		if (liveGame.runId !== originRunId) {
+			return
+		}
+		if (isSolveClockRunnable(appStateRef.current, originRunId)) {
 			const now = Date.now()
 			setNowMs(now)
 			setTimer((current) => {
@@ -1220,8 +1262,10 @@ export function GameScreen({
 	}, [])
 
 	const presentHintResult = useCallback(
-		(result: HintResult, mode: 'HINT' | 'TEACH') => {
+		async (result: HintResult, mode: 'HINT' | 'TEACH') => {
 			const current = liveGame.session
+			const requestRunId = liveGame.runId
+			const requestRevision = current?.revision ?? -1
 			const lineCtx =
 				result.kind === 'STEP' && current !== null
 					? lineContextForStep(result.step, current.player)
@@ -1232,6 +1276,59 @@ export function GameScreen({
 				: isReplay
 					? 'none'
 					: 'campaign'
+
+			if (result.kind === 'STEP' && mode === 'TEACH') {
+				// H3: do not reveal until Teach allowance is atomically granted.
+				if (REWARDED_USER_FACING_ENABLED) {
+					const acquire = await service.tryAcquireTeachMeReveal()
+					const stillCurrent =
+						liveGame.runId === requestRunId &&
+						liveGame.session !== null &&
+						liveGame.session.revision === requestRevision
+					if (acquire !== 'granted' || !stillCurrent) {
+						// Stale or denied — never show explanation; entitlement
+						// was only consumed on granted+committed acquire.
+						if (acquire === 'denied' && stillCurrent) {
+							setHelpPhase({ kind: 'menu' })
+							requestRewardedHelpRef.current('TEACH')
+						} else {
+							closeHelp()
+						}
+						return
+					}
+					const after = service.getSave()
+					trackEvent('teach_me_free_consumed', {
+						remaining: freeTeachMeRemaining({
+							helpAllowanceDay: after.helpAllowanceDay,
+							freeHintsUsedToday: after.freeHintsUsedToday,
+							freeTeachMeUsedToday: after.freeTeachMeUsedToday,
+							pendingRewardedHints: after.pendingRewardedHints,
+							pendingRewardedTeachMe: after.pendingRewardedTeachMe,
+						}),
+					})
+					void service.recordTeachMeView().then(() => refresh())
+				} else {
+					void service.recordTeachMeView().then(() => refresh())
+				}
+				setHintStep(result.step)
+				setHintHighlight({
+					orientation: result.step.orientation,
+					lineIndex: result.step.lineIndex,
+					action: result.step.action,
+					targets: result.step.targets,
+				})
+				fitBoard()
+				setHelpPhase({
+					kind: 'result',
+					mode,
+					title: explained.title,
+					body: explained.body,
+					canApply: explained.canApply,
+					explanation: explained.explanation,
+				})
+				return
+			}
+
 			if (result.kind === 'STEP') {
 				setHintStep(result.step)
 				setHintHighlight({
@@ -1241,39 +1338,6 @@ export function GameScreen({
 					targets: result.step.targets,
 				})
 				fitBoard()
-				if (mode === 'TEACH') {
-					// Teach Me benefit is the explanation itself — consume here.
-					const before = rollHelpAllowanceToDay(
-						{
-							helpAllowanceDay: service.getSave().helpAllowanceDay,
-							freeHintsUsedToday: service.getSave().freeHintsUsedToday,
-							freeTeachMeUsedToday: service.getSave().freeTeachMeUsedToday,
-							pendingRewardedHints: service.getSave().pendingRewardedHints,
-							pendingRewardedTeachMe:
-								service.getSave().pendingRewardedTeachMe,
-						},
-						service.todayDayKey(),
-					)
-					const consumingFree = willConsumeFreeTeachMe(before)
-					void (async () => {
-						await service.recordTeachMeView()
-						if (REWARDED_USER_FACING_ENABLED) {
-							const next = await service.consumeTeachMeRevealAllowance()
-							if (next !== null && consumingFree) {
-								trackEvent('teach_me_free_consumed', {
-									remaining: freeTeachMeRemaining({
-										helpAllowanceDay: next.helpAllowanceDay,
-										freeHintsUsedToday: next.freeHintsUsedToday,
-										freeTeachMeUsedToday: next.freeTeachMeUsedToday,
-										pendingRewardedHints: next.pendingRewardedHints,
-										pendingRewardedTeachMe: next.pendingRewardedTeachMe,
-									}),
-								})
-							}
-						}
-						refresh()
-					})()
-				}
 			} else {
 				setHintStep(null)
 				if (
@@ -1308,7 +1372,7 @@ export function GameScreen({
 				explanation: explained.explanation,
 			})
 		},
-		[fitBoard, isDaily, isReplay, refresh, service],
+		[closeHelp, fitBoard, isDaily, isReplay, refresh, service],
 	)
 
 	const executeHintComputation = useCallback(
@@ -1415,7 +1479,8 @@ export function GameScreen({
 							}
 							if (
 								outcome === 'not_available' ||
-								outcome === 'failed'
+								outcome === 'failed' ||
+								outcome === 'busy'
 							) {
 								Alert.alert(
 									'Реклама недоступна',
@@ -1451,6 +1516,10 @@ export function GameScreen({
 			service,
 		],
 	)
+
+	useEffect(() => {
+		requestRewardedHelpRef.current = requestRewardedHelp
+	}, [requestRewardedHelp])
 
 	const runHintRequest = useCallback(
 		(mode: 'HINT' | 'TEACH') => {

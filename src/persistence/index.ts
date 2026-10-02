@@ -19,6 +19,11 @@ export { createSaveRepository } from './repository'
 export type { SaveRepository } from './repository'
 export { createGameProgressService } from './progressService'
 export type { GameProgressService, PersistGameSnapshotInput } from './progressService'
+export {
+	PersistenceBlockedError,
+	isPersistenceBlockedError,
+	type PersistenceHealth,
+} from './persistenceHealth'
 export type {
 	CompletionEventResult,
 	DailyCompletionEventResult,

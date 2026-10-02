@@ -167,16 +167,18 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 	}, [])
 
 	const goHome = useCallback(() => {
+		transitionGuard.cancel()
 		refresh()
 		setRoute({ name: 'home' })
-	}, [refresh])
+	}, [refresh, transitionGuard])
 
 	const goDaily = useCallback(
 		(focusDayKey?: DayKey) => {
+			transitionGuard.cancel()
 			refresh()
 			setRoute({ name: 'daily', focusDayKey })
 		},
-		[refresh],
+		[refresh, transitionGuard],
 	)
 
 	/**
@@ -289,9 +291,13 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 		return () => sub.remove()
 	}, [])
 
-	const openSession = useCallback((session: GameSessionDescriptor) => {
-		setRoute({ name: 'game', session })
-	}, [])
+	const openSession = useCallback(
+		(session: GameSessionDescriptor) => {
+			transitionGuard.cancel()
+			setRoute({ name: 'game', session })
+		},
+		[transitionGuard],
+	)
 
 	const runPostCompletionInterstitial = useCallback(async () => {
 		// Completions are counted at persist time via recordCompletionForAdPolicy.
@@ -446,9 +452,16 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 			// Shared in-flight guard: repeated Next / Home taps after completion
 			// must not stack interstitial + navigation operations.
 			void transitionGuard
-				.run(async () => {
+				.run(async (isCurrent) => {
 					await runPostCompletionInterstitial()
+					// H6: if the user already navigated elsewhere, do not reopen A.
+					if (!isCurrent()) {
+						return
+					}
 					await service.replaceActivePuzzle(puzzleId)
+					if (!isCurrent()) {
+						return
+					}
 					refresh()
 					openSession({
 						mode: 'CAMPAIGN',
@@ -483,8 +496,11 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 			}
 			// Same guard as Next: the interstitial + navigation run at most once.
 			void transitionGuard
-				.run(async () => {
+				.run(async (isCurrent) => {
 					await runPostCompletionInterstitial()
+					if (!isCurrent()) {
+						return
+					}
 					navigate()
 				})
 				.catch(() => undefined)

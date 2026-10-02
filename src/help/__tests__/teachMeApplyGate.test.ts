@@ -123,14 +123,14 @@ describe('Teach Me Apply vs Hint allowance (H3) — service gate', () => {
 		expect(await service.consumeHintApplyAllowance()).toBeNull()
 	})
 
-	it('consume mutates the in-memory save synchronously (no await gap)', async () => {
+	it('consume only publishes memory after durable write settles (N1)', async () => {
 		const service = await createService()
+		const before = service.getSave().freeHintsUsedToday
 		const pending = service.consumeHintApplyAllowance()
-		// Before the returned promise settles the allowance is already spent,
-		// so a second synchronous Apply cannot double-spend.
-		expect(service.getSave().freeHintsUsedToday).toBe(1)
+		// Durable-first commit: memory is unchanged until the write succeeds.
+		expect(service.getSave().freeHintsUsedToday).toBe(before)
 		await pending
-		expect(service.getSave().freeHintsUsedToday).toBe(1)
+		expect(service.getSave().freeHintsUsedToday).toBe(before + 1)
 	})
 
 	it('double synchronous Apply consumes two distinct allowances, never one twice', async () => {

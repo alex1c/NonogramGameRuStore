@@ -1,25 +1,32 @@
 /**
- * Fullscreen ad lifecycle adapter for yandex-mobile-ads@8.5.0.
+ * Fullscreen ad lifecycle coordinator for yandex-mobile-ads@8.5.0.
  *
- * SDK contract (verified against RewardedAd.ts / InterstitialAd.ts):
- * - show() Promise rejects on start error; successful display does NOT mean
- *   the Promise settles when the user finishes the ad.
- * - Lifecycle outcomes arrive via onAdDismissed / onAdFailedToShow / onRewarded.
+ * SDK contract:
+ * - show() may reject on start error; successful display does NOT settle when
+ *   the user finishes the ad.
+ * - Outcomes arrive via onAdDismissed / onAdFailedToShow / onRewarded.
  *
- * Application code must settle app-level Promises from those events, never from
- * assuming await show() means "ad finished".
+ * Application contract (Phase 9D / C1+N2):
+ * - At most ONE active fullscreen operation (interstitial OR rewarded).
+ * - Starting a second request returns BUSY — it never supersedes the first.
+ * - Every operation settles exactly once, then cleans up listeners.
+ * - After terminal, ALL later SDK callbacks are ignored (including reward).
  */
 
 export type InterstitialOutcome =
 	| 'shown_and_dismissed'
 	| 'failed'
 	| 'not_available'
+	| 'busy'
 
 export type RewardedOutcome =
 	| 'rewarded_and_dismissed'
 	| 'dismissed_without_reward'
 	| 'failed'
 	| 'not_available'
+	| 'busy'
+
+export type FullscreenOpType = 'interstitial' | 'rewarded'
 
 /** Minimal surface required from Yandex RewardedAd / InterstitialAd. */
 export interface FullscreenAdHandle {
@@ -58,97 +65,201 @@ function createOnceSettler<T>(): OnceSettler<T> {
 	}
 }
 
-let operationSerial = 0
+interface ActiveFullscreenOperation {
+	readonly operationId: number
+	readonly type: FullscreenOpType
+	terminal: boolean
+	rewardSeen: boolean
+	cleanup: () => void
+}
+
+let nextOperationId = 1
+let activeOperation: ActiveFullscreenOperation | null = null
+
+/** True while any fullscreen interstitial/rewarded operation is non-terminal. */
+export function isFullscreenBusy(): boolean {
+	return activeOperation !== null && !activeOperation.terminal
+}
+
+function clearActiveIf(operationId: number): void {
+	if (activeOperation?.operationId === operationId) {
+		activeOperation = null
+	}
+}
+
+/**
+ * Detach all SDK listeners so a terminal ad cannot affect a later operation.
+ */
+function detachListeners(ad: FullscreenAdHandle): void {
+	ad.onAdDismissed = null
+	ad.onAdFailedToShow = null
+	if ('onRewarded' in ad) {
+		;(ad as RewardedAdHandle).onRewarded = null
+	}
+}
 
 /**
  * Show an interstitial and settle exactly once from dismiss/fail events.
- * show() is started but not treated as completion.
+ * Returns `busy` immediately when another fullscreen op is already active.
  */
 export function runInterstitialLifecycle(
 	ad: FullscreenAdHandle,
 ): Promise<InterstitialOutcome> {
-	const opId = ++operationSerial
+	if (isFullscreenBusy()) {
+		return Promise.resolve('busy')
+	}
+
+	const operationId = nextOperationId++
 	const settler = createOnceSettler<InterstitialOutcome>()
 
-	const settleIfCurrent = (value: InterstitialOutcome): void => {
-		if (opId !== operationSerial) {
+	const finish = (value: InterstitialOutcome): void => {
+		const op = activeOperation
+		if (op === null || op.operationId !== operationId || op.terminal) {
 			return
 		}
+		op.terminal = true
+		op.cleanup()
+		clearActiveIf(operationId)
 		settler.settle(value)
 	}
 
+	const cleanup = (): void => {
+		detachListeners(ad)
+	}
+
+	activeOperation = {
+		operationId,
+		type: 'interstitial',
+		terminal: false,
+		rewardSeen: false,
+		cleanup,
+	}
+
 	ad.onAdDismissed = () => {
-		settleIfCurrent('shown_and_dismissed')
+		finish('shown_and_dismissed')
 	}
 	ad.onAdFailedToShow = () => {
-		settleIfCurrent('failed')
+		finish('failed')
 	}
 
 	try {
 		void ad.show().catch(() => {
-			settleIfCurrent('failed')
+			finish('failed')
 		})
 	} catch {
-		settleIfCurrent('failed')
+		finish('failed')
 	}
 
 	return settler.promise
 }
 
 /**
- * Show a rewarded ad. Reward is recorded via onRewardConfirmed (SDK onRewarded).
- * The returned Promise settles on dismiss/fail — never by awaiting show() alone.
+ * Show a rewarded ad. Reward is recorded via onRewardConfirmed (SDK onRewarded)
+ * only while the operation is non-terminal. Promise settles on dismiss/fail.
  */
 export function runRewardedLifecycle(
 	ad: RewardedAdHandle,
 	onRewardConfirmed: () => void,
 ): Promise<RewardedOutcome> {
-	const opId = ++operationSerial
-	const settler = createOnceSettler<RewardedOutcome>()
-	let rewardSeen = false
+	if (isFullscreenBusy()) {
+		return Promise.resolve('busy')
+	}
 
-	const settleIfCurrent = (value: RewardedOutcome): void => {
-		if (opId !== operationSerial) {
+	const operationId = nextOperationId++
+	const settler = createOnceSettler<RewardedOutcome>()
+
+	const finish = (value: RewardedOutcome): void => {
+		const op = activeOperation
+		if (op === null || op.operationId !== operationId || op.terminal) {
 			return
 		}
+		op.terminal = true
+		op.cleanup()
+		clearActiveIf(operationId)
 		settler.settle(value)
 	}
 
+	const cleanup = (): void => {
+		detachListeners(ad)
+	}
+
+	activeOperation = {
+		operationId,
+		type: 'rewarded',
+		terminal: false,
+		rewardSeen: false,
+		cleanup,
+	}
+
 	ad.onRewarded = () => {
-		if (opId !== operationSerial) {
+		const op = activeOperation
+		// Terminal / wrong op / non-rewarded / already rewarded → ignore.
+		if (
+			op === null ||
+			op.operationId !== operationId ||
+			op.type !== 'rewarded' ||
+			op.terminal ||
+			op.rewardSeen
+		) {
 			return
 		}
-		if (rewardSeen) {
-			return
-		}
-		rewardSeen = true
+		op.rewardSeen = true
 		onRewardConfirmed()
 	}
 	ad.onAdDismissed = () => {
-		settleIfCurrent(
-			rewardSeen ? 'rewarded_and_dismissed' : 'dismissed_without_reward',
-		)
+		const op = activeOperation
+		const rewarded =
+			op !== null &&
+			op.operationId === operationId &&
+			op.rewardSeen
+		finish(rewarded ? 'rewarded_and_dismissed' : 'dismissed_without_reward')
 	}
 	ad.onAdFailedToShow = () => {
-		settleIfCurrent('failed')
+		finish('failed')
 	}
 
 	try {
 		void ad.show().catch(() => {
-			settleIfCurrent('failed')
+			finish('failed')
 		})
 	} catch {
-		settleIfCurrent('failed')
+		finish('failed')
 	}
 
 	return settler.promise
 }
 
-/** Test helper — bump serial so stale callbacks cannot settle a newer op. */
+/** Test helper — force-clear coordinator so suites stay isolated. */
+export function __resetFullscreenCoordinatorForTests(): void {
+	if (activeOperation !== null && !activeOperation.terminal) {
+		activeOperation.terminal = true
+		activeOperation.cleanup()
+	}
+	activeOperation = null
+}
+
+/** @deprecated Use __resetFullscreenCoordinatorForTests — supersede is gone. */
 export function __bumpFullscreenOperationSerialForTests(): void {
-	operationSerial += 1
+	__resetFullscreenCoordinatorForTests()
 }
 
 export function __getFullscreenOperationSerialForTests(): number {
-	return operationSerial
+	return activeOperation?.operationId ?? nextOperationId
+}
+
+export function __getActiveFullscreenOperationForTests(): {
+	readonly operationId: number
+	readonly type: FullscreenOpType
+	readonly terminal: boolean
+	readonly rewardSeen: boolean
+} | null {
+	if (activeOperation === null) {
+		return null
+	}
+	return {
+		operationId: activeOperation.operationId,
+		type: activeOperation.type,
+		terminal: activeOperation.terminal,
+		rewardSeen: activeOperation.rewardSeen,
+	}
 }

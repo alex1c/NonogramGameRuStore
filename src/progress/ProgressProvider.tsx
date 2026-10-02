@@ -19,6 +19,7 @@ import {
 	createSaveRepository,
 	type GameProgressService,
 	type HydrationStatus,
+	type PersistenceHealth,
 	type SaveRoot,
 } from '../persistence'
 import { createDefaultSave } from '../persistence/createDefaultSave'
@@ -29,6 +30,10 @@ interface ProgressContextValue {
 	readonly service: GameProgressService
 	readonly refresh: () => void
 	readonly reason?: string
+	/** Durable-write readiness (N1). */
+	readonly persistenceHealth: PersistenceHealth
+	/** Re-run hydrate (IO retry). Does not invent a default over unread data. */
+	readonly retryHydrate: () => void
 }
 
 const ProgressContext = createContext<ProgressContextValue | null>(null)
@@ -57,7 +62,9 @@ export function ProgressProvider({
 	const [status, setStatus] = useState<HydrationStatus>('LOADING')
 	const [save, setSave] = useState<SaveRoot>(createDefaultSave)
 	const [reason, setReason] = useState<string | undefined>()
-	const [tick, setTick] = useState(0)
+	const [persistenceHealth, setPersistenceHealth] =
+		useState<PersistenceHealth>('READY')
+	const [hydrateNonce, setHydrateNonce] = useState(0)
 
 	useEffect(() => {
 		let cancelled = false
@@ -69,22 +76,30 @@ export function ProgressProvider({
 			setStatus(result.status)
 			setSave(result.save)
 			setReason(result.reason)
+			setPersistenceHealth(service.getPersistenceHealth())
 		})().catch(() => {
 			if (cancelled) {
 				return
 			}
-			setStatus('ERROR_RECOVERED')
+			setStatus('ERROR_IO_READ')
 			setSave(createDefaultSave())
 			setReason('Hydration failed')
+			setPersistenceHealth('READ_ERROR')
 		})
 		return () => {
 			cancelled = true
 		}
-	}, [service, tick])
+	}, [service, hydrateNonce])
 
 	const refresh = useCallback(() => {
 		setSave(service.getSave())
+		setPersistenceHealth(service.getPersistenceHealth())
 	}, [service])
+
+	const retryHydrate = useCallback(() => {
+		setStatus('LOADING')
+		setHydrateNonce((n) => n + 1)
+	}, [])
 
 	const value = useMemo(
 		() => ({
@@ -93,13 +108,19 @@ export function ProgressProvider({
 			service,
 			refresh,
 			reason,
+			persistenceHealth,
+			retryHydrate,
 		}),
-		[status, save, service, refresh, reason],
+		[
+			status,
+			save,
+			service,
+			refresh,
+			reason,
+			persistenceHealth,
+			retryHydrate,
+		],
 	)
-
-	// Expose a remount hook for DEV reset without leaking into production API.
-	void tick
-	void setTick
 
 	return (
 		<ProgressContext.Provider value={value}>
