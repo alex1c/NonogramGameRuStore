@@ -76,14 +76,15 @@ describe('achievement evaluator', () => {
 		)
 		expect(states.find((s) => s.id === 'ten_pictures')?.access).toBe('LOCKED')
 
-		// replay does not increase unique
+		// Replay does not increase unique or totalCompletions (H5).
 		save = completePuzzle(save, {
 			puzzleId: CAMPAIGN_ENTRIES[0]!.puzzleId,
 			activeTimeMs: 90,
+			isReplay: true,
 		})
 		states = evaluateAchievements(contextFromSave(save))
 		expect(states.find((s) => s.id === 'five_pictures')?.current).toBe(5)
-		expect(save.statistics.totalCompletions).toBe(6)
+		expect(save.statistics.totalCompletions).toBe(5)
 	})
 
 	it('difficulty and large grid achievements', () => {

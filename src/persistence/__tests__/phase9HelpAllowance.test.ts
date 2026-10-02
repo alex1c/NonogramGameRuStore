@@ -22,8 +22,8 @@ import type { DayKey } from '../../daily/dateUtils'
 describe('schema v6 help allowance migration', () => {
 	it('createDefaultSave is schema v6 with zero free uses', () => {
 		const save = createDefaultSave()
-		expect(save.schemaVersion).toBe(6)
-		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(6)
+		expect(save.schemaVersion).toBe(7)
+		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(7)
 		expect(save.freeHintsUsedToday).toBe(0)
 		expect(save.freeTeachMeUsedToday).toBe(0)
 		expect(save.pendingRewardedHints).toBe(0)
@@ -48,7 +48,7 @@ describe('schema v6 help allowance migration', () => {
 			tutorialOfferDismissed: true,
 		})
 		expect(result.kind).toBe('ok')
-		expect(result.save.schemaVersion).toBe(6)
+		expect(result.save.schemaVersion).toBe(7)
 		expect(result.save.freeHintsUsedToday).toBe(0)
 		expect(result.save.freeTeachMeUsedToday).toBe(0)
 		expect(result.save.completedPuzzleIds).toEqual(['mini-beginner-bar'])
@@ -73,7 +73,7 @@ describe('schema v6 help allowance migration', () => {
 			unlockedAchievementIds: ['first_picture'],
 		})
 		expect(result.kind).toBe('ok')
-		expect(result.save.schemaVersion).toBe(6)
+		expect(result.save.schemaVersion).toBe(7)
 		expect(result.save.unlockedAchievementIds).toContain('first_picture')
 		expect(result.save.tutorialVersionCompleted).toBeNull()
 		expect(result.save.tutorialOfferDismissed).toBe(false)
@@ -96,7 +96,7 @@ describe('schema v6 help allowance migration', () => {
 			},
 		})
 		expect(result.kind).toBe('ok')
-		expect(result.save.schemaVersion).toBe(6)
+		expect(result.save.schemaVersion).toBe(7)
 		expect(result.save.solvedPuzzleIds).toEqual(['a'])
 		expect(result.save.freeHintsUsedToday).toBe(0)
 		expect(result.save.freeTeachMeUsedToday).toBe(0)

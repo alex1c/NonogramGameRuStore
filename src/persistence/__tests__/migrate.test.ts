@@ -155,9 +155,50 @@ describe('migrateSave', () => {
 			tutorialOfferDismissed: false,
 		})
 		expect(result.kind).toBe('ok')
-		expect(result.save.schemaVersion).toBe(6)
+		expect(result.save.schemaVersion).toBe(7)
 		expect(result.save.freeHintsUsedToday).toBe(0)
 		expect(result.save.freeTeachMeUsedToday).toBe(0)
+	})
+
+	it('valid v6 save → migrate to v7 with tutorialFirstRunSkipped=false', () => {
+		const result = migrateSave({
+			schemaVersion: 6,
+			activeGame: null,
+			activeDailyGame: null,
+			completedPuzzleIds: ['p1'],
+			solvedPuzzleIds: ['p1'],
+			startedPuzzleIds: ['p1'],
+			bestTimes: [],
+			statistics: createDefaultSave().statistics,
+			dailyCompletionRecords: [],
+			restoredDailyDays: [],
+			dailyStartedDay: null,
+			unlockedAchievementIds: [],
+			tutorialVersionCompleted: 1,
+			tutorialOfferDismissed: true,
+			helpAllowanceDay: '2026-10-01',
+			freeHintsUsedToday: 2,
+			freeTeachMeUsedToday: 1,
+			pendingRewardedHints: 1,
+			pendingRewardedTeachMe: 0,
+		})
+		expect(result.kind).toBe('ok')
+		expect(result.save.schemaVersion).toBe(7)
+		expect(result.save.tutorialFirstRunSkipped).toBe(false)
+		// v6 data is preserved verbatim.
+		expect(result.save.tutorialVersionCompleted).toBe(1)
+		expect(result.save.tutorialOfferDismissed).toBe(true)
+		expect(result.save.freeHintsUsedToday).toBe(2)
+		expect(result.save.pendingRewardedHints).toBe(1)
+		expect(result.save.completedPuzzleIds).toEqual(['p1'])
+	})
+
+	it('invalid tutorialFirstRunSkipped type → recovered', () => {
+		const result = migrateSave({
+			...createDefaultSave(),
+			tutorialFirstRunSkipped: 'yes',
+		})
+		expect(result.kind).toBe('recovered')
 	})
 
 	it('malformed JSON → recover', () => {
@@ -209,7 +250,7 @@ describe('migrateSave', () => {
 
 	it('duplicate completed IDs normalized on parse', () => {
 		const result = parseAndValidateSave({
-			schemaVersion: 6,
+			schemaVersion: 7,
 			activeGame: null,
 			activeDailyGame: null,
 			completedPuzzleIds: ['a', 'a', 'b'],

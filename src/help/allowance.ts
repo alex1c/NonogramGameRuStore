@@ -70,6 +70,32 @@ export function canUseTeachMeWithoutRewarded(
 	return freeTeachMeRemaining(state) > 0 || state.pendingRewardedTeachMe > 0
 }
 
+/**
+ * Result of the Hint Apply gate (H3).
+ * - 'free'            → a free daily Hint is available.
+ * - 'pending_rewarded' → free Hints are exhausted but a rewarded one is pending.
+ * - 'needs_rewarded'  → Apply must NOT mutate the board; offer rewarded opt-in.
+ */
+export type HintApplyGate = 'free' | 'pending_rewarded' | 'needs_rewarded'
+
+/**
+ * Decide whether a board-mutating Apply may proceed.
+ *
+ * Apply ALWAYS draws from the Hint allowance — even when the STEP being
+ * applied was revealed through Teach Me (which only spends Teach Me quota).
+ */
+export function evaluateHintApplyGate(
+	state: HelpAllowanceState,
+): HintApplyGate {
+	if (freeHintsRemaining(state) > 0) {
+		return 'free'
+	}
+	if (state.pendingRewardedHints > 0) {
+		return 'pending_rewarded'
+	}
+	return 'needs_rewarded'
+}
+
 export function willConsumeFreeHint(state: HelpAllowanceState): boolean {
 	return freeHintsRemaining(state) > 0
 }

@@ -6,6 +6,8 @@ export {
 	consumeHintApply,
 	consumeTeachMeReveal,
 	createDefaultHelpAllowance,
+	evaluateHintApplyGate,
+	type HintApplyGate,
 	formatFreeRemainingLabel,
 	freeHintsRemaining,
 	freeTeachMeRemaining,

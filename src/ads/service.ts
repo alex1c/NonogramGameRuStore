@@ -1,6 +1,9 @@
 /**
  * Yandex Mobile Ads service wrapper.
  * Screens never import SDK types — only this module and BannerSlot.
+ *
+ * Fullscreen show() is lifecycle-event driven (see fullscreenLifecycle.ts).
+ * Completions for interstitial eligibility are recorded separately from show.
  */
 
 import {
@@ -12,6 +15,12 @@ import {
 } from 'yandex-mobile-ads'
 import { AD_UNIT_IDS } from './config'
 import {
+	runInterstitialLifecycle,
+	runRewardedLifecycle,
+	type InterstitialOutcome,
+	type RewardedOutcome,
+} from './fullscreenLifecycle'
+import {
 	canShowInterstitial,
 	createInterstitialPolicyState,
 	recordInterstitialShown,
@@ -19,6 +28,7 @@ import {
 	type InterstitialPolicyState,
 } from './policy'
 import { createRewardGrantGuard } from './rewardedPolicy'
+import { trackEvent } from '../analytics'
 
 let adsInitialized = false
 let interstitialLoader: InterstitialAdLoader | null = null
@@ -27,6 +37,9 @@ let interstitialLoading = false
 let interstitialShowing = false
 let interstitialPolicy: InterstitialPolicyState = createInterstitialPolicyState()
 let rewardedLoading = false
+
+/** Track completion runIds already counted toward interstitial eligibility. */
+const countedCompletionRunIds = new Set<string>()
 
 /** Initialize Mobile Ads once; failures never throw to callers. */
 export function initializeAds(): void {
@@ -62,19 +75,32 @@ export async function preloadInterstitial(): Promise<void> {
 }
 
 /**
- * Record a production completion, then optionally show a cached interstitial
- * only at a natural post-completion navigation boundary.
- * Never blocks the caller — failures resolve as false immediately.
+ * Record one confirmed production completion for interstitial eligibility.
+ * Idempotent per runId — CTA presses must not increment.
  */
-export async function maybeShowInterstitialAfterCompletion(options: {
+export function recordCompletionForAdPolicy(options: {
+	readonly runId: string
+	readonly isTutorial: boolean
+}): void {
+	if (options.isTutorial) {
+		return
+	}
+	if (countedCompletionRunIds.has(options.runId)) {
+		return
+	}
+	countedCompletionRunIds.add(options.runId)
+	interstitialPolicy = recordPuzzleCompleted(interstitialPolicy, false)
+}
+
+/**
+ * Optionally show a cached interstitial at a natural post-completion boundary.
+ * Always settles — navigation must never hang on show().
+ */
+export async function maybeShowInterstitial(options: {
 	readonly isTutorial: boolean
 	readonly now?: number
-}): Promise<boolean> {
+}): Promise<InterstitialOutcome> {
 	const now = options.now ?? Date.now()
-	interstitialPolicy = recordPuzzleCompleted(
-		interstitialPolicy,
-		options.isTutorial,
-	)
 
 	if (
 		!canShowInterstitial(interstitialPolicy, {
@@ -86,21 +112,19 @@ export async function maybeShowInterstitialAfterCompletion(options: {
 		interstitialShowing
 	) {
 		void preloadInterstitial()
-		return false
+		return 'not_available'
 	}
 
 	const ad = loadedInterstitial
 	loadedInterstitial = null
 	interstitialShowing = true
-	// Cap consumes only on successful show attempt start; failed show still
-	// counts as "shownThisSession" attempt to avoid retry spam — ForestMusic
-	// WaterSort marks before show. Keep same: successful show path only.
-	interstitialPolicy = recordInterstitialShown(interstitialPolicy, now)
 	try {
-		await ad.show()
-		return true
-	} catch {
-		return false
+		const outcome = await runInterstitialLifecycle(ad)
+		if (outcome === 'shown_and_dismissed') {
+			interstitialPolicy = recordInterstitialShown(interstitialPolicy, now)
+			trackEvent('interstitial_shown', {})
+		}
+		return outcome
 	} finally {
 		interstitialShowing = false
 		void preloadInterstitial()
@@ -108,14 +132,36 @@ export async function maybeShowInterstitialAfterCompletion(options: {
 }
 
 /**
- * Rewarded infrastructure. UI is deferred while free Hint remains unlimited.
- * Grant only via verified onRewarded callback.
+ * @deprecated Prefer recordCompletionForAdPolicy + maybeShowInterstitial.
+ * Kept temporarily for call-site migration; still event-driven.
+ */
+export async function maybeShowInterstitialAfterCompletion(options: {
+	readonly isTutorial: boolean
+	readonly now?: number
+	readonly runId?: string
+}): Promise<boolean> {
+	if (options.runId !== undefined) {
+		recordCompletionForAdPolicy({
+			runId: options.runId,
+			isTutorial: options.isTutorial,
+		})
+	} else if (!options.isTutorial) {
+		// Legacy path without runId — still count once per call (tests).
+		interstitialPolicy = recordPuzzleCompleted(interstitialPolicy, false)
+	}
+	const outcome = await maybeShowInterstitial(options)
+	return outcome === 'shown_and_dismissed'
+}
+
+/**
+ * Show rewarded ad. Entitlement persistence belongs in onRewardConfirmed
+ * (SDK onRewarded), not after await show().
  */
 export async function showRewarded(
-	onRewardGranted: () => void,
-): Promise<'granted' | 'dismissed' | 'unavailable'> {
+	onRewardConfirmed: () => void | Promise<void>,
+): Promise<RewardedOutcome> {
 	if (rewardedLoading) {
-		return 'unavailable'
+		return 'not_available'
 	}
 	rewardedLoading = true
 	try {
@@ -123,20 +169,15 @@ export async function showRewarded(
 		const ad: RewardedAd = await loader.loadAd({
 			adUnitId: AD_UNIT_IDS.rewarded,
 		})
-		const guard = createRewardGrantGuard(onRewardGranted)
-		ad.onRewarded = () => {
+		const guard = createRewardGrantGuard(() => {
+			void Promise.resolve(onRewardConfirmed())
+		})
+		const outcome = await runRewardedLifecycle(ad, () => {
 			guard.onVerifiedReward()
-		}
-		ad.onAdDismissed = () => {
-			guard.onDismissed()
-		}
-		ad.onAdFailedToShow = () => {
-			guard.onDismissed()
-		}
-		await ad.show()
-		return guard.hasGranted() ? 'granted' : 'dismissed'
+		})
+		return outcome
 	} catch {
-		return 'unavailable'
+		return 'not_available'
 	} finally {
 		rewardedLoading = false
 	}
@@ -151,4 +192,8 @@ export function __setInterstitialPolicyForTests(
 
 export function __getInterstitialPolicyForTests(): InterstitialPolicyState {
 	return interstitialPolicy
+}
+
+export function __clearCountedCompletionRunIdsForTests(): void {
+	countedCompletionRunIds.clear()
 }

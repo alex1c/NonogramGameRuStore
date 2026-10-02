@@ -4,6 +4,7 @@
  * Phase 8B: v4 (sticky unlockedAchievementIds).
  * Phase 9: v5 (tutorial completion version).
  * Phase 9.1: v6 (daily Hint / Teach Me free allowances + rewarded pending).
+ * Phase 9C: v7 (tutorialFirstRunSkipped — persisted first-run skip).
  * Persist IDs + player progress — never solution/clues/catalog blobs.
  *
  * Storage key remains `nonogram.save.v1` (historical suffix); schemaVersion
@@ -15,7 +16,7 @@ import type { PaintTool } from '../gameplay/tools'
 import type { DayKey } from '../daily/dateUtils'
 
 /** Single source of truth for the current save schema version. */
-export const CURRENT_SAVE_SCHEMA_VERSION = 6 as const
+export const CURRENT_SAVE_SCHEMA_VERSION = 7 as const
 
 export type SaveSchemaVersion = typeof CURRENT_SAVE_SCHEMA_VERSION
 
@@ -85,7 +86,7 @@ export interface DailyCompletionRecordSave {
 }
 
 /**
- * Root persisted document (schema v6).
+ * Root persisted document (schema v7).
  *
  * Semantics:
  * - completedPuzzleIds = Campaign completions only
@@ -99,6 +100,8 @@ export interface DailyCompletionRecordSave {
  * - unlockedAchievementIds = sticky unlocked achievement history (never shrinks)
  * - tutorialVersionCompleted = last fully completed tutorial version (null = never)
  * - tutorialOfferDismissed = user chose «Позже» on soft Home offer
+ * - tutorialFirstRunSkipped = user skipped / exited the first-run tutorial
+ *   (persisted so first_run does not reopen on every cold start)
  * - helpAllowance* = local-day free Hint/Teach Me quotas + pending rewarded entitlements
  */
 export interface SaveRoot {
@@ -122,6 +125,11 @@ export interface SaveRoot {
 	readonly tutorialVersionCompleted: number | null
 	/** Soft Home offer dismissed («Позже») — does not block Settings replay. */
 	readonly tutorialOfferDismissed: boolean
+	/**
+	 * User skipped or exited the first-run tutorial before completing it.
+	 * Suppresses first-run auto-open only; Settings replay always works.
+	 */
+	readonly tutorialFirstRunSkipped: boolean
 	/** Local calendar day for free help counters (YYYY-MM-DD). */
 	readonly helpAllowanceDay: DayKey
 	/** Free successful Hint Applies used on helpAllowanceDay. */
@@ -138,6 +146,10 @@ export type HydrationStatus =
 	| 'LOADING'
 	| 'READY'
 	| 'ERROR_RECOVERED'
+	/** Storage read failed: in-memory default only, persistent writes blocked. */
+	| 'ERROR_IO_READ'
+	/** Save written by a newer app: in-memory default only, writes blocked. */
+	| 'ERROR_UNSUPPORTED_SCHEMA'
 
 export interface HydrationResult {
 	readonly status: Exclude<HydrationStatus, 'LOADING'>

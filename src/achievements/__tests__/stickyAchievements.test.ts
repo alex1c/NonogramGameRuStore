@@ -58,8 +58,8 @@ function v3FixtureWithShapesComplete() {
 describe('Phase 8B sticky achievements / schema v4→v6', () => {
 	it('defaults to schema v6 with empty sticky ids', () => {
 		const save = createDefaultSave()
-		expect(save.schemaVersion).toBe(6)
-		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(6)
+		expect(save.schemaVersion).toBe(7)
+		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(7)
 		expect(save.unlockedAchievementIds).toEqual([])
 	})
 
@@ -104,7 +104,7 @@ describe('Phase 8B sticky achievements / schema v4→v6', () => {
 		if (result.kind !== 'ok') {
 			return
 		}
-		expect(result.save.schemaVersion).toBe(6)
+		expect(result.save.schemaVersion).toBe(7)
 		expect(result.save.unlockedAchievementIds).toContain('first_picture')
 	})
 

@@ -3,7 +3,7 @@
  * No ads. No statistics / achievement pollution.
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
 	Alert,
 	Pressable,
@@ -30,6 +30,11 @@ interface TutorialScreenProps {
 	readonly onFinished: () => void
 	readonly onExitEarly: () => void
 	readonly onPersistComplete: () => Promise<void>
+	/**
+	 * Lets the navigator trigger the same confirm-exit flow (`requestExit`)
+	 * from Android Back. Called with the handler on mount, null on unmount.
+	 */
+	readonly onRegisterExitRequest?: (request: (() => void) | null) => void
 }
 
 function createEmptyLine(length: number): number[] {
@@ -57,8 +62,11 @@ export function TutorialScreen({
 	onFinished,
 	onExitEarly,
 	onPersistComplete,
+	onRegisterExitRequest,
 }: TutorialScreenProps) {
 	const insets = useSafeAreaInsets()
+	/** True while the final persist is running — blocks repeated CTA taps. */
+	const isCompletingRef = useRef(false)
 	const [stepIndex, setStepIndex] = useState(0)
 	const [tool, setTool] = useState<Tool>('fill')
 	const [grid, setGrid] = useState(() =>
@@ -66,7 +74,7 @@ export function TutorialScreen({
 	)
 	const [feedback, setFeedback] = useState<string | null>(null)
 	const [undoDone, setUndoDone] = useState(false)
-	const [, setHistory] = useState<number[][][]>([])
+	const [history, setHistory] = useState<number[][][]>([])
 
 	const step = TUTORIAL_STEPS[stepIndex] as TutorialStepDef
 	const chapter = getChapterProgress(stepIndex)
@@ -74,8 +82,20 @@ export function TutorialScreen({
 	const advance = useCallback(
 		async (nextIndex: number) => {
 			if (nextIndex >= TUTORIAL_STEPS.length) {
+				if (isCompletingRef.current) {
+					return
+				}
+				isCompletingRef.current = true
+				try {
+					// M4: tutorial_complete only AFTER the persist succeeded.
+					await onPersistComplete()
+				} catch {
+					// Persist failed: stay on the last step so the user can retry.
+					isCompletingRef.current = false
+					setFeedback('Не удалось сохранить прогресс. Попробуйте ещё раз.')
+					return
+				}
 				trackEvent('tutorial_complete', { source })
-				await onPersistComplete()
 				onFinished()
 				return
 			}
@@ -134,21 +154,18 @@ export function TutorialScreen({
 	)
 
 	const handleUndo = useCallback(() => {
-		setHistory((prev) => {
-			if (prev.length === 0) {
-				// Still count as undo practice if grid was painted.
-				setUndoDone(true)
-				return prev
-			}
-			const last = prev[prev.length - 1]
-			if (last !== undefined) {
-				setGrid(last)
-			}
-			setUndoDone(true)
-			return prev.slice(0, -1)
-		})
+		const last = history[history.length - 1]
+		if (last === undefined) {
+			// Nothing to undo yet: ask the user to paint a cell first.
+			setFeedback('Сначала закрасьте клетку, затем нажмите «Отмена».')
+			return
+		}
+		// Restore the previous grid snapshot and drop it from the history.
+		setGrid(last)
+		setHistory(history.slice(0, -1))
+		setUndoDone(true)
 		setFeedback(null)
-	}, [])
+	}, [history])
 
 	const requestExit = useCallback(() => {
 		Alert.alert(
@@ -170,6 +187,13 @@ export function TutorialScreen({
 			],
 		)
 	}, [onExitEarly, source, step.chapterId])
+
+	// M5: expose requestExit so Android Back (tutorial_confirm_exit) runs the
+	// exact same confirm dialog as the on-screen "Закрыть" button.
+	useEffect(() => {
+		onRegisterExitRequest?.(requestExit)
+		return () => onRegisterExitRequest?.(null)
+	}, [onRegisterExitRequest, requestExit])
 
 	const showBoard = step.lineLength !== undefined
 	const clueLabel = useMemo(() => {

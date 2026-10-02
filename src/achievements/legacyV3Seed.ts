@@ -1,14 +1,14 @@
 /**
  * v3→v4 sticky achievement seeding using frozen legacy Gallery membership.
  *
- * Uses live mini-catalog puzzle geometry/difficulty for the frozen 21 IDs
- * (those puzzle bodies do not change with Gallery taxonomy swaps).
+ * Uses compatibility puzzle resolution (legacy mini-21) + frozen difficulty
+ * tags — never production-only lookup or runtime analyzeDifficulty.
  * Collection completeness uses LEGACY_V3_GALLERY_ITEMS only.
  */
 
-import { analyzeDifficulty } from '../domain/difficulty/analyzer'
 import type { DifficultyTier } from '../domain/difficulty/tiers'
-import { getProductionPuzzleById } from '../content/playable'
+import { resolvePlayablePuzzleById } from '../content/playable'
+import { resolvePuzzleDifficultyTier } from '../content/difficultyLookup'
 import type { SaveRoot } from '../persistence/schema'
 import {
 	computeCurrentStreak,
@@ -20,15 +20,22 @@ import {
 	type AchievementDefinition,
 } from './definitions'
 import { LEGACY_V3_GALLERY_ITEMS } from './legacyV3Gallery'
+import { getLegacyV3PuzzleMetadata } from './legacyV3Metadata'
 import { mergeStickyAchievementIds } from './sticky'
 import type { AchievementEvalContext } from './evaluate'
 
 function tierForLegacy(puzzleId: string): DifficultyTier | 'UNRATED' {
-	const puzzle = getProductionPuzzleById(puzzleId)
+	// Frozen v3 metadata first: no puzzle decode, no analyzeDifficulty.
+	const frozen = getLegacyV3PuzzleMetadata(puzzleId)
+	if (frozen !== null) {
+		return frozen.tier
+	}
+	// Defensive fallback for non-legacy ids: precomputed runtime tier only.
+	const puzzle = resolvePlayablePuzzleById(puzzleId)
 	if (puzzle === null) {
 		return 'UNRATED'
 	}
-	return analyzeDifficulty(puzzle).tier
+	return resolvePuzzleDifficultyTier(puzzle) ?? 'UNRATED'
 }
 
 function countDifficulty(
@@ -69,7 +76,15 @@ function countLargeGrid(
 ): number {
 	let count = 0
 	for (const id of solvedIds) {
-		const puzzle = getProductionPuzzleById(id)
+		// Frozen grid size for the 21 legacy puzzles — no decode needed.
+		const frozen = getLegacyV3PuzzleMetadata(id)
+		if (frozen !== null) {
+			if (frozen.width >= minSide || frozen.height >= minSide) {
+				count += 1
+			}
+			continue
+		}
+		const puzzle = resolvePlayablePuzzleById(id)
 		if (puzzle === null) {
 			continue
 		}

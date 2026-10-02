@@ -24,6 +24,7 @@ import {
 	computeLongestStreak,
 	getRestoreEligibility,
 } from '../daily/streak'
+import { DailyRolloverError } from '../daily/rollover'
 import type { Clock } from './clock'
 import { createRealClock } from './clock'
 import type { SaveRepository } from './repository'
@@ -59,6 +60,7 @@ import {
 	setActiveGame,
 	markTutorialCompleted as markTutorialCompletedReducer,
 	dismissTutorialOffer as dismissTutorialOfferReducer,
+	markTutorialFirstRunSkipped as markTutorialFirstRunSkippedReducer,
 	resetTutorialProgressDevOnly as resetTutorialProgressDevOnlyReducer,
 	ensureHelpAllowanceDay as ensureHelpAllowanceDayReducer,
 	consumeHintApplyAllowance as consumeHintApplyAllowanceReducer,
@@ -183,8 +185,18 @@ export interface GameProgressService {
 	resetProgressDevOnly(): Promise<SaveRoot>
 	markTutorialCompleted(tutorialVersion: number): Promise<SaveRoot>
 	dismissTutorialOffer(): Promise<SaveRoot>
+	markTutorialFirstRunSkipped(): Promise<SaveRoot>
 	resetTutorialProgressDevOnly(): Promise<SaveRoot>
 	ensureHelpAllowanceDay(): Promise<SaveRoot>
+	/**
+	 * Synchronous gate (H3): true when Hint Apply may draw from free or pending
+	 * rewarded Hint allowance right now (today's roll applied, no I/O).
+	 */
+	canConsumeHintApplyAllowance(): boolean
+	/**
+	 * Consume one Hint Apply allowance. The in-memory save mutates
+	 * synchronously when the call is made; only persistence is async.
+	 */
 	consumeHintApplyAllowance(): Promise<SaveRoot | null>
 	consumeTeachMeRevealAllowance(): Promise<SaveRoot | null>
 	grantRewardedHintAllowance(): Promise<SaveRoot>
@@ -234,24 +246,87 @@ export function createGameProgressService(
 ): GameProgressService {
 	let current: SaveRoot = createDefaultSave()
 	let hydrated = false
+	/**
+	 * True when the stored payload could not be classified as safe to replace
+	 * (storage read failed, newer schema, or corrupt payload that could not be
+	 * backed up). While set, the service keeps working in memory only and
+	 * NEVER writes, so the real stored data is not destroyed by a default save.
+	 * Cleared by the next successful hydrate().
+	 */
+	let writesBlocked = false
 
 	const commit = async (next: SaveRoot): Promise<SaveRoot> => {
 		current = next
-		await repository.save(current)
+		if (!writesBlocked) {
+			await repository.save(current)
+		}
 		return current
 	}
 
 	const today = (): DayKey => localDayKey(new Date(clock.now()))
 
+	/**
+	 * Rejects Daily mutations once the local day has rolled over.
+	 * Both the caller's session day and any stored active Daily must still be
+	 * "today"; otherwise progress would be credited to the wrong day/streak.
+	 */
+	const assertDailyDayIsToday = (sessionDayKey: DayKey): void => {
+		const day = today()
+		if (sessionDayKey !== day) {
+			throw new DailyRolloverError(sessionDayKey, day)
+		}
+		const active = current.activeDailyGame
+		if (active !== null && active.dayKey !== day) {
+			throw new DailyRolloverError(active.dayKey, day)
+		}
+	}
+
 	return {
 		async hydrate() {
+			writesBlocked = false
 			const loaded = await repository.load()
 			let status: HydrationStatus = 'READY'
 			let reason: string | undefined
 
-			if (loaded.kind === 'recovered' || loaded.kind === 'unsupported') {
+			// IO / future-schema: never overwrite durable storage (H1).
+			if (loaded.kind === 'io_error' || loaded.kind === 'unsupported') {
+				writesBlocked = true
+				hydrated = true
+				current = loaded.save
+				// In-memory default only; durable storage stays untouched.
+				return {
+					status:
+						loaded.kind === 'io_error'
+							? 'ERROR_IO_READ'
+							: 'ERROR_UNSUPPORTED_SCHEMA',
+					save: current,
+					reason: loaded.reason,
+				}
+			}
+
+			if (loaded.kind === 'recovered') {
 				status = 'ERROR_RECOVERED'
 				reason = loaded.reason
+				if (loaded.rawPayload !== undefined) {
+					try {
+						await repository.backupCorruptPayload(
+							loaded.rawPayload,
+							clock.now(),
+						)
+					} catch {
+						// Backup failed — do not overwrite the only evidence.
+						writesBlocked = true
+						hydrated = true
+						current = loaded.save
+						return { status, save: current, reason }
+					}
+				} else {
+					// No raw evidence available — still avoid blind overwrite.
+					writesBlocked = true
+					hydrated = true
+					current = loaded.save
+					return { status, save: current, reason }
+				}
 			}
 
 			const sanitized = sanitizeSaveAgainstCatalog(loaded.save, clock)
@@ -265,7 +340,9 @@ export function createGameProgressService(
 				await repository.save(current)
 			} else {
 				current = sanitized.save
-				if (loaded.kind === 'recovered' || loaded.kind === 'unsupported') {
+				if (loaded.kind === 'empty' || loaded.kind === 'recovered') {
+					await repository.save(current)
+				} else if (loaded.kind === 'ok' && loaded.migrated) {
 					await repository.save(current)
 				}
 			}
@@ -372,7 +449,11 @@ export function createGameProgressService(
 					(item) => item.puzzleId === input.puzzleId,
 				)?.bestActiveTimeMs ?? null
 
-			const progressed = completePuzzle(beforeSave, input)
+			const progressed = completePuzzle(beforeSave, {
+				puzzleId: input.puzzleId,
+				activeTimeMs: input.activeTimeMs,
+				isReplay: input.isReplay === true,
+			})
 			const { save: next, newlyUnlocked } = withStickyAchievementTransition(
 				beforeSave,
 				progressed,
@@ -380,17 +461,21 @@ export function createGameProgressService(
 			)
 			await commit(next)
 
-			const newBest =
+			const nextBest =
 				next.bestTimes.find((item) => item.puzzleId === input.puzzleId)
-					?.bestActiveTimeMs ?? input.activeTimeMs
+					?.bestActiveTimeMs ?? null
+			const newBest = nextBest ?? input.activeTimeMs
+			// A replay / duplicate completion only "improves" when it beats an
+			// existing best; first-ever Campaign completion always counts.
 			const bestTimeImproved =
-				previousBest === null || newBest < previousBest
+				nextBest !== null &&
+				(previousBest === null || nextBest < previousBest)
 			const galleryIncluded = getGalleryItemDef(input.puzzleId) !== null
 
 			const event: CompletionEventResult = {
 				mode: input.isReplay ? 'REPLAY' : 'CAMPAIGN',
 				puzzleId: input.puzzleId,
-				firstCompletion,
+				firstCompletion: input.isReplay ? false : firstCompletion,
 				firstPuzzleSolve,
 				galleryJustUnlocked: firstPuzzleSolve && galleryIncluded,
 				bestTimeImproved,
@@ -447,6 +532,10 @@ export function createGameProgressService(
 
 		async flush() {
 			ensureHydrated(hydrated)
+			// Never flush an in-memory default over unreadable / unsupported data.
+			if (writesBlocked) {
+				return
+			}
 			await repository.save(current)
 		},
 
@@ -465,6 +554,11 @@ export function createGameProgressService(
 			return commit(dismissTutorialOfferReducer(current))
 		},
 
+		async markTutorialFirstRunSkipped() {
+			ensureHydrated(hydrated)
+			return commit(markTutorialFirstRunSkippedReducer(current))
+		},
+
 		async resetTutorialProgressDevOnly() {
 			ensureHydrated(hydrated)
 			return commit(resetTutorialProgressDevOnlyReducer(current))
@@ -477,6 +571,13 @@ export function createGameProgressService(
 				return current
 			}
 			return commit(next)
+		},
+
+		canConsumeHintApplyAllowance() {
+			ensureHydrated(hydrated)
+			return (
+				consumeHintApplyAllowanceReducer(current, today()) !== null
+			)
 		},
 
 		async consumeHintApplyAllowance() {
@@ -627,6 +728,7 @@ export function createGameProgressService(
 
 		async persistDailyState(input) {
 			ensureHydrated(hydrated)
+			assertDailyDayIsToday(input.dayKey)
 			const next = persistActiveDailyPlayerState(current, {
 				dayKey: input.dayKey,
 				puzzle: input.puzzle,
@@ -642,6 +744,7 @@ export function createGameProgressService(
 
 		async restartDaily(input) {
 			ensureHydrated(hydrated)
+			assertDailyDayIsToday(input.dayKey)
 			const now = clock.now()
 			let next = recordDailyRestart(current)
 			const player = createEmptyPlayerState(
@@ -666,6 +769,7 @@ export function createGameProgressService(
 
 		async completeDailyPuzzle(input) {
 			ensureHydrated(hydrated)
+			assertDailyDayIsToday(input.dayKey)
 			const beforeSave = current
 			const day = today()
 			const streakBefore = computeCurrentStreak({

@@ -209,8 +209,11 @@ export const TUTORIAL_STEPS: readonly TutorialStepDef[] = [
 		kind: 'undo',
 		title: 'Ошибки и исправление',
 		body:
-			'Ластик убирает отметку в клетке. Отмена возвращает последнее действие. Повтор возвращает отменённое. Нажмите «Отмена» один раз на демо-доске.',
-		ctaLabel: 'Я нажал Отмена',
+			'Сначала закрасьте любую клетку, затем нажмите «Отмена» — отметка исчезнет. Так исправляют ошибки без перезапуска.',
+		lineLength: 5,
+		lineClues: [0],
+		softError: 'Сначала закрасьте клетку, затем нажмите «Отмена».',
+		ctaLabel: 'Далее',
 	},
 	{
 		id: 'tools',
@@ -301,15 +304,32 @@ export function getChapterProgress(stepIndex: number): {
 	}
 }
 
-/** True when every target cell matches the player grid. */
+/** True when every target cell matches and no extra filled/cross cells exist. */
 export function tutorialTargetsMet(
 	grid: readonly (readonly number[])[],
 	targets: readonly TutorialCellTarget[],
 ): boolean {
+	const expected = new Map<string, number>()
 	for (const target of targets) {
-		const row = grid[target.row]
-		if (row === undefined || row[target.col] !== target.expect) {
+		expected.set(`${target.row}:${target.col}`, target.expect)
+	}
+	for (let r = 0; r < grid.length; r += 1) {
+		const row = grid[r]
+		if (row === undefined) {
 			return false
+		}
+		for (let c = 0; c < row.length; c += 1) {
+			const key = `${r}:${c}`
+			const cell = row[c] ?? 0
+			const want = expected.get(key)
+			if (want !== undefined) {
+				if (cell !== want) {
+					return false
+				}
+			} else if (cell !== 0) {
+				// Extra marks outside the required targets block advancement (L1).
+				return false
+			}
 		}
 	}
 	return true
@@ -338,12 +358,20 @@ export function shouldSoftOfferTutorial(save: {
 
 export function shouldFirstRunOfferTutorial(save: {
 	readonly tutorialVersionCompleted: number | null
+	readonly tutorialOfferDismissed?: boolean
+	readonly tutorialFirstRunSkipped?: boolean
 	readonly completedPuzzleIds: readonly string[]
 	readonly solvedPuzzleIds: readonly string[]
+	readonly startedPuzzleIds?: readonly string[]
 	readonly dailyCompletionRecords: readonly unknown[]
 	readonly unlockedAchievementIds: readonly string[]
+	readonly activeGame?: unknown
+	readonly activeDailyGame?: unknown
 }): boolean {
 	if (save.tutorialVersionCompleted !== null) {
+		return false
+	}
+	if (save.tutorialFirstRunSkipped === true) {
 		return false
 	}
 	return !hasExistingProgress(save)
@@ -352,13 +380,19 @@ export function shouldFirstRunOfferTutorial(save: {
 function hasExistingProgress(save: {
 	readonly completedPuzzleIds: readonly string[]
 	readonly solvedPuzzleIds: readonly string[]
+	readonly startedPuzzleIds?: readonly string[]
 	readonly dailyCompletionRecords: readonly unknown[]
 	readonly unlockedAchievementIds: readonly string[]
+	readonly activeGame?: unknown
+	readonly activeDailyGame?: unknown
 }): boolean {
 	return (
 		save.completedPuzzleIds.length > 0 ||
 		save.solvedPuzzleIds.length > 0 ||
+		(save.startedPuzzleIds?.length ?? 0) > 0 ||
 		save.dailyCompletionRecords.length > 0 ||
-		save.unlockedAchievementIds.length > 0
+		save.unlockedAchievementIds.length > 0 ||
+		save.activeGame != null ||
+		save.activeDailyGame != null
 	)
 }

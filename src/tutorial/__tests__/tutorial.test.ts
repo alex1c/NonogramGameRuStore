@@ -23,7 +23,7 @@ describe('tutorial curriculum', () => {
 		expect(TUTORIAL_STEPS[TUTORIAL_STEPS.length - 1]?.id).toBe('finale')
 	})
 
-	it('overlap step forces only the center cell', () => {
+	it('overlap rejects overfill beyond the required target (L1)', () => {
 		const overlap = TUTORIAL_STEPS.find((s) => s.id === 'overlap')
 		expect(overlap?.targets).toEqual([{ row: 0, col: 2, expect: 1 }])
 		expect(
@@ -32,6 +32,23 @@ describe('tutorial curriculum', () => {
 		expect(
 			tutorialTargetsMet([[0, 0, 0, 0, 0]], overlap?.targets ?? []),
 		).toBe(false)
+		expect(
+			tutorialTargetsMet([[1, 1, 1, 1, 1]], overlap?.targets ?? []),
+		).toBe(false)
+	})
+
+	it('undo step exposes a playable board (H2)', () => {
+		const undo = TUTORIAL_STEPS.find((s) => s.id === 'undo')
+		expect(undo?.kind).toBe('undo')
+		expect(undo?.lineLength).toBe(5)
+	})
+
+	it('first-run skip persists and blocks auto-reopen', () => {
+		const skipped = {
+			...createDefaultSave(),
+			tutorialFirstRunSkipped: true,
+		}
+		expect(shouldFirstRunOfferTutorial(skipped)).toBe(false)
 	})
 
 	it('multi-group 2 1 requires separator', () => {

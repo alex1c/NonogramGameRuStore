@@ -4,14 +4,25 @@
 
 import type { KeyValueStorage } from '../storage/types'
 import { SAVE_STORAGE_KEY } from '../storage/keys'
+import { createDefaultSave } from './createDefaultSave'
 import { migrateSaveJson, type MigrateSaveResult } from './migrate'
 import type { SaveRoot } from './schema'
 import { freezeSave } from './validate'
 
 export interface SaveRepository {
+	/**
+	 * Load and classify the persisted save. NEVER writes to storage.
+	 * See {@link MigrateSaveResult} for the taxonomy and overwrite rules.
+	 */
 	load(): Promise<MigrateSaveResult>
 	save(save: SaveRoot): Promise<void>
 	clear(): Promise<void>
+	/**
+	 * Preserve a corrupt raw payload under `${key}.corrupt.${timestamp}`
+	 * before it is overwritten. Resolves with the backup key; rejects when the
+	 * backup could not be written (caller must then NOT overwrite).
+	 */
+	backupCorruptPayload(rawPayload: string, timestampMs: number): Promise<string>
 }
 
 /**
@@ -38,18 +49,22 @@ export function createSaveRepository(
 
 	return {
 		async load(): Promise<MigrateSaveResult> {
+			let raw: string | null
 			try {
-				const raw = await storage.getItem(key)
-				return migrateSaveJson(raw)
+				raw = await storage.getItem(key)
 			} catch (error) {
+				// A failed read says nothing about what is stored. Report it as
+				// io_error so callers never treat it as "corrupt → overwrite".
+				// The default save is for in-memory / safe-UI use only.
 				const reason =
 					error instanceof Error ? error.message : 'Storage read failed'
 				return {
-					kind: 'recovered',
-					save: migrateSaveJson(null).save,
+					kind: 'io_error',
+					save: createDefaultSave(),
 					reason,
 				}
 			}
+			return migrateSaveJson(raw)
 		},
 
 		save(save: SaveRoot): Promise<void> {
@@ -73,6 +88,18 @@ export function createSaveRepository(
 				}
 				await storage.removeItem(key)
 			})
+		},
+
+		async backupCorruptPayload(
+			rawPayload: string,
+			timestampMs: number,
+		): Promise<string> {
+			const backupKey = `${key}.corrupt.${timestampMs}`
+			// Serialized with normal writes; not subject to revision skipping.
+			await enqueue(async () => {
+				await storage.setItem(backupKey, rawPayload)
+			})
+			return backupKey
 		},
 	}
 }

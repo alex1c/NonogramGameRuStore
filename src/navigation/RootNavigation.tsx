@@ -4,8 +4,13 @@
  * Banner placement reported to App shell (Game/Tutorial host their own / none).
  */
 
-import { useCallback, useEffect, useState } from 'react'
-import { Alert, AppState, type AppStateStatus } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+	Alert,
+	AppState,
+	BackHandler,
+	type AppStateStatus,
+} from 'react-native'
 import { HomeScreen } from '../screens/HomeScreen'
 import { LevelsScreen, type LevelOpenIntent } from '../screens/LevelsScreen'
 import { StatisticsScreen } from '../screens/StatisticsScreen'
@@ -23,13 +28,20 @@ import { isGalleryPuzzleUnlocked } from '../gallery'
 import { resolvePlayablePuzzleById } from '../content/playable'
 import type { DayKey } from '../daily/dateUtils'
 import type { BannerPlacement } from '../ads'
-import { maybeShowInterstitialAfterCompletion } from '../ads'
+import { maybeShowInterstitial } from '../ads'
 import { trackEvent } from '../analytics'
 import {
 	CURRENT_TUTORIAL_VERSION,
 	shouldFirstRunOfferTutorial,
 } from '../tutorial/definition'
+import { isDailySessionStale } from '../daily/rollover'
 import { placementForShellRoute } from './bannerPlacement'
+import {
+	resolveAndroidBackAction,
+	type BackPolicyAction,
+	type BackPolicyRouteName,
+} from './androidBackPolicy'
+import { createTransitionGuard } from './transitionGuard'
 
 /** Explicit game session mode — never overlapping booleans. */
 export type GameSessionDescriptor =
@@ -69,6 +81,26 @@ type Route =
 	| { readonly name: 'settings' }
 	| { readonly name: 'about' }
 
+/**
+ * Maps a parameter-free Back target to a concrete route.
+ * Targets that need params (collection / detail) never come through here —
+ * the policy returns dedicated actions for them — so they fall back to Home.
+ */
+function routeForBackTarget(target: BackPolicyRouteName): Route {
+	switch (target) {
+		case 'levels':
+		case 'statistics':
+		case 'gallery':
+		case 'achievements':
+		case 'daily':
+		case 'settings':
+		case 'about':
+			return { name: target }
+		default:
+			return { name: 'home' }
+	}
+}
+
 interface RootNavigationProps {
 	readonly onBannerPlacementChange?: (placement: BannerPlacement | null) => void
 }
@@ -82,9 +114,49 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 	)
 	const [darkMode, setDarkMode] = useState(false)
 
+	/** Latest route for listeners registered once (BackHandler / AppState). */
+	const routeRef = useRef<Route>(route)
+	/** Route name seen by the previous commit (analytics entry detection). */
+	const previousRouteNameRef = useRef<Route['name'] | null>(null)
+	/** Tutorial's confirm-exit handler (same one as its "Закрыть" button). */
+	const tutorialExitRequestRef = useRef<(() => void) | null>(null)
+	/** Blocks stacked interstitial + navigation after repeated CTA taps. */
+	const transitionGuard = useMemo(() => createTransitionGuard(), [])
+
+	useEffect(() => {
+		routeRef.current = route
+	}, [route])
+
 	useEffect(() => {
 		onBannerPlacementChange?.(placementForShellRoute(route.name))
 	}, [onBannerPlacementChange, route])
+
+	// M4: daily_open when entering Daily; gallery_open when entering the
+	// Gallery root (not when popping back from a collection / detail).
+	useEffect(() => {
+		const previous = previousRouteNameRef.current
+		previousRouteNameRef.current = route.name
+		if (previous === route.name) {
+			return
+		}
+		if (route.name === 'daily') {
+			trackEvent('daily_open', {})
+		}
+		if (
+			route.name === 'gallery' &&
+			previous !== 'galleryCollection' &&
+			previous !== 'galleryDetail'
+		) {
+			trackEvent('gallery_open', {})
+		}
+	}, [route])
+
+	const handleTutorialExitRegistration = useCallback(
+		(request: (() => void) | null) => {
+			tutorialExitRequestRef.current = request
+		},
+		[],
+	)
 
 	useEffect(() => {
 		if (route.name === 'tutorial' && route.source === 'first_run') {
@@ -93,18 +165,6 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 		// Fire once for initial first-run entry.
 		// eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only
 	}, [])
-
-	// Midnight / focus refresh: discard stale Daily + refresh Home card.
-	useEffect(() => {
-		const onActive = (state: AppStateStatus) => {
-			if (state !== 'active') {
-				return
-			}
-			void service.discardStaleDailyIfNeeded().then(() => refresh())
-		}
-		const sub = AppState.addEventListener('change', onActive)
-		return () => sub.remove()
-	}, [refresh, service])
 
 	const goHome = useCallback(() => {
 		refresh()
@@ -119,17 +179,124 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 		[refresh],
 	)
 
+	/**
+	 * M2: the running DAILY session outlived its local day. Drop the stale
+	 * save, tell the user, and route to the Daily calendar (today's puzzle).
+	 * Idempotent: routeRef flips synchronously so a second trigger in the same
+	 * tick (GameScreen + AppState) is a no-op.
+	 */
+	const handleDailyExpired = useCallback(() => {
+		const current = routeRef.current
+		if (current.name !== 'game' || current.session.mode !== 'DAILY') {
+			return
+		}
+		routeRef.current = { name: 'daily' }
+		void service
+			.discardStaleDailyIfNeeded()
+			.catch(() => undefined)
+			.then(() => refresh())
+		goDaily()
+		Alert.alert(
+			'Наступил новый день',
+			'Кроссворд дня обновился. Прогресс вчерашнего кроссворда не засчитан — откройте календарь, чтобы начать сегодняшний.',
+		)
+	}, [goDaily, refresh, service])
+
+	// Midnight / focus refresh: on AppState active, invalidate a stale DAILY
+	// game session, discard stale Daily saves and refresh the Home card.
+	useEffect(() => {
+		const onActive = (state: AppStateStatus) => {
+			if (state !== 'active') {
+				return
+			}
+			const current = routeRef.current
+			if (
+				current.name === 'game' &&
+				current.session.mode === 'DAILY' &&
+				isDailySessionStale(current.session.dayKey, service.todayDayKey())
+			) {
+				handleDailyExpired()
+				return
+			}
+			void service.discardStaleDailyIfNeeded().then(() => refresh())
+		}
+		const sub = AppState.addEventListener('change', onActive)
+		return () => sub.remove()
+	}, [handleDailyExpired, refresh, service])
+
+	/**
+	 * M5: apply a resolved Android Back action. Returns true when handled;
+	 * false lets React Native's default behaviour (exit app) run.
+	 */
+	const applyBackAction = useCallback(
+		(action: BackPolicyAction): boolean => {
+			switch (action.kind) {
+				case 'exit_app':
+					// Home: let RN default exit the app.
+					return false
+				case 'go': {
+					const target = routeForBackTarget(action.route)
+					if (target.name === 'home') {
+						goHome()
+					} else {
+						setRoute(target)
+					}
+					return true
+				}
+				case 'go_gallery_collection':
+					setRoute({
+						name: 'galleryCollection',
+						collectionId: action.collectionId,
+					})
+					return true
+				case 'tutorial_confirm_exit':
+					// Same confirm dialog as the on-screen "Закрыть" button.
+					tutorialExitRequestRef.current?.()
+					return true
+				case 'game_flush_exit':
+				case 'consume_help_overlay':
+					// GameScreen owns these (flush / help overlay); consume Back here
+					// so a stray press can never exit the app mid-solve.
+					return true
+				default:
+					return true
+			}
+		},
+		[goHome],
+	)
+
+	// Registered once so screen-level handlers (Levels set detail, Daily day
+	// detail, Game help) registered later keep priority; this is the policy
+	// fallback for every route without local back state.
+	const applyBackActionRef = useRef(applyBackAction)
+	useEffect(() => {
+		applyBackActionRef.current = applyBackAction
+	}, [applyBackAction])
+
+	useEffect(() => {
+		const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+			const current = routeRef.current
+			return applyBackActionRef.current(
+				resolveAndroidBackAction({
+					routeName: current.name,
+					collectionId:
+						current.name === 'galleryDetail'
+							? current.collectionId
+							: undefined,
+				}),
+			)
+		})
+		return () => sub.remove()
+	}, [])
+
 	const openSession = useCallback((session: GameSessionDescriptor) => {
 		setRoute({ name: 'game', session })
 	}, [])
 
 	const runPostCompletionInterstitial = useCallback(async () => {
-		const shown = await maybeShowInterstitialAfterCompletion({
-			isTutorial: false,
-		})
-		if (shown) {
-			trackEvent('interstitial_shown')
-		}
+		// Completions are counted at persist time via recordCompletionForAdPolicy.
+		// This only decides/show — always settles (C1).
+		await maybeShowInterstitial({ isTutorial: false })
 	}, [])
 
 	const handleContinue = useCallback(() => {
@@ -209,18 +376,20 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 				!save.completedPuzzleIds.includes(active.puzzleId)
 
 			const launch = () => {
-				const session: GameSessionDescriptor =
-					intent.kind === 'replay'
-						? {
-								mode: 'REPLAY',
-								puzzleId: intent.puzzleId,
-								launch: 'replay',
-							}
-						: {
-								mode: 'CAMPAIGN',
-								puzzleId: intent.puzzleId,
-								launch: 'fresh',
-							}
+				if (intent.kind === 'replay') {
+					// Ephemeral replay — never overwrite Campaign active save.
+					openSession({
+						mode: 'REPLAY',
+						puzzleId: intent.puzzleId,
+						launch: 'replay',
+					})
+					return
+				}
+				const session: GameSessionDescriptor = {
+					mode: 'CAMPAIGN',
+					puzzleId: intent.puzzleId,
+					launch: 'fresh',
+				}
 				void service.replaceActivePuzzle(intent.puzzleId).then(() => {
 					refresh()
 					openSession(session)
@@ -258,48 +427,65 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 			if (!isGalleryPuzzleUnlocked(puzzleId, save.solvedPuzzleIds)) {
 				return
 			}
-			void service.replaceActivePuzzle(puzzleId).then(() => {
-				refresh()
-				openSession({
-					mode: 'REPLAY',
-					puzzleId,
-					launch: 'replay',
-				})
+			// REPLAY is ephemeral — must not replace unfinished Campaign activeGame.
+			openSession({
+				mode: 'REPLAY',
+				puzzleId,
+				launch: 'replay',
 			})
 		},
-		[openSession, refresh, save.solvedPuzzleIds, service],
+		[openSession, save.solvedPuzzleIds],
 	)
 
 	const handleCompletionNext = useCallback(
 		(puzzleId: string) => {
-			void (async () => {
-				await runPostCompletionInterstitial()
-				await service.replaceActivePuzzle(puzzleId)
-				refresh()
-				openSession({
-					mode: 'CAMPAIGN',
-					puzzleId,
-					launch: 'fresh',
+			// Shared in-flight guard: repeated Next / Home taps after completion
+			// must not stack interstitial + navigation operations.
+			void transitionGuard
+				.run(async () => {
+					await runPostCompletionInterstitial()
+					await service.replaceActivePuzzle(puzzleId)
+					refresh()
+					openSession({
+						mode: 'CAMPAIGN',
+						puzzleId,
+						launch: 'fresh',
+					})
 				})
-			})()
+				.catch(() => undefined)
 		},
-		[openSession, refresh, runPostCompletionInterstitial, service],
+		[
+			openSession,
+			refresh,
+			runPostCompletionInterstitial,
+			service,
+			transitionGuard,
+		],
 	)
 
 	const handleGameExit = useCallback(
 		(session: GameSessionDescriptor, fromCompletion: boolean) => {
-			void (async () => {
-				if (fromCompletion) {
-					await runPostCompletionInterstitial()
-				}
+			const navigate = () => {
 				if (session.mode === 'DAILY') {
 					goDaily(session.dayKey)
 				} else {
 					goHome()
 				}
-			})()
+			}
+			if (!fromCompletion) {
+				// Plain exits show no interstitial — nothing to debounce.
+				navigate()
+				return
+			}
+			// Same guard as Next: the interstitial + navigation run at most once.
+			void transitionGuard
+				.run(async () => {
+					await runPostCompletionInterstitial()
+					navigate()
+				})
+				.catch(() => undefined)
 		},
-		[goDaily, goHome, runPostCompletionInterstitial],
+		[goDaily, goHome, runPostCompletionInterstitial, transitionGuard],
 	)
 
 	if (route.name === 'tutorial') {
@@ -307,11 +493,27 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 			<TutorialScreen
 				source={route.source}
 				onFinished={goHome}
-				onExitEarly={goHome}
+				onExitEarly={() => {
+					void (async () => {
+						// Persist the first-run skip so the tutorial does not reopen
+						// on every cold start. Settings / Home replays are not
+						// persisted as skips.
+						if (route.source === 'first_run') {
+							try {
+								await service.markTutorialFirstRunSkipped()
+							} catch {
+								// Persist failure must never trap the user in the tutorial.
+							}
+							refresh()
+						}
+						goHome()
+					})()
+				}}
 				onPersistComplete={async () => {
 					await service.markTutorialCompleted(CURRENT_TUTORIAL_VERSION)
 					refresh()
 				}}
+				onRegisterExitRequest={handleTutorialExitRegistration}
 			/>
 		)
 	}
@@ -358,6 +560,7 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 				}}
 				onOpenDailyCalendar={(dayKey) => goDaily(dayKey)}
 				onNextPuzzle={handleCompletionNext}
+				onDailyExpired={handleDailyExpired}
 				darkMode={darkMode}
 			/>
 		)

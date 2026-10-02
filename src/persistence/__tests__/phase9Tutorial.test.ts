@@ -9,7 +9,7 @@ import { CURRENT_SAVE_SCHEMA_VERSION } from '../schema'
 describe('schema v6 tutorial + help migration', () => {
 	it('default save is v6 with tutorial and help fields', () => {
 		const save = createDefaultSave()
-		expect(save.schemaVersion).toBe(6)
+		expect(save.schemaVersion).toBe(7)
 		expect(save.tutorialVersionCompleted).toBeNull()
 		expect(save.tutorialOfferDismissed).toBe(false)
 		expect(save.freeHintsUsedToday).toBe(0)

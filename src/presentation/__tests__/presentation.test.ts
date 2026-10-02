@@ -75,10 +75,11 @@ describe('home / statistics view models', () => {
 		save = completePuzzle(save, {
 			puzzleId: campaignId,
 			activeTimeMs: 900,
+			isReplay: true,
 		})
 		const stats = buildStatisticsViewModel(save)
 		expect(stats.completedUnique).toBe(1)
-		expect(stats.totalCompletions).toBe(2)
+		expect(stats.totalCompletions).toBe(1)
 		expect(stats.campaignTotal).toBe(1000)
 	})
 })

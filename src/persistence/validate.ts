@@ -476,39 +476,45 @@ function withHintDefaultsOnDaily(
 }
 
 /**
- * Migrate a validated v1 document to current (via v2→v3→v4→v5→v6).
+ * Migrate a validated v1 document to current (via v2→v3→v4→v5→v6→v7).
  * solvedPuzzleIds = completedPuzzleIds; dailyStartedDay = null; hint counters = 0.
  */
 export function migrateV1DocumentToV2(
 	v1: SaveRootV1,
 	today: DayKey = DAILY_EPOCH_DAY,
 ): SaveRoot {
-	return migrateV5DocumentToV6(
-		migrateV4DocumentToV5(
-			migrateV3DocumentToV4(
-				migrateV2DocumentToV3({
-					schemaVersion: 2,
-					activeGame: withHintDefaultsOnActive(v1.activeGame),
-					activeDailyGame: null,
-					completedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
-					solvedPuzzleIds: Object.freeze([...v1.completedPuzzleIds]),
-					startedPuzzleIds: Object.freeze([...v1.startedPuzzleIds]),
-					bestTimes: v1.bestTimes,
-					statistics: Object.freeze({
-						...v1.statistics,
-						hintRequests: 0,
-						hintsApplied: 0,
-						teachMeViews: 0,
+	return migrateV6DocumentToV7(
+		migrateV5DocumentToV6(
+			migrateV4DocumentToV5(
+				migrateV3DocumentToV4(
+					migrateV2DocumentToV3({
+						schemaVersion: 2,
+						activeGame: withHintDefaultsOnActive(v1.activeGame),
+						activeDailyGame: null,
+						completedPuzzleIds: Object.freeze([
+							...v1.completedPuzzleIds,
+						]),
+						solvedPuzzleIds: Object.freeze([
+							...v1.completedPuzzleIds,
+						]),
+						startedPuzzleIds: Object.freeze([...v1.startedPuzzleIds]),
+						bestTimes: v1.bestTimes,
+						statistics: Object.freeze({
+							...v1.statistics,
+							hintRequests: 0,
+							hintsApplied: 0,
+							teachMeViews: 0,
+						}),
+						dailyCompletionRecords: Object.freeze(
+							[] as DailyCompletionRecordSave[],
+						),
+						restoredDailyDays: Object.freeze([] as DayKey[]),
+						dailyStartedDay: null,
 					}),
-					dailyCompletionRecords: Object.freeze(
-						[] as DailyCompletionRecordSave[],
-					),
-					restoredDailyDays: Object.freeze([] as DayKey[]),
-					dailyStartedDay: null,
-				}),
+				),
 			),
+			today,
 		),
-		today,
 	)
 }
 
@@ -760,15 +766,71 @@ export type SaveParseOutcomeV5 =
 	| { readonly ok: false; readonly reason: string }
 
 /**
+ * Intermediate v6 shape used only during migration to v7.
+ * Identical to the current root minus the v7 `tutorialFirstRunSkipped` field.
+ */
+export type SaveRootV6 = Omit<
+	SaveRoot,
+	'schemaVersion' | 'tutorialFirstRunSkipped'
+> & { readonly schemaVersion: 6 }
+
+export type SaveParseOutcomeV6 =
+	| { readonly ok: true; readonly save: SaveRootV6 }
+	| { readonly ok: false; readonly reason: string }
+
+/**
+ * Migrate validated v6 → v7: add `tutorialFirstRunSkipped` (default false).
+ * Existing users keep their prior first-run behaviour (offer only when the
+ * save has no progress), so no forced tutorial is introduced.
+ */
+export function migrateV6DocumentToV7(v6: SaveRootV6): SaveRoot {
+	return freezeSave({
+		...v6,
+		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+		tutorialFirstRunSkipped: false,
+	})
+}
+
+/** Validate schema v6 document (migration source for v7). */
+export function parseAndValidateSaveV6(raw: unknown): SaveParseOutcomeV6 {
+	if (raw === null || typeof raw !== 'object') {
+		return { ok: false, reason: 'Save root must be an object' }
+	}
+	const record = raw as Record<string, unknown>
+	if (record.schemaVersion !== 6) {
+		return {
+			ok: false,
+			reason: `Expected schemaVersion 6, got ${String(record.schemaVersion)}`,
+		}
+	}
+	// Reuse the current-shape validator with the v7 field defaulted.
+	const asCurrent = parseAndValidateSave({
+		...record,
+		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+		tutorialFirstRunSkipped: false,
+	})
+	if (!asCurrent.ok) {
+		return asCurrent
+	}
+	// Strip the v7-only field to obtain the v6 shape.
+	const { tutorialFirstRunSkipped, ...rest } = asCurrent.save
+	void tutorialFirstRunSkipped
+	return {
+		ok: true,
+		save: Object.freeze({ ...rest, schemaVersion: 6 as const }),
+	}
+}
+
+/**
  * Migrate validated v5 → v6: daily free Hint/Teach Me allowances.
  * Starts at 0 used for current local day — no retroactive charges.
  */
 export function migrateV5DocumentToV6(
 	v5: SaveRootV5,
 	today: DayKey = '2026-09-28',
-): SaveRoot {
+): SaveRootV6 {
 	return Object.freeze({
-		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
+		schemaVersion: 6 as const,
 		activeGame: v5.activeGame,
 		activeDailyGame: v5.activeDailyGame,
 		completedPuzzleIds: Object.freeze([...v5.completedPuzzleIds]),
@@ -1017,6 +1079,14 @@ export function parseAndValidateSave(
 	) {
 		return { ok: false, reason: 'Invalid tutorialOfferDismissed' }
 	}
+	// v7: missing → false for forward-compat parses of older documents.
+	if (
+		record.tutorialFirstRunSkipped !== undefined &&
+		typeof record.tutorialFirstRunSkipped !== 'boolean'
+	) {
+		return { ok: false, reason: 'Invalid tutorialFirstRunSkipped' }
+	}
+	const tutorialFirstRunSkipped = record.tutorialFirstRunSkipped === true
 
 	const helpAllowanceDayRaw = record.helpAllowanceDay
 	if (
@@ -1085,6 +1155,7 @@ export function parseAndValidateSave(
 			unlockedAchievementIds,
 			tutorialVersionCompleted,
 			tutorialOfferDismissed,
+			tutorialFirstRunSkipped,
 			helpAllowanceDay,
 			freeHintsUsedToday,
 			freeTeachMeUsedToday,
@@ -1125,6 +1196,7 @@ export function freezeSave(save: SaveRoot): SaveRoot {
 		]),
 		tutorialVersionCompleted: save.tutorialVersionCompleted,
 		tutorialOfferDismissed: save.tutorialOfferDismissed,
+		tutorialFirstRunSkipped: save.tutorialFirstRunSkipped,
 		helpAllowanceDay: save.helpAllowanceDay,
 		freeHintsUsedToday: save.freeHintsUsedToday,
 		freeTeachMeUsedToday: save.freeTeachMeUsedToday,

@@ -211,14 +211,50 @@ export function persistActiveDailyPlayerState(
  * Atomic Campaign completion:
  * stats + completed IDs + solved IDs + best time + clear Campaign active.
  * Daily active untouched.
+ *
+ * Replay must NOT advance Campaign progression or clear unfinished Campaign.
  */
 export function completePuzzle(
 	save: SaveRoot,
 	input: {
 		readonly puzzleId: string
 		readonly activeTimeMs: number
+		readonly isReplay?: boolean
 	},
 ): SaveRoot {
+	if (input.isReplay) {
+		// Ephemeral replay (H5): keep activeGame untouched, never add Campaign
+		// completedPuzzleIds / startedPuzzleIds, never bump totalCompletions
+		// (so Campaign unlock + completion achievements cannot be farmed).
+		const hasBest = save.bestTimes.some(
+			(item) => item.puzzleId === input.puzzleId,
+		)
+		return freezeSave({
+			...save,
+			// Solved is a noop for already-solved puzzles; replay entry is only
+			// reachable from solved Gallery items.
+			solvedPuzzleIds: withUniqueId(save.solvedPuzzleIds, input.puzzleId),
+			// Only improve an existing best time — never create a Campaign one.
+			bestTimes: hasBest
+				? upsertBestTime(save.bestTimes, input.puzzleId, input.activeTimeMs)
+				: save.bestTimes,
+			statistics: Object.freeze({
+				...save.statistics,
+				totalActiveSolveTimeMs:
+					save.statistics.totalActiveSolveTimeMs +
+					Math.max(0, input.activeTimeMs),
+			}),
+		})
+	}
+	if (save.completedPuzzleIds.includes(input.puzzleId)) {
+		// H6 idempotence: a duplicate Campaign completion (double persist /
+		// retry after a lost ack) must not double-count statistics. It may only
+		// clear a stale active party for the same puzzle.
+		const staleActive = save.activeGame?.puzzleId === input.puzzleId
+		return staleActive
+			? freezeSave({ ...save, activeGame: null })
+			: save
+	}
 	return freezeSave({
 		...save,
 		activeGame: null,
@@ -509,6 +545,20 @@ export function dismissTutorialOffer(save: SaveRoot): SaveRoot {
 }
 
 /**
+ * Persist that the user skipped / exited the first-run tutorial so it does
+ * not auto-reopen on every cold start. Settings replay is unaffected.
+ */
+export function markTutorialFirstRunSkipped(save: SaveRoot): SaveRoot {
+	if (save.tutorialFirstRunSkipped) {
+		return save
+	}
+	return freezeSave({
+		...save,
+		tutorialFirstRunSkipped: true,
+	})
+}
+
+/**
  * DEV-only: clear tutorial completion so first-run / soft offer can be retested
  * without wiping Campaign / Gallery / Daily progress.
  */
@@ -517,6 +567,7 @@ export function resetTutorialProgressDevOnly(save: SaveRoot): SaveRoot {
 		...save,
 		tutorialVersionCompleted: null,
 		tutorialOfferDismissed: false,
+		tutorialFirstRunSkipped: false,
 	})
 }
 

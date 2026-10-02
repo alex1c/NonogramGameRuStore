@@ -71,6 +71,7 @@ describe('completion event result', () => {
 		const better = await service.completePuzzle({
 			puzzleId: puzzle.id,
 			activeTimeMs: 400,
+			isReplay: true,
 		})
 		expect(better.event.bestTimeImproved).toBe(true)
 		expect(better.event.newBestTimeMs).toBe(400)
@@ -184,8 +185,8 @@ describe('fingerprint metadata invariance', () => {
 
 describe('default save schema v6', () => {
 	it('createDefaultSave schema is 6', () => {
-		expect(createDefaultSave().schemaVersion).toBe(6)
-		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(6)
+		expect(createDefaultSave().schemaVersion).toBe(7)
+		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(7)
 		expect(createDefaultSave().unlockedAchievementIds).toEqual([])
 	})
 })

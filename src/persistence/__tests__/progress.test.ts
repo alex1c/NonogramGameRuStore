@@ -62,25 +62,30 @@ describe('progress reducers', () => {
 		expect(save.bestTimes[0]?.bestActiveTimeMs).toBe(5000)
 	})
 
-	it('replay increments totalCompletions but not unique IDs', () => {
+	it('replay does not advance Campaign unique IDs or totalCompletions (H5)', () => {
 		const id = PRODUCTION_CAMPAIGN_FIRST
 		let save = completePuzzle(createDefaultSave(), {
 			puzzleId: id,
 			activeTimeMs: 9000,
 		})
-		save = completePuzzle(save, { puzzleId: id, activeTimeMs: 8000 })
+		save = completePuzzle(save, {
+			puzzleId: id,
+			activeTimeMs: 8000,
+			isReplay: true,
+		})
 		expect(save.completedPuzzleIds).toEqual([id])
-		expect(save.statistics.totalCompletions).toBe(2)
+		expect(save.statistics.totalCompletions).toBe(1)
 		expect(save.bestTimes[0]?.bestActiveTimeMs).toBe(8000)
 	})
 
-	it('worse replay time does not replace best', () => {
+	it('duplicate Campaign complete is idempotent (H6)', () => {
 		const id = PRODUCTION_CAMPAIGN_SECOND
 		let save = completePuzzle(createDefaultSave(), {
 			puzzleId: id,
 			activeTimeMs: 3000,
 		})
 		save = completePuzzle(save, { puzzleId: id, activeTimeMs: 9000 })
+		expect(save.statistics.totalCompletions).toBe(1)
 		expect(save.bestTimes[0]?.bestActiveTimeMs).toBe(3000)
 	})
 

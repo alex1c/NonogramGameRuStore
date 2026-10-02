@@ -13,6 +13,7 @@ export type {
 } from './schema'
 export { createDefaultSave, createEmptyStatistics } from './createDefaultSave'
 export { migrateSave, migrateSaveJson } from './migrate'
+export type { MigrateSaveResult } from './migrate'
 export { parseAndValidateSave } from './validate'
 export { createSaveRepository } from './repository'
 export type { SaveRepository } from './repository'

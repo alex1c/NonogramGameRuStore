@@ -18,8 +18,17 @@ export { createRewardGrantGuard } from './rewardedPolicy'
 export {
 	initializeAds,
 	preloadInterstitial,
+	maybeShowInterstitial,
 	maybeShowInterstitialAfterCompletion,
+	recordCompletionForAdPolicy,
 	showRewarded,
 	__setInterstitialPolicyForTests,
 	__getInterstitialPolicyForTests,
+	__clearCountedCompletionRunIdsForTests,
 } from './service'
+export {
+	runInterstitialLifecycle,
+	runRewardedLifecycle,
+	type InterstitialOutcome,
+	type RewardedOutcome,
+} from './fullscreenLifecycle'
