@@ -53,6 +53,34 @@ describe('Home scroll layout contract', () => {
 		expect(bannerIdx).toBeGreaterThan(contentIdx)
 	})
 
+	it('places Settings below progress, away from top-right debug zone', () => {
+		const homeSource = fs.readFileSync(
+			path.join(__dirname, '../../screens/HomeScreen.tsx'),
+			'utf8',
+		)
+		const titleIdx = homeSource.indexOf('accessibilityRole="header"')
+		const settingsIdx = homeSource.indexOf('testID="home-settings"')
+		const continueIdx = homeSource.indexOf('testID="home-continue"')
+		const progressIdx = homeSource.indexOf('styles.progressTrack')
+		expect(settingsIdx).toBeGreaterThan(titleIdx)
+		expect(settingsIdx).toBeGreaterThan(progressIdx)
+		expect(continueIdx).toBeGreaterThan(settingsIdx)
+		// Must not inflate the hit area back into the Expo console corner.
+		const settingsPressable = homeSource.slice(
+			homeSource.lastIndexOf('<Pressable', settingsIdx),
+			settingsIdx + 80,
+		)
+		expect(settingsPressable).not.toMatch(/hitSlop/)
+		expect(homeSource).toContain('settingsButton:')
+		expect(homeSource).toMatch(/settingsButton:[\s\S]*?minHeight:\s*48/)
+		expect(homeSource).toContain('accessibilityLabel="Настройки"')
+		// Exactly one Settings control.
+		expect(homeSource.split('testID="home-settings"').length - 1).toBe(1)
+		expect(homeSource.split('accessibilityLabel="Настройки"').length - 1).toBe(
+			1,
+		)
+	})
+
 	it('tutorial route never requests a shell banner', () => {
 		expect(placementForShellRoute('tutorial')).toBeNull()
 	})

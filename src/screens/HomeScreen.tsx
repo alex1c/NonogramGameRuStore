@@ -77,15 +77,6 @@ export function HomeScreen({
 				<Text style={styles.title} accessibilityRole="header">
 					{APP_SHORT_NAME}
 				</Text>
-				<Pressable
-					accessibilityRole="button"
-					accessibilityLabel="Настройки"
-					onPress={onOpenSettings}
-					hitSlop={8}
-					testID="home-settings"
-				>
-					<Text style={styles.gear}>⚙</Text>
-				</Pressable>
 			</View>
 
 			<Text style={styles.progress} accessibilityLabel={progress.label}>
@@ -112,6 +103,30 @@ export function HomeScreen({
 				Галерея {gallery.unlocked}/{gallery.total} · Достижения{' '}
 				{unlockedAchievements}/{achievements.length}
 			</Text>
+
+			{/*
+			 * Settings lives in scroll content below the progress block so its
+			 * touch target cannot overlap the Expo/dev-client top-right console.
+			 */}
+			<View style={styles.settingsRow}>
+				<Pressable
+					accessibilityRole="button"
+					accessibilityLabel="Настройки"
+					onPress={onOpenSettings}
+					style={({ pressed }) => [
+						styles.settingsButton,
+						{ opacity: pressed ? 0.85 : 1 },
+					]}
+					testID="home-settings"
+				>
+					<Text style={styles.gear} accessible={false}>
+						⚙
+					</Text>
+					<Text style={styles.settingsLabel} accessible={false}>
+						Настройки
+					</Text>
+				</Pressable>
+			</View>
 
 			{home.continueCard !== null ? (
 				<Pressable
@@ -310,7 +325,6 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'center',
 		marginBottom: spacing.sm,
-		gap: spacing.sm,
 	},
 	title: {
 		...typography.title,
@@ -318,10 +332,34 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		flexShrink: 1,
 	},
+	settingsRow: {
+		flexDirection: 'row',
+		justifyContent: 'flex-end',
+		alignItems: 'center',
+		marginBottom: spacing.sm,
+	},
+	settingsButton: {
+		minWidth: 48,
+		minHeight: 48,
+		paddingHorizontal: spacing.md,
+		borderRadius: 12,
+		borderWidth: 1,
+		borderColor: colors.border,
+		backgroundColor: colors.surface,
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 6,
+	},
 	gear: {
-		fontSize: 22,
+		fontSize: 20,
 		color: colors.accent,
-		paddingHorizontal: 4,
+		lineHeight: 24,
+	},
+	settingsLabel: {
+		fontSize: 14,
+		fontWeight: '600',
+		color: colors.textMuted,
 	},
 	tutorialCard: {
 		backgroundColor: '#FFFFFF',
