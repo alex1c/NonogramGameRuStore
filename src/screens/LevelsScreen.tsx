@@ -20,6 +20,7 @@ import {
 	type CampaignSetCardViewModel,
 	type LevelCardViewModel,
 } from '../campaign'
+import { trackEvent } from '../analytics'
 import { useProgress } from '../progress/ProgressProvider'
 import { colors, spacing, typography } from '../theme'
 
@@ -79,6 +80,8 @@ export function LevelsScreen({ onBack, onOpenLevel }: LevelsScreenProps) {
 				)
 				return
 			}
+			// M4: a real (unlocked) set was opened — locked taps never report.
+			trackEvent('campaign_set_open', { setNumber: card.displayOrder })
 			setSelectedSetId(card.setId)
 		},
 		[showLockedFeedback],

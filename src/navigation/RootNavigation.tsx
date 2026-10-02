@@ -296,7 +296,11 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 	const runPostCompletionInterstitial = useCallback(async () => {
 		// Completions are counted at persist time via recordCompletionForAdPolicy.
 		// This only decides/show — always settles (C1).
-		await maybeShowInterstitial({ isTutorial: false })
+		try {
+			await maybeShowInterstitial({ isTutorial: false })
+		} catch {
+			// An ad failure must never trap the user on the completion screen.
+		}
 	}, [])
 
 	const handleContinue = useCallback(() => {
