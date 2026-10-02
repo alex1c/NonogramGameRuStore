@@ -25,8 +25,8 @@ describe('ads config', () => {
 		expect(AD_UNIT_IDS.rewarded).toBe('R-M-20146030-5')
 	})
 
-	it('defers user-facing rewarded while free Hint remains unlimited', () => {
-		expect(REWARDED_USER_FACING_ENABLED).toBe(false)
+	it('enables user-facing rewarded for over-limit Hint / Teach Me', () => {
+		expect(REWARDED_USER_FACING_ENABLED).toBe(true)
 	})
 })
 

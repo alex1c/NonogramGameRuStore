@@ -60,6 +60,11 @@ import {
 	markTutorialCompleted as markTutorialCompletedReducer,
 	dismissTutorialOffer as dismissTutorialOfferReducer,
 	resetTutorialProgressDevOnly as resetTutorialProgressDevOnlyReducer,
+	ensureHelpAllowanceDay as ensureHelpAllowanceDayReducer,
+	consumeHintApplyAllowance as consumeHintApplyAllowanceReducer,
+	consumeTeachMeRevealAllowance as consumeTeachMeRevealAllowanceReducer,
+	grantRewardedHintAllowance as grantRewardedHintAllowanceReducer,
+	grantRewardedTeachMeAllowance as grantRewardedTeachMeAllowanceReducer,
 } from './progressReducers'
 import {
 	contextFromSave,
@@ -179,6 +184,11 @@ export interface GameProgressService {
 	markTutorialCompleted(tutorialVersion: number): Promise<SaveRoot>
 	dismissTutorialOffer(): Promise<SaveRoot>
 	resetTutorialProgressDevOnly(): Promise<SaveRoot>
+	ensureHelpAllowanceDay(): Promise<SaveRoot>
+	consumeHintApplyAllowance(): Promise<SaveRoot | null>
+	consumeTeachMeRevealAllowance(): Promise<SaveRoot | null>
+	grantRewardedHintAllowance(): Promise<SaveRoot>
+	grantRewardedTeachMeAllowance(): Promise<SaveRoot>
 
 	/** Mark user Daily participation start (first Daily screen open). */
 	openDailyScreen(): Promise<SaveRoot>
@@ -258,6 +268,12 @@ export function createGameProgressService(
 				if (loaded.kind === 'recovered' || loaded.kind === 'unsupported') {
 					await repository.save(current)
 				}
+			}
+
+			const rolled = ensureHelpAllowanceDayReducer(current, today())
+			if (rolled !== current) {
+				current = rolled
+				await repository.save(current)
 			}
 
 			hydrated = true
@@ -452,6 +468,43 @@ export function createGameProgressService(
 		async resetTutorialProgressDevOnly() {
 			ensureHydrated(hydrated)
 			return commit(resetTutorialProgressDevOnlyReducer(current))
+		},
+
+		async ensureHelpAllowanceDay() {
+			ensureHydrated(hydrated)
+			const next = ensureHelpAllowanceDayReducer(current, today())
+			if (next === current) {
+				return current
+			}
+			return commit(next)
+		},
+
+		async consumeHintApplyAllowance() {
+			ensureHydrated(hydrated)
+			const next = consumeHintApplyAllowanceReducer(current, today())
+			if (next === null) {
+				return null
+			}
+			return commit(next)
+		},
+
+		async consumeTeachMeRevealAllowance() {
+			ensureHydrated(hydrated)
+			const next = consumeTeachMeRevealAllowanceReducer(current, today())
+			if (next === null) {
+				return null
+			}
+			return commit(next)
+		},
+
+		async grantRewardedHintAllowance() {
+			ensureHydrated(hydrated)
+			return commit(grantRewardedHintAllowanceReducer(current, today()))
+		},
+
+		async grantRewardedTeachMeAllowance() {
+			ensureHydrated(hydrated)
+			return commit(grantRewardedTeachMeAllowanceReducer(current, today()))
 		},
 
 		async openDailyScreen() {

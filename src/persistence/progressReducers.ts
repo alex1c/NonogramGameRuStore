@@ -7,6 +7,14 @@ import { serializePlayerState } from '../domain/nonogram/playerState'
 import type { PlayerState, Puzzle } from '../domain/nonogram/types'
 import { PaintTool } from '../gameplay/tools'
 import type { DayKey } from '../daily/dateUtils'
+import {
+	consumeHintApply as consumeHintApplyPure,
+	consumeTeachMeReveal as consumeTeachMeRevealPure,
+	grantRewardedHintEntitlement as grantRewardedHintPure,
+	grantRewardedTeachMeEntitlement as grantRewardedTeachMePure,
+	rollHelpAllowanceToDay,
+	type HelpAllowanceState,
+} from '../help/allowance'
 import { buildPuzzleContentFingerprint } from './fingerprint'
 import { createDefaultSave } from './createDefaultSave'
 import type {
@@ -510,4 +518,79 @@ export function resetTutorialProgressDevOnly(save: SaveRoot): SaveRoot {
 		tutorialVersionCompleted: null,
 		tutorialOfferDismissed: false,
 	})
+}
+
+function helpStateFromSave(save: SaveRoot): HelpAllowanceState {
+	return {
+		helpAllowanceDay: save.helpAllowanceDay,
+		freeHintsUsedToday: save.freeHintsUsedToday,
+		freeTeachMeUsedToday: save.freeTeachMeUsedToday,
+		pendingRewardedHints: save.pendingRewardedHints,
+		pendingRewardedTeachMe: save.pendingRewardedTeachMe,
+	}
+}
+
+function applyHelpState(save: SaveRoot, help: HelpAllowanceState): SaveRoot {
+	return freezeSave({
+		...save,
+		helpAllowanceDay: help.helpAllowanceDay,
+		freeHintsUsedToday: help.freeHintsUsedToday,
+		freeTeachMeUsedToday: help.freeTeachMeUsedToday,
+		pendingRewardedHints: help.pendingRewardedHints,
+		pendingRewardedTeachMe: help.pendingRewardedTeachMe,
+	})
+}
+
+/** Roll free counters when local day changes (preserves pending entitlements). */
+export function ensureHelpAllowanceDay(
+	save: SaveRoot,
+	today: DayKey,
+): SaveRoot {
+	const currentHelp = helpStateFromSave(save)
+	const next = rollHelpAllowanceToDay(currentHelp, today)
+	// rollHelpAllowanceToDay returns the same reference when the day matches.
+	if (next === currentHelp) {
+		return save
+	}
+	return applyHelpState(save, next)
+}
+
+export function consumeHintApplyAllowance(
+	save: SaveRoot,
+	today: DayKey,
+): SaveRoot | null {
+	const rolled = rollHelpAllowanceToDay(helpStateFromSave(save), today)
+	const consumed = consumeHintApplyPure(rolled)
+	if (consumed === null) {
+		return null
+	}
+	return applyHelpState(save, consumed)
+}
+
+export function consumeTeachMeRevealAllowance(
+	save: SaveRoot,
+	today: DayKey,
+): SaveRoot | null {
+	const rolled = rollHelpAllowanceToDay(helpStateFromSave(save), today)
+	const consumed = consumeTeachMeRevealPure(rolled)
+	if (consumed === null) {
+		return null
+	}
+	return applyHelpState(save, consumed)
+}
+
+export function grantRewardedHintAllowance(
+	save: SaveRoot,
+	today: DayKey,
+): SaveRoot {
+	const rolled = rollHelpAllowanceToDay(helpStateFromSave(save), today)
+	return applyHelpState(save, grantRewardedHintPure(rolled))
+}
+
+export function grantRewardedTeachMeAllowance(
+	save: SaveRoot,
+	today: DayKey,
+): SaveRoot {
+	const rolled = rollHelpAllowanceToDay(helpStateFromSave(save), today)
+	return applyHelpState(save, grantRewardedTeachMePure(rolled))
 }

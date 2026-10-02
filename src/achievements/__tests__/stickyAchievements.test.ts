@@ -55,11 +55,11 @@ function v3FixtureWithShapesComplete() {
 	})
 }
 
-describe('Phase 8B sticky achievements / schema v4→v5', () => {
-	it('defaults to schema v5 with empty sticky ids', () => {
+describe('Phase 8B sticky achievements / schema v4→v6', () => {
+	it('defaults to schema v6 with empty sticky ids', () => {
 		const save = createDefaultSave()
-		expect(save.schemaVersion).toBe(5)
-		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(5)
+		expect(save.schemaVersion).toBe(6)
+		expect(CURRENT_SAVE_SCHEMA_VERSION).toBe(6)
 		expect(save.unlockedAchievementIds).toEqual([])
 	})
 
@@ -84,7 +84,7 @@ describe('Phase 8B sticky achievements / schema v4→v5', () => {
 		expect(a.unlockedAchievementIds).toEqual(b.unlockedAchievementIds)
 	})
 
-	it('full migrateSave chain v1→v5 succeeds', () => {
+	it('full migrateSave chain v1→v6 succeeds', () => {
 		const v1 = {
 			schemaVersion: 1,
 			activeGame: null,
@@ -104,7 +104,7 @@ describe('Phase 8B sticky achievements / schema v4→v5', () => {
 		if (result.kind !== 'ok') {
 			return
 		}
-		expect(result.save.schemaVersion).toBe(5)
+		expect(result.save.schemaVersion).toBe(6)
 		expect(result.save.unlockedAchievementIds).toContain('first_picture')
 	})
 

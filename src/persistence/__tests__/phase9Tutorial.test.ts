@@ -6,15 +6,17 @@ import { createDefaultSave } from '../createDefaultSave'
 import { migrateSave } from '../migrate'
 import { CURRENT_SAVE_SCHEMA_VERSION } from '../schema'
 
-describe('schema v5 tutorial migration', () => {
-	it('default save is v5 with tutorial fields', () => {
+describe('schema v6 tutorial + help migration', () => {
+	it('default save is v6 with tutorial and help fields', () => {
 		const save = createDefaultSave()
-		expect(save.schemaVersion).toBe(5)
+		expect(save.schemaVersion).toBe(6)
 		expect(save.tutorialVersionCompleted).toBeNull()
 		expect(save.tutorialOfferDismissed).toBe(false)
+		expect(save.freeHintsUsedToday).toBe(0)
+		expect(save.freeTeachMeUsedToday).toBe(0)
 	})
 
-	it('v4 → v5 keeps sticky achievements and progress', () => {
+	it('v4 → v6 keeps sticky achievements and progress', () => {
 		const result = migrateSave({
 			schemaVersion: 4,
 			activeGame: null,

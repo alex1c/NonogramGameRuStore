@@ -26,6 +26,8 @@ export const ANALYTICS_EVENT_NAMES = [
 	'interstitial_shown',
 	'rewarded_requested',
 	'rewarded_completed',
+	'hint_free_consumed',
+	'teach_me_free_consumed',
 ] as const
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENT_NAMES)[number]
@@ -68,8 +70,10 @@ const ALLOWED_PARAMETERS: Record<AnalyticsEventName, readonly string[]> = {
 	gallery_unlock: ['collectionId'],
 	achievement_unlock: ['achievementId'],
 	interstitial_shown: [],
-	rewarded_requested: ['purpose'],
-	rewarded_completed: ['purpose'],
+	rewarded_requested: ['helpType'],
+	rewarded_completed: ['helpType'],
+	hint_free_consumed: ['remaining'],
+	teach_me_free_consumed: ['remaining'],
 }
 
 export type AnalyticsParameter = string | number | boolean

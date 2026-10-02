@@ -3,6 +3,7 @@
  * Phase 4–5: v1. Phase 6: v2 (Daily). Phase 7: v3 (Hints).
  * Phase 8B: v4 (sticky unlockedAchievementIds).
  * Phase 9: v5 (tutorial completion version).
+ * Phase 9.1: v6 (daily Hint / Teach Me free allowances + rewarded pending).
  * Persist IDs + player progress — never solution/clues/catalog blobs.
  *
  * Storage key remains `nonogram.save.v1` (historical suffix); schemaVersion
@@ -14,7 +15,7 @@ import type { PaintTool } from '../gameplay/tools'
 import type { DayKey } from '../daily/dateUtils'
 
 /** Single source of truth for the current save schema version. */
-export const CURRENT_SAVE_SCHEMA_VERSION = 5 as const
+export const CURRENT_SAVE_SCHEMA_VERSION = 6 as const
 
 export type SaveSchemaVersion = typeof CURRENT_SAVE_SCHEMA_VERSION
 
@@ -84,7 +85,7 @@ export interface DailyCompletionRecordSave {
 }
 
 /**
- * Root persisted document (schema v5).
+ * Root persisted document (schema v6).
  *
  * Semantics:
  * - completedPuzzleIds = Campaign completions only
@@ -98,6 +99,7 @@ export interface DailyCompletionRecordSave {
  * - unlockedAchievementIds = sticky unlocked achievement history (never shrinks)
  * - tutorialVersionCompleted = last fully completed tutorial version (null = never)
  * - tutorialOfferDismissed = user chose «Позже» on soft Home offer
+ * - helpAllowance* = local-day free Hint/Teach Me quotas + pending rewarded entitlements
  */
 export interface SaveRoot {
 	readonly schemaVersion: SaveSchemaVersion
@@ -120,6 +122,16 @@ export interface SaveRoot {
 	readonly tutorialVersionCompleted: number | null
 	/** Soft Home offer dismissed («Позже») — does not block Settings replay. */
 	readonly tutorialOfferDismissed: boolean
+	/** Local calendar day for free help counters (YYYY-MM-DD). */
+	readonly helpAllowanceDay: DayKey
+	/** Free successful Hint Applies used on helpAllowanceDay. */
+	readonly freeHintsUsedToday: number
+	/** Free Teach Me STEP explanations shown on helpAllowanceDay. */
+	readonly freeTeachMeUsedToday: number
+	/** Pending rewarded Hint entitlements (0 or 1). */
+	readonly pendingRewardedHints: number
+	/** Pending rewarded Teach Me entitlements (0 or 1). */
+	readonly pendingRewardedTeachMe: number
 }
 
 export type HydrationStatus =

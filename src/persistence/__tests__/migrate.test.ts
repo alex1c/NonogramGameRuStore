@@ -9,7 +9,7 @@ import { CURRENT_SAVE_SCHEMA_VERSION } from '../schema'
 import { parseAndValidateSave } from '../validate'
 
 describe('createDefaultSave', () => {
-	it('returns deterministic empty schema v5', () => {
+	it('returns deterministic empty schema v6', () => {
 		const a = createDefaultSave()
 		const b = createDefaultSave()
 		expect(a).toEqual(b)
@@ -31,14 +31,14 @@ describe('migrateSave', () => {
 		expect(result.save.activeGame).toBeNull()
 	})
 
-	it('valid v5 save → restore', () => {
+	it('valid v6 save → restore', () => {
 		const save = createDefaultSave()
 		const result = migrateSave(save)
 		expect(result.kind).toBe('ok')
 		expect(result.save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
 	})
 
-	it('valid v1 save → migrate to v5', () => {
+	it('valid v1 save → migrate to v6', () => {
 		const result = migrateSave({
 			schemaVersion: 1,
 			activeGame: null,
@@ -61,7 +61,7 @@ describe('migrateSave', () => {
 		expect(Array.isArray(result.save.unlockedAchievementIds)).toBe(true)
 	})
 
-	it('valid v2 save → migrate to v5', () => {
+	it('valid v2 save → migrate to v6', () => {
 		const result = migrateSave({
 			schemaVersion: 2,
 			activeGame: null,
@@ -87,7 +87,7 @@ describe('migrateSave', () => {
 		expect(result.save.unlockedAchievementIds).toContain('first_picture')
 	})
 
-	it('valid v3 save → migrate to v5 with sticky seed', () => {
+	it('valid v3 save → migrate to v6 with sticky seed', () => {
 		const result = migrateSave({
 			schemaVersion: 3,
 			activeGame: null,
@@ -116,7 +116,7 @@ describe('migrateSave', () => {
 		expect(result.save.tutorialVersionCompleted).toBeNull()
 	})
 
-	it('valid v4 save → migrate to v5', () => {
+	it('valid v4 save → migrate to v6', () => {
 		const result = migrateSave({
 			schemaVersion: 4,
 			activeGame: null,
@@ -132,8 +132,32 @@ describe('migrateSave', () => {
 			unlockedAchievementIds: [],
 		})
 		expect(result.kind).toBe('ok')
-		expect(result.save.schemaVersion).toBe(5)
+		expect(result.save.schemaVersion).toBe(CURRENT_SAVE_SCHEMA_VERSION)
 		expect(result.save.tutorialOfferDismissed).toBe(false)
+		expect(result.save.freeHintsUsedToday).toBe(0)
+	})
+
+	it('valid v5 save → migrate to v6', () => {
+		const result = migrateSave({
+			schemaVersion: 5,
+			activeGame: null,
+			activeDailyGame: null,
+			completedPuzzleIds: [],
+			solvedPuzzleIds: [],
+			startedPuzzleIds: [],
+			bestTimes: [],
+			statistics: createDefaultSave().statistics,
+			dailyCompletionRecords: [],
+			restoredDailyDays: [],
+			dailyStartedDay: null,
+			unlockedAchievementIds: [],
+			tutorialVersionCompleted: null,
+			tutorialOfferDismissed: false,
+		})
+		expect(result.kind).toBe('ok')
+		expect(result.save.schemaVersion).toBe(6)
+		expect(result.save.freeHintsUsedToday).toBe(0)
+		expect(result.save.freeTeachMeUsedToday).toBe(0)
 	})
 
 	it('malformed JSON → recover', () => {
@@ -185,7 +209,7 @@ describe('migrateSave', () => {
 
 	it('duplicate completed IDs normalized on parse', () => {
 		const result = parseAndValidateSave({
-			schemaVersion: 5,
+			schemaVersion: 6,
 			activeGame: null,
 			activeDailyGame: null,
 			completedPuzzleIds: ['a', 'a', 'b'],
@@ -199,6 +223,11 @@ describe('migrateSave', () => {
 			unlockedAchievementIds: ['first_picture', 'first_picture'],
 			tutorialVersionCompleted: null,
 			tutorialOfferDismissed: false,
+			helpAllowanceDay: '2026-10-01',
+			freeHintsUsedToday: 0,
+			freeTeachMeUsedToday: 0,
+			pendingRewardedHints: 0,
+			pendingRewardedTeachMe: 0,
 		})
 		expect(result.ok).toBe(true)
 		if (result.ok) {

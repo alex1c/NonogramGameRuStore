@@ -13,6 +13,7 @@ export const HOME_SCROLL_ANCHOR_TEST_IDS = [
 	'home-daily',
 	'home-levels',
 	'home-statistics',
+	'home-tutorial-offer',
 ] as const
 
 describe('Home scroll layout contract', () => {
@@ -29,9 +30,12 @@ describe('Home scroll layout contract', () => {
 		const scrollIdx = homeSource.indexOf('testID="home-scroll"')
 		const statsIdx = homeSource.indexOf('testID="home-statistics"')
 		const levelsIdx = homeSource.indexOf('testID="home-levels"')
+		const tutorialIdx = homeSource.indexOf('testID="home-tutorial-offer"')
 		expect(scrollIdx).toBeGreaterThan(-1)
 		expect(statsIdx).toBeGreaterThan(scrollIdx)
 		expect(levelsIdx).toBeGreaterThan(scrollIdx)
+		// Soft tutorial offer must sit below Statistics (not above Continue/Daily).
+		expect(tutorialIdx).toBeGreaterThan(statsIdx)
 	})
 
 	it('App shell keeps banner outside clipped content host', () => {

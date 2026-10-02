@@ -98,8 +98,23 @@ import type {
 } from '../persistence/completionResult'
 import { cropSolutionBitmap } from '../gallery/crop'
 import { getGalleryItemDef } from '../gallery/definitions'
-import { formatDayTitleRu } from '../daily/dateUtils'
+import { formatDayTitleRu, localDayKey } from '../daily/dateUtils'
 import { formatDayPlural } from '../presentation/russianPlural'
+import { REWARDED_USER_FACING_ENABLED, showRewarded } from '../ads'
+import { trackEvent } from '../analytics'
+import {
+	FREE_HINTS_PER_DAY,
+	FREE_TEACH_ME_PER_DAY,
+	canUseHintWithoutRewarded,
+	canUseTeachMeWithoutRewarded,
+	formatFreeRemainingLabel,
+	freeHintsRemaining,
+	freeTeachMeRemaining,
+	rollHelpAllowanceToDay,
+	willConsumeFreeHint,
+	willConsumeFreeTeachMe,
+	type HelpAllowanceState,
+} from '../help'
 
 export interface GameScreenProps {
 	readonly session: GameSessionDescriptor
@@ -132,6 +147,8 @@ const liveGame = {
 	completionPersisted: false,
 	helpOpen: false,
 	replayHintsUsedThisRun: 0,
+	/** True while a rewarded ad is showing — keeps active solve timer paused. */
+	rewardedAdOpen: false,
 }
 
 export function GameScreen({
@@ -144,7 +161,7 @@ export function GameScreen({
 	darkMode = false,
 }: GameScreenProps) {
 	const insets = useSafeAreaInsets()
-	const { service, refresh } = useProgress()
+	const { service, refresh, save } = useProgress()
 	const palette: BoardPalette = darkMode
 		? DARK_BOARD_PALETTE
 		: LIGHT_BOARD_PALETTE
@@ -153,6 +170,38 @@ export function GameScreen({
 	const isDaily = routeSession.mode === 'DAILY'
 	const isReplay = routeSession.mode === 'REPLAY'
 	const dailyDayKey = routeSession.mode === 'DAILY' ? routeSession.dayKey : null
+
+	/** Display-only roll — hydrate/service also rolls on real help mutations. */
+	const helpAllowance: HelpAllowanceState = useMemo(
+		() =>
+			rollHelpAllowanceToDay(
+				{
+					helpAllowanceDay: save.helpAllowanceDay,
+					freeHintsUsedToday: save.freeHintsUsedToday,
+					freeTeachMeUsedToday: save.freeTeachMeUsedToday,
+					pendingRewardedHints: save.pendingRewardedHints,
+					pendingRewardedTeachMe: save.pendingRewardedTeachMe,
+				},
+				localDayKey(),
+			),
+		[
+			save.helpAllowanceDay,
+			save.freeHintsUsedToday,
+			save.freeTeachMeUsedToday,
+			save.pendingRewardedHints,
+			save.pendingRewardedTeachMe,
+		],
+	)
+	const hintFreeLeft = freeHintsRemaining(helpAllowance)
+	const teachFreeLeft = freeTeachMeRemaining(helpAllowance)
+	const hintRemainingLabel =
+		REWARDED_USER_FACING_ENABLED && hintFreeLeft > 0
+			? `Подсказки — ${formatFreeRemainingLabel(hintFreeLeft, FREE_HINTS_PER_DAY)}`
+			: null
+	const teachRemainingLabel =
+		REWARDED_USER_FACING_ENABLED && teachFreeLeft > 0
+			? `Научи меня — ${formatFreeRemainingLabel(teachFreeLeft, FREE_TEACH_ME_PER_DAY)}`
+			: null
 
 	const puzzle = useMemo(() => getProductionPuzzleById(puzzleId), [puzzleId])
 	const loadError =
@@ -412,7 +461,7 @@ export function GameScreen({
 		const applyNow = () => {
 			const now = Date.now()
 			setNowMs(now)
-			if (!liveGame.completionPersisted) {
+			if (!liveGame.completionPersisted && !liveGame.rewardedAdOpen) {
 				setTimer((current) => startOrResumeTimer(current, now))
 			}
 		}
@@ -428,7 +477,7 @@ export function GameScreen({
 	useEffect(() => {
 		const onChange = (state: AppStateStatus) => {
 			if (state === 'active') {
-				if (!liveGame.completionPersisted) {
+				if (!liveGame.completionPersisted && !liveGame.rewardedAdOpen) {
 					const now = Date.now()
 					setNowMs(now)
 					setTimer((current) => startOrResumeTimer(current, now))
@@ -716,6 +765,29 @@ export function GameScreen({
 		setApplyingHint(false)
 	}, [])
 
+	const pauseForRewarded = useCallback(() => {
+		liveGame.rewardedAdOpen = true
+		const now = Date.now()
+		setTimer((current) => {
+			const paused = pauseTimer(current, now)
+			liveGame.timer = paused
+			return paused
+		})
+	}, [])
+
+	const resumeAfterRewarded = useCallback(() => {
+		liveGame.rewardedAdOpen = false
+		if (!liveGame.completionPersisted) {
+			const now = Date.now()
+			setNowMs(now)
+			setTimer((current) => {
+				const resumed = startOrResumeTimer(current, now)
+				liveGame.timer = resumed
+				return resumed
+			})
+		}
+	}, [])
+
 	const presentHintResult = useCallback(
 		(result: HintResult, mode: 'HINT' | 'TEACH') => {
 			const current = liveGame.session
@@ -739,7 +811,37 @@ export function GameScreen({
 				})
 				fitBoard()
 				if (mode === 'TEACH') {
-					void service.recordTeachMeView().then(() => refresh())
+					// Teach Me benefit is the explanation itself — consume here.
+					const before = rollHelpAllowanceToDay(
+						{
+							helpAllowanceDay: service.getSave().helpAllowanceDay,
+							freeHintsUsedToday: service.getSave().freeHintsUsedToday,
+							freeTeachMeUsedToday: service.getSave().freeTeachMeUsedToday,
+							pendingRewardedHints: service.getSave().pendingRewardedHints,
+							pendingRewardedTeachMe:
+								service.getSave().pendingRewardedTeachMe,
+						},
+						service.todayDayKey(),
+					)
+					const consumingFree = willConsumeFreeTeachMe(before)
+					void (async () => {
+						await service.recordTeachMeView()
+						if (REWARDED_USER_FACING_ENABLED) {
+							const next = await service.consumeTeachMeRevealAllowance()
+							if (next !== null && consumingFree) {
+								trackEvent('teach_me_free_consumed', {
+									remaining: freeTeachMeRemaining({
+										helpAllowanceDay: next.helpAllowanceDay,
+										freeHintsUsedToday: next.freeHintsUsedToday,
+										freeTeachMeUsedToday: next.freeTeachMeUsedToday,
+										pendingRewardedHints: next.pendingRewardedHints,
+										pendingRewardedTeachMe: next.pendingRewardedTeachMe,
+									}),
+								})
+							}
+						}
+						refresh()
+					})()
 				}
 			} else {
 				setHintStep(null)
@@ -778,7 +880,7 @@ export function GameScreen({
 		[fitBoard, isDaily, isReplay, refresh, service],
 	)
 
-	const runHintRequest = useCallback(
+	const executeHintComputation = useCallback(
 		(mode: 'HINT' | 'TEACH') => {
 			if (session === null || session.completed || puzzle === null) {
 				return
@@ -809,6 +911,111 @@ export function GameScreen({
 		[closeHelp, presentHintResult, puzzle, refresh, service, session],
 	)
 
+	const requestRewardedHelp = useCallback(
+		(mode: 'HINT' | 'TEACH') => {
+			const helpType = mode === 'HINT' ? 'hint' : 'teach_me'
+			const title =
+				mode === 'HINT'
+					? 'Бесплатные подсказки на сегодня закончились'
+					: 'Бесплатные объяснения на сегодня закончились'
+			const body =
+				mode === 'HINT'
+					? 'Получите ещё одну подсказку за просмотр рекламы или продолжите решать самостоятельно.\n\n1 просмотр = 1 подсказка'
+					: 'Получите ещё одно подробное объяснение за просмотр рекламы или продолжите решать самостоятельно.\n\n1 просмотр = 1 объяснение'
+			const confirmLabel =
+				mode === 'HINT' ? 'Получить подсказку' : 'Получить объяснение'
+
+			Alert.alert(title, body, [
+				{ text: 'Закрыть', style: 'cancel' },
+				{
+					text: confirmLabel,
+					onPress: () => {
+						void (async () => {
+							trackEvent('rewarded_requested', { helpType })
+							pauseForRewarded()
+							const outcome = await showRewarded(() => {
+								// Grant is applied after show() resolves with 'granted'
+								// so async persistence stays sequential and idempotent.
+							})
+							resumeAfterRewarded()
+							if (outcome === 'unavailable') {
+								Alert.alert(
+									'Реклама недоступна',
+									'Реклама сейчас недоступна. Попробуйте позже.',
+								)
+								return
+							}
+							if (outcome !== 'granted') {
+								return
+							}
+							trackEvent('rewarded_completed', { helpType })
+							if (mode === 'HINT') {
+								await service.grantRewardedHintAllowance()
+							} else {
+								await service.grantRewardedTeachMeAllowance()
+							}
+							refresh()
+							// Recompute against current board after returning from ad.
+							executeHintComputation(mode)
+						})()
+					},
+				},
+			])
+		},
+		[
+			executeHintComputation,
+			pauseForRewarded,
+			refresh,
+			resumeAfterRewarded,
+			service,
+		],
+	)
+
+	const runHintRequest = useCallback(
+		(mode: 'HINT' | 'TEACH') => {
+			if (session === null || session.completed || puzzle === null) {
+				return
+			}
+			if (session.activeGesture !== null) {
+				return
+			}
+
+			if (!REWARDED_USER_FACING_ENABLED) {
+				executeHintComputation(mode)
+				return
+			}
+
+			void (async () => {
+				const rolled = await service.ensureHelpAllowanceDay()
+				const state: HelpAllowanceState = {
+					helpAllowanceDay: rolled.helpAllowanceDay,
+					freeHintsUsedToday: rolled.freeHintsUsedToday,
+					freeTeachMeUsedToday: rolled.freeTeachMeUsedToday,
+					pendingRewardedHints: rolled.pendingRewardedHints,
+					pendingRewardedTeachMe: rolled.pendingRewardedTeachMe,
+				}
+				refresh()
+				const allowed =
+					mode === 'HINT'
+						? canUseHintWithoutRewarded(state)
+						: canUseTeachMeWithoutRewarded(state)
+				if (!allowed) {
+					requestRewardedHelp(mode)
+					return
+				}
+				executeHintComputation(mode)
+			})()
+		},
+		[
+			executeHintComputation,
+			puzzle,
+			refresh,
+			requestRewardedHelp,
+			service,
+			session,
+		],
+	)
+
 	const handleApplyHint = useCallback(() => {
 		if (applyingHint || hintStep === null || session === null) {
 			return
@@ -829,13 +1036,49 @@ export function GameScreen({
 			if (outcome.reason === 'STALE') {
 				Alert.alert('Подсказка устарела', 'Запросите подсказку снова.')
 			}
+			// Failed Apply must not consume free or rewarded entitlement.
 			closeHelp()
 			return
 		}
 		applySessionUpdate((current) =>
 			applyHintToSession(current, outcome.mutations, outcome.player),
 		)
-		void service.recordHintApplied(branch).then(() => refresh())
+		void (async () => {
+			if (REWARDED_USER_FACING_ENABLED) {
+				await service.ensureHelpAllowanceDay()
+				const before = rollHelpAllowanceToDay(
+					{
+						helpAllowanceDay: service.getSave().helpAllowanceDay,
+						freeHintsUsedToday: service.getSave().freeHintsUsedToday,
+						freeTeachMeUsedToday: service.getSave().freeTeachMeUsedToday,
+						pendingRewardedHints: service.getSave().pendingRewardedHints,
+						pendingRewardedTeachMe: service.getSave().pendingRewardedTeachMe,
+					},
+					service.todayDayKey(),
+				)
+				const consumingFree = willConsumeFreeHint(before)
+				const next = await service.consumeHintApplyAllowance()
+				if (next === null) {
+					// Should not happen when gated correctly; keep board apply.
+					await service.recordHintApplied(branch)
+					refresh()
+					return
+				}
+				if (consumingFree) {
+					trackEvent('hint_free_consumed', {
+						remaining: freeHintsRemaining({
+							helpAllowanceDay: next.helpAllowanceDay,
+							freeHintsUsedToday: next.freeHintsUsedToday,
+							freeTeachMeUsedToday: next.freeTeachMeUsedToday,
+							pendingRewardedHints: next.pendingRewardedHints,
+							pendingRewardedTeachMe: next.pendingRewardedTeachMe,
+						}),
+					})
+				}
+			}
+			await service.recordHintApplied(branch)
+			refresh()
+		})()
 		if (isReplay) {
 			setReplayHintsUsed((n) => n + 1)
 		}
@@ -1009,6 +1252,8 @@ export function GameScreen({
 					palette={palette}
 					phase={helpPhase}
 					applying={applyingHint}
+					hintRemainingLabel={hintRemainingLabel}
+					teachRemainingLabel={teachRemainingLabel}
 					onClose={closeHelp}
 					onRequestHint={() => runHintRequest('HINT')}
 					onRequestTeach={() => runHintRequest('TEACH')}

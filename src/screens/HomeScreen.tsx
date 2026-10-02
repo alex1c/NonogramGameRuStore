@@ -113,31 +113,6 @@ export function HomeScreen({
 				{unlockedAchievements}/{achievements.length}
 			</Text>
 
-			{softTutorial ? (
-				<View style={styles.tutorialCard} testID="home-tutorial-offer">
-					<Text style={styles.tutorialTitle}>Хотите пройти обучение?</Text>
-					<Text style={styles.tutorialBody}>
-						Коротко объясним правила японских кроссвордов.
-					</Text>
-					<View style={styles.tutorialActions}>
-						<Pressable
-							onPress={onStartTutorial}
-							style={styles.tutorialPrimary}
-							accessibilityRole="button"
-						>
-							<Text style={styles.tutorialPrimaryText}>Пройти</Text>
-						</Pressable>
-						<Pressable
-							onPress={onDismissTutorialOffer}
-							style={styles.tutorialSecondary}
-							accessibilityRole="button"
-						>
-							<Text style={styles.tutorialSecondaryText}>Позже</Text>
-						</Pressable>
-					</View>
-				</View>
-			) : null}
-
 			{home.continueCard !== null ? (
 				<Pressable
 					accessibilityRole="button"
@@ -249,6 +224,31 @@ export function HomeScreen({
 			>
 				<Text style={styles.secondaryText}>Статистика</Text>
 			</Pressable>
+
+			{softTutorial ? (
+				<View style={styles.tutorialCard} testID="home-tutorial-offer">
+					<Text style={styles.tutorialTitle}>Хотите пройти обучение?</Text>
+					<Text style={styles.tutorialBody}>
+						Коротко объясним правила японских кроссвордов.
+					</Text>
+					<View style={styles.tutorialActions}>
+						<Pressable
+							onPress={onStartTutorial}
+							style={styles.tutorialPrimary}
+							accessibilityRole="button"
+						>
+							<Text style={styles.tutorialPrimaryText}>Пройти</Text>
+						</Pressable>
+						<Pressable
+							onPress={onDismissTutorialOffer}
+							style={styles.tutorialSecondary}
+							accessibilityRole="button"
+						>
+							<Text style={styles.tutorialSecondaryText}>Позже</Text>
+						</Pressable>
+					</View>
+				</View>
+			) : null}
 
 			{__DEV__ ? (
 				<View style={styles.devBlock} testID="home-dev-block">

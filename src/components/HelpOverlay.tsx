@@ -24,6 +24,8 @@ export interface HelpOverlayProps {
 	readonly palette: BoardPalette
 	readonly phase: HelpPanelPhase
 	readonly applying: boolean
+	readonly hintRemainingLabel: string | null
+	readonly teachRemainingLabel: string | null
 	readonly onClose: () => void
 	readonly onRequestHint: () => void
 	readonly onRequestTeach: () => void
@@ -35,6 +37,8 @@ export function HelpOverlay({
 	palette,
 	phase,
 	applying,
+	hintRemainingLabel,
+	teachRemainingLabel,
 	onClose,
 	onRequestHint,
 	onRequestTeach,
@@ -78,6 +82,22 @@ export function HelpOverlay({
 						>
 							Подсказки используют только логику — без угадывания.
 						</Text>
+						{hintRemainingLabel !== null ? (
+							<Text
+								style={[styles.quota, { color: palette.clueTextDimmed }]}
+								testID="help-hint-quota"
+							>
+								{hintRemainingLabel}
+							</Text>
+						) : null}
+						{teachRemainingLabel !== null ? (
+							<Text
+								style={[styles.quota, { color: palette.clueTextDimmed }]}
+								testID="help-teach-quota"
+							>
+								{teachRemainingLabel}
+							</Text>
+						) : null}
 						<HelpOption
 							palette={palette}
 							title="Подсказка"
@@ -274,6 +294,11 @@ const styles = StyleSheet.create({
 		fontSize: 13,
 		lineHeight: 18,
 		marginBottom: 4,
+		fontWeight: '500',
+	},
+	quota: {
+		fontSize: 12,
+		lineHeight: 16,
 		fontWeight: '500',
 	},
 	hintCard: {

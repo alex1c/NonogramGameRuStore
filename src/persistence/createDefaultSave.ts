@@ -2,6 +2,7 @@
  * Deterministic default save factory — no mutable singleton.
  */
 
+import { DAILY_EPOCH_DAY } from '../daily/dateUtils'
 import {
 	CURRENT_SAVE_SCHEMA_VERSION,
 	type ProgressStatistics,
@@ -21,7 +22,10 @@ export function createEmptyStatistics(): ProgressStatistics {
 	})
 }
 
-/** Pure deterministic default save (schema v5, no wall-clock fields). */
+/**
+ * Pure deterministic default save (schema v6, no wall-clock).
+ * Service hydrate rolls helpAllowanceDay to the real local day.
+ */
 export function createDefaultSave(): SaveRoot {
 	return Object.freeze({
 		schemaVersion: CURRENT_SAVE_SCHEMA_VERSION,
@@ -40,5 +44,10 @@ export function createDefaultSave(): SaveRoot {
 		unlockedAchievementIds: Object.freeze([] as string[]),
 		tutorialVersionCompleted: null,
 		tutorialOfferDismissed: false,
+		helpAllowanceDay: DAILY_EPOCH_DAY,
+		freeHintsUsedToday: 0,
+		freeTeachMeUsedToday: 0,
+		pendingRewardedHints: 0,
+		pendingRewardedTeachMe: 0,
 	})
 }

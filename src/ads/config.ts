@@ -25,10 +25,10 @@ export const BANNER_UNIT_BY_PLACEMENT: Record<BannerPlacement, string> = {
 }
 
 /**
- * Free Hint / Teach Me remain unlimited. Inventing scarcity solely to
- * monetize would be dishonest — keep rewarded infrastructure, defer CTA.
+ * Free Hint / Teach Me have separate daily quotas (5 each).
+ * Over-limit uses require one rewarded ad per additional use (R-M-20146030-5).
  */
-export const REWARDED_USER_FACING_ENABLED = false
+export const REWARDED_USER_FACING_ENABLED = true
 
 export function getBannerUnitId(placement: BannerPlacement): string {
 	return BANNER_UNIT_BY_PLACEMENT[placement]

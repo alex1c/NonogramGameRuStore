@@ -47,7 +47,7 @@ describe('banner placement map unchanged', () => {
 		expect(BANNER_UNIT_BY_PLACEMENT.information).toBe('R-M-20146030-3')
 		expect(AD_UNIT_IDS.interstitial).toBe('R-M-20146030-4')
 		expect(AD_UNIT_IDS.rewarded).toBe('R-M-20146030-5')
-		expect(REWARDED_USER_FACING_ENABLED).toBe(false)
+		expect(REWARDED_USER_FACING_ENABLED).toBe(true)
 	})
 
 	it('maps shell routes without putting banner on tutorial/game', () => {
