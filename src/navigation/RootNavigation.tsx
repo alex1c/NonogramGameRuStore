@@ -29,6 +29,7 @@ import {
 	CURRENT_TUTORIAL_VERSION,
 	shouldFirstRunOfferTutorial,
 } from '../tutorial/definition'
+import { placementForShellRoute } from './bannerPlacement'
 
 /** Explicit game session mode — never overlapping booleans. */
 export type GameSessionDescriptor =
@@ -72,30 +73,6 @@ interface RootNavigationProps {
 	readonly onBannerPlacementChange?: (placement: BannerPlacement | null) => void
 }
 
-function placementForRoute(route: Route): BannerPlacement | null {
-	switch (route.name) {
-		case 'tutorial':
-			return null
-		case 'game':
-			// Game hosts its own BannerSlot (game placement).
-			return null
-		case 'home':
-		case 'levels':
-			return 'home_levels'
-		case 'gallery':
-		case 'galleryCollection':
-		case 'galleryDetail':
-		case 'achievements':
-		case 'statistics':
-		case 'settings':
-		case 'about':
-		case 'daily':
-			return 'information'
-		default:
-			return 'home_levels'
-	}
-}
-
 export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps) {
 	const { save, service, refresh } = useProgress()
 	const [route, setRoute] = useState<Route>(() =>
@@ -106,7 +83,7 @@ export function RootNavigation({ onBannerPlacementChange }: RootNavigationProps)
 	const [darkMode, setDarkMode] = useState(false)
 
 	useEffect(() => {
-		onBannerPlacementChange?.(placementForRoute(route))
+		onBannerPlacementChange?.(placementForShellRoute(route.name))
 	}, [onBannerPlacementChange, route])
 
 	useEffect(() => {

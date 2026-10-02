@@ -1,9 +1,9 @@
 /**
- * Home — real game entry (Continue / Play / Levels / Statistics).
- * BannerSlot remains in App shell. DEV controls stay under __DEV__.
+ * Home — scrollable entry when content exceeds the contentHost above Banner 2.
+ * Banner lives in App shell (never overlay). No bottom system-inset padding here.
  */
 
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { getCampaignProgressSummary } from '../campaign'
 import {
@@ -67,6 +67,12 @@ export function HomeScreen({
 			style={[styles.root, { paddingTop: insets.top + spacing.md }]}
 			testID="home-screen"
 		>
+			<ScrollView
+				style={styles.scroll}
+				contentContainerStyle={styles.scrollContent}
+				keyboardShouldPersistTaps="handled"
+				testID="home-scroll"
+			>
 			<View style={styles.titleRow}>
 				<Text style={styles.title} accessibilityRole="header">
 					{APP_SHORT_NAME}
@@ -195,6 +201,7 @@ export function HomeScreen({
 					styles.secondaryButton,
 					{ opacity: pressed ? 0.85 : 1 },
 				]}
+				testID="home-levels"
 			>
 				<Text style={styles.secondaryText}>Уровни</Text>
 			</Pressable>
@@ -238,12 +245,13 @@ export function HomeScreen({
 					styles.secondaryButton,
 					{ opacity: pressed ? 0.85 : 1 },
 				]}
+				testID="home-statistics"
 			>
 				<Text style={styles.secondaryText}>Статистика</Text>
 			</Pressable>
 
 			{__DEV__ ? (
-				<View style={styles.devBlock}>
+				<View style={styles.devBlock} testID="home-dev-block">
 					<Pressable
 						onPress={onToggleDarkMode}
 						style={styles.devToggle}
@@ -279,6 +287,7 @@ export function HomeScreen({
 					</Pressable>
 				</View>
 			) : null}
+			</ScrollView>
 		</View>
 	)
 }
@@ -286,8 +295,14 @@ export function HomeScreen({
 const styles = StyleSheet.create({
 	root: {
 		flex: 1,
-		paddingHorizontal: spacing.lg,
 		backgroundColor: colors.background,
+	},
+	scroll: {
+		flex: 1,
+	},
+	scrollContent: {
+		paddingHorizontal: spacing.lg,
+		paddingBottom: spacing.lg,
 		gap: spacing.sm,
 	},
 	titleRow: {
@@ -457,8 +472,8 @@ const styles = StyleSheet.create({
 		fontWeight: '600',
 	},
 	devBlock: {
-		marginTop: 'auto',
-		marginBottom: spacing.md,
+		marginTop: spacing.md,
+		marginBottom: spacing.sm,
 		gap: 4,
 	},
 	devToggle: {

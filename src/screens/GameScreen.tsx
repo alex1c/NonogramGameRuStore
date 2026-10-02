@@ -970,7 +970,7 @@ export function GameScreen({
 				</View>
 			</GestureDetector>
 
-			<View style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
+			<View>
 				<GameControls
 					tool={session.tool}
 					canUndo={sessionCanUndo(session)}
@@ -1085,9 +1085,12 @@ export function GameScreen({
 				}
 			/>
 			) : null}
-			{/* Stable session banner — not remounted on cell/tool/hint updates. */}
+			{/* Banner 1 below controls; system inset below banner — never overlay. */}
 			<BannerSlot placement="game" />
-			<View style={{ height: Math.max(insets.bottom, 0) }} />
+			<View
+				style={{ height: Math.max(insets.bottom, 0) }}
+				testID="game-banner-safe-area"
+			/>
 		</View>
 	)
 }

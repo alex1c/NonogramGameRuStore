@@ -48,7 +48,6 @@ export function AchievementsScreen({ onBack }: AchievementsScreenProps) {
 				styles.root,
 				{
 					paddingTop: insets.top + spacing.sm,
-					paddingBottom: Math.max(insets.bottom, 8),
 				},
 			]}
 			testID="achievements-screen"

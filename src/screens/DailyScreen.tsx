@@ -154,7 +154,6 @@ export function DailyScreen({
 				styles.root,
 				{
 					paddingTop: insets.top + spacing.sm,
-					paddingBottom: Math.max(insets.bottom, 8),
 				},
 			]}
 			testID="daily-screen"

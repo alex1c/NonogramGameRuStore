@@ -100,7 +100,6 @@ export function GalleryCollectionScreen({
 				styles.root,
 				{
 					paddingTop: insets.top + spacing.sm,
-					paddingBottom: Math.max(insets.bottom, 8),
 				},
 			]}
 			testID="gallery-collection-screen"

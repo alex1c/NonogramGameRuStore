@@ -13,9 +13,15 @@ import { colors, typography } from './src/theme'
 import { APP_SHORT_NAME } from './src/about/config'
 
 /**
- * App shell.
- * Hydrates save before showing Home. BannerSlot for non-game/non-tutorial routes.
- * Game owns its own game-placement banner. Tutorial never requests ads.
+ * App shell layout contract (ForestMusic):
+ *
+ * root (column)
+ *   ├─ contentHost flex:1 overflow:hidden  ← screens / ScrollView / FlatList
+ *   ├─ BannerSlot                         ← own layout row, never absolute
+ *   └─ bottom SafeArea inset
+ *
+ * Game/Tutorial set placement=null so the shell banner is omitted;
+ * Game mounts Banner 1 inside its own column above the system inset.
  */
 export default function App() {
 	useEffect(() => {
@@ -55,8 +61,8 @@ function AppBody() {
 	const showShellBanner = bannerPlacement !== null
 
 	return (
-		<View style={styles.flex}>
-			<View style={styles.flex}>
+		<View style={styles.flex} testID="app-shell">
+			<View style={styles.contentHost} testID="app-content-host">
 				<RootNavigation onBannerPlacementChange={setBannerPlacement} />
 			</View>
 			{showShellBanner ? (
@@ -73,6 +79,15 @@ function AppBody() {
 const styles = StyleSheet.create({
 	flex: {
 		flex: 1,
+		backgroundColor: colors.background,
+	},
+	/**
+	 * Clip overflowing screen content so it cannot paint over the banner
+	 * sibling (Android default overflow is visible).
+	 */
+	contentHost: {
+		flex: 1,
+		overflow: 'hidden',
 		backgroundColor: colors.background,
 	},
 	bottomInset: {
